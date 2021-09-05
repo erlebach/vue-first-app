@@ -87,12 +87,27 @@ export default {
         );
         // Value returned is not a ref (at this time)
         // These feeders should be checked against the Graph and table displays
-        const { bookings_in, bookings_out, feeders } = computeFeeders(
+        let { bookings_in, bookings_out, feeders } = computeFeeders(
           dFSU.value,
           dBookings.value
         );
         //u.print("bookingsWithFeeders", bookingsWithFeeders);
         // u.print("AFTER propagation, edges: ", edges);
+
+        // include tails in bookings
+        dTails.value.forEach((tail) => {
+          const id_f = tail.id_f;
+          const id_nf = tail.id_nf;
+          if (id_f.slice(13, 16) !== "PTY" && id_nf.slice(10, 13) !== "PTY") {
+            console.log("push dBookings.value");
+            dBookings.value.push({ id_f, id_nf, tail });
+          }
+        });
+
+        u.print("dBookings.value:", dBookings.value); // tails are at the end
+
+        bookings_in = u.createMappingOneToMany(dBookings.value, "id_nf");
+        bookings_out = u.createMappingOneToMany(dBookings.value, "id_f");
 
         // Analyze the impact of an arrival delay (using historical data)
         rigidModel(

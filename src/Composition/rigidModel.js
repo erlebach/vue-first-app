@@ -103,35 +103,41 @@ export function rigidModel(
 
   //checkRotations(FSUm, bookings, dTails); // debug
 
+  function setupBookingProps(e, FSUm) {
+    e.fsu_f = FSUm[e.id_f];
+    e.fsu_nf = FSUm[e.id_nf];
+    // rotation only exists for fixed tails
+    const calcRealRot = (e.fsu_nf.OUT_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // not equal
+    const calcAvailRot = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // not equal
+    const calcPlannedRot =
+      (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // not equal
+    const actAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // same as calcAvailRot
+
+    e.availRotP = calcPlannedRot; // scheduled
+    e.availRotMinReq = calcPlannedRot < 60 ? calcPlannedRot : 60; // 60 min
+    e.rotSlackP = e.availRotP - e.availRotMinReq;
+    e.ACT_availableP = actAvailable; // Based on best estimated information
+    e.ACTSlackP = e.ACT_availableP - 30; // not clear required
+  }
+
   bookings.forEach((e) => {
     e.fsu_f = FSUm[e.id_f];
     e.fsu_nf = FSUm[e.id_nf];
     // u.print("e", e);
     // rotation only exists for fixed tails
-    if (e.fsu_f !== undefined && e.fsu_nf !== undefined) {
-      if (e.TAIL_f === e.TAIL_nf) {
-        const calcRealRot = (e.fsu_nf.OUT_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // not equal
-        const calcAvailRot =
-          (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // not equal
-        const calcPlannedRot =
-          (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // not equal
-        const actAvailable = // same as calcAvailRot
-          (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min;
-
-        e.availRotP = calcPlannedRot; // scheduled
-        e.availRotMinReq = calcPlannedRot < 60 ? calcPlannedRot : 60; // 60 min
-        e.rotSlackP = e.availRotP - e.availRotMinReq;
-        e.ACT_availableP = actAvailable; // Based on best estimated information
-        e.ACTSlackP = e.ACT_availableP - 30; // not clear required
-      } else {
-        const actAvailable = // same as calcAvailRot
-          (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min;
-        e.availRotP = 100000;
-        e.availRotMinReq = 100000;
-        e.rotSlackP = 100000;
-        e.ACT_availableP = actAvailable; // Based on best estimated information
-        e.ACTSlackP = e.ACT_availableP - 30; // not clear required
-      }
+    if (e.tail) {
+      // Sta
+      setupBookingProps(e, FSUm);
+    } else if (e.TAIL_f === e.TAIL_nf) {
+      // PTY with tail turnaround and passengers
+      setupBookingProps(e, FSUm);
+    } else {
+      const actAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // same as calcAvailRot
+      e.availRotP = 100000;
+      e.availRotMinReq = 100000;
+      e.rotSlackP = 100000;
+      e.ACT_availableP = actAvailable; // Based on best estimated information
+      e.ACTSlackP = e.ACT_availableP - 30; // not clear required
     }
     if (e.fsu_f === undefined) {
       fsu_undefined._f++;
@@ -150,6 +156,8 @@ export function rigidModel(
 
   // Initialize additional fields
   u.print("FSUm", FSUm);
+
+  // NODE METADATA
 
   Object.values(FSUm).forEach((n) => {
     const inbounds = bookings_in[n.id]; // all feeders of flight id_nf
@@ -206,6 +214,7 @@ export function rigidModel(
   n.rotSlackP;
   */
 
+  /*
   Object.values(bookings).forEach((e) => {
     const tail_f = e.tail_f;
     const tail_nf = e.tail_nf;
@@ -218,7 +227,9 @@ export function rigidModel(
     }
     // u.print("bookings e", e);
   });
+  */
 
+  /*
   u.print("bookings", bookings);
   u.print("inbounds ", bookings_in);
 
@@ -228,10 +239,12 @@ export function rigidModel(
 
   // Check tailSta
   u.print("tailsSta", tailsSta);
+  */
 
   // initializePredictedDelaysAndSlacks(dFSU, tailsSta);
+  u.print("before createGraph, bookings: ", bookings);
 
-  const tailm = u.createMapping(dTails, "id_f");
+  //const tailm = u.createMapping(dTails, "id_f");
   const graph = createGraph(edges, bookings_in, bookings_out);
 
   // edges: src, dst  (PTY-Sta or Sta-PTY). Sta refers to "Station"
@@ -263,6 +276,9 @@ export function rigidModel(
   const definedTailSta = [];
   graph.traverseBfs(id, (key, values) => {
     // outgoing flight from PTY
+    propDelay(key, bookings_in, bookings_out, FSUm);
+
+    /*
     if (key.slice(10, 13) === "PTY") {
       // rotation at STA (FSUm is FSU map: (id: record) )
       const res = propDelaySta(
@@ -298,6 +314,7 @@ export function rigidModel(
         definedTailSta
       );
     }
+    */
   });
 
   Object.keys(FSUm).forEach((k) => {
@@ -313,6 +330,27 @@ export function rigidModel(
   });
   u.print("end of rigid, FSUm", FSUm);
   return null;
+}
+//--------------------------------------------------------
+function propDelay(id, bookings_in, bookings_out, FSUm) {
+  //
+  const b_in = bookings_in[id];
+  const b_out = bookings_out[id];
+  //u.print("bookings_in", b_in);
+  if (b_out === undefined) {
+    // arrivals the next day
+    const fsu = FSUm[id];
+    console.log("--------------------------");
+    console.log(`propDelay  ===> id: ${id}`);
+    console.log(
+      "arrival date/time: ",
+      `${fsu.SCH_ARR_DTZ}, ${fsu.SCH_ARR_TMZ}`
+    );
+    u.print("bookings_out", b_out);
+    return;
+  }
+
+  // update edge and node parameters (For Sunday Work)
 }
 //--------------------------------------------------------
 // Flight arrives at PTY, probably late. Find all sibling feeders
@@ -630,12 +668,14 @@ function createGraph(edges, bookings_in, bookings_out) {
     graph.addEdge(e.src, e.dst);
   });
 
+  /*
   u.print("inside graph, barebones graph", graph);
   u.print("inside graph, barebones graph._vertices", graph._vertices);
   const ids = graph._vertices[16]; //"2019/10/01PAPPTY17:16203"];
   u.print("inside graph, ids=_vertices[22] ", ids); // undefined
   const ids1 = graph._vertices["2019/10/01PAPPTY17:16203"];
   u.print("inside graph, ids= _vertices['2019/....']", ids1); // undefine
+  */
 
   // Upgrade graph
   // Given srcId, find all the destinations
@@ -683,19 +723,19 @@ function createGraph(edges, bookings_in, bookings_out) {
 
   let count = 0;
 
-  Object.keys(targets).forEach((id) => {
-    count++;
-    console.log(`count: ${count}`);
-    if (count < 1000) {
-      // limit the output
-      u.print("==> id: ", id);
-      u.print("sources: ", sources[id]);
-      u.print("targets: ", targets[id]);
-      // for debugging
-      handleBookingsIn(bookings_in, sources, id);
-      //handleBookingsOut(bookings_out, targets, id);
-    }
-  });
+  // Object.keys(targets).forEach((id) => {
+  //   count++;
+  //   console.log(`count: ${count}`);
+  //   if (count < 1000) {
+  //     // limit the output
+  //     u.print("==> id: ", id);
+  //     u.print("sources: ", sources[id]);
+  //     u.print("targets: ", targets[id]);
+  //     // for debugging
+  //     handleBookingsIn(bookings_in, sources, id);
+  //     //handleBookingsOut(bookings_out, targets, id);
+  //   }
+  // });
 
   graph.help =
     "targets[srcid] returns all the outbounds of the srcid inbound\n" +
