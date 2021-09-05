@@ -1,0 +1,53 @@
+add to .eslintrc.js: 
+"rules": {
+      "no-unused-vars": "off"
+}
+to prevent this message from happening.
+------------------------------------
+2021-07-30
+- Choose a node (hardcode for now). 
+- List all the outbound flights. These are the out-degree neighbors
+- List all the inbound flights. These are the in-degree neighbors
+- List them in a Table, below the city table.
+
+2021-08-14
+- FlightsInAir works on its own. And I can change times. I am not using vuex
+- FlightsInAir and CityTable do not work together. I get an error when 
+I either 1) type a new city, or type in a new time.  
+REASON: must have to do with how I am reading the data. Somehow, I am must
+be interacting the two components. 
+  (2021-08-14: both now work. I added some conditionals. I have to remove 
+  colorByCity.vue from CityTable and put it in CityGraph*.vue)
+
+Ideally, I want to have a singleton class to read the data from multiple locations. Alternatively, some intelligent cache mechanism. 
+
+But I also need the capability to switch input files. The current class-based 
+approach takes the file name as a constructor. This should work as long as 
+the components are completely decoupled. But they are not. A table has elements
+that when selected might point to the graph. 
+
+I might want the various graphs to always be properly related to each other. 
+Not clear what this means as yet. 
+
+For now, I should be concerned with maintainability and flexibility, but 
+not efficiency. Otherwise, I will never get a demo going. 
+
+Another problem to solve: 
+- I can watch(load.isDataLoaded()), but I cannot watch a computed value
+defined in FlightsInAir.vue. So the following works: 
+
+  watch(load.isDataLoaded(), (curVal, old) => {....}
+
+But the following does NOT work: 
+
+const isDataLoaded = computed(() => {
+      return load.isDataLoaded();
+    });
+
+  watch(isDataLoaded, (curVal, old) => {....}
+
+NOTE: load.isDataLoaded() returns a ref(). 
+-------------------------------------------------------
+2021-08-14
+- Add Schdep and schArr to FlightsInAir table
+-------------------------------------------------------

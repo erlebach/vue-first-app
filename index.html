@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!-- <link rel="icon" href="<%= BASE_URL %>favicon.ico"> -->
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    <!-- Not sure the next line is necessary. G6 is undefined if not present. 
+		 Antv/G6 is only referred to in package.json, 
+		 which only involves installation. -->
+    <!-- <script src="http://localhost:8098"></script> -->
+
+	<!-- These are not required if I am working through webpack -->
+	<!-- <script defer src="https://unpkg.com/@antv/g6@4.3.4"></script> --> 
+	<!-- <script defer src="../node_modules/@antv/g6W4.3.4"></script> -->
+  </head>
+  <body id="bodyid">
+    <noscript>
+      <strong
+        >We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work
+        properly without JavaScript enabled. Please enable it to
+        continue.</strong
+      >
+    </noscript>
+    <div id="app"></div>
+    <!-- built files will be auto injected -->
+  </body>
+</html>

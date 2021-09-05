@@ -1,0 +1,126 @@
+<html>
+  <head>
+    <script src="https://unpkg.com/vue@next"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="module">
+      import * as u from "../Composition/utils.js";
+      const { createApp, ref, watchEffect } = Vue;
+
+      function useFetch(getUrl) {
+        const data = ref(null);
+        const error = ref(null);
+        const isPending = ref(true);
+
+        // The entire function is reexecuted, even the lines where nothing changed
+        watchEffect(() => {
+          isPending.value = true;
+          data.value = null;
+          error.value = false;
+          fetch(getUrl())
+            .then((res) => res.json())
+            .then((_data) => {
+              data.value = _data;
+              isPending.value = false;
+            })
+            .catch((err) => {
+              error.value = err;
+              isPending.value = false;
+            });
+        });
+
+        return { data, error, isPending };
+      }
+
+      function get2files(url1, url2) {
+        const { data: d1, error: e1, isPending: pend1 } = useFetch(() => url1);
+        const { data: d2, error: e2, isPending: pend2 } = useFetch(() => url2);
+
+        watchEffect(() => {
+          if (d1 && d2) {
+            console.log("Both datasets have been retrieved");
+            analyzeData(dBookings, dTails);
+          }
+        });
+        return { d1, d2, e1, e2, pend1, pend2 };
+      }
+
+      function get2files1() {
+        const { data: dTails, error: e1, isPending: pend1 } = useFetch(
+          () => "./tail_pairs.json"
+        );
+        const { data: dBookings, error: e2, isPending: pend2 } = useFetch(
+          () => "./bookings_oneday.json"
+        );
+
+        watchEffect(() => {
+          if (dBookings && dTails) {
+            console.log("** Both datasets have been retrieved");
+            analyzeData(dBookings, dTails);
+          }
+        });
+        return { dTails, dBookings, e1, e2, pend1, pend2 };
+      }
+
+      function analyzeData(bookings, tails) {
+        console.log("analyzeData");
+        book0 = bookings[0];
+        tails0 = tails[0];
+        console.log(book0);
+        console.log(tails0);
+      }
+
+      function getFile() {
+        const x = ref(0);
+        return { x };
+      }
+
+      const Post = {
+        template: `
+                        <div v-if="isPending">loading...</div>
+                        <div v-else-if="data">{{data}}</div>
+                        <div v-else-if="error">Something is wrong</div>
+                     `,
+        props: { id: Number },
+        setup(props) {
+          const { x } = getFile();
+          u.print("x", x);
+          const { d1, d2, e1, e2, pend1, pend2 } = get2files(
+            "./tail_pairs.json",
+            "./bookings_oneday.json"
+          );
+          console.log("after get2file");
+          const data = d1; // ref
+          const error = e1; // ref
+          const isPending = pend1; // ref
+
+          return {
+            data,
+            error,
+            isPending,
+          };
+        },
+      };
+
+      const App = {
+        components: { Post },
+        data() {
+          const { x } = getFile();
+          u.print("x", x);
+          return {
+            id: 1,
+          };
+        },
+        template: `Hello`,
+        // template: `
+        //             <button @click="id++"> change ID </button>
+        //             <Post :id="id" />
+        //             `,
+      };
+
+      createApp(App).mount("#app");
+    </script>
+  </body>
+</html>

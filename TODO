@@ -1,0 +1,87 @@
+DONE
+// Draw node with delays in orange or red or green
+// Draw edges with insufficient connection in orange or red or green
+// Fix cities (need entire city name)
+// First time plot is drawn, make sure some nodes are larger (MIA)
+
+TODO
+// Create textboxes next to each node with delays. Not others.
+// Add rotation for all flights from FSU table. That goes into nodes.
+   - if historical data, available and actual rotation is known. 
+   - if future prediction, then planned rotation is known, but actual/available rotation is not known. 
+	 Planned: schDep - schArr of a given tail (schDep - schArr) DONE
+     Available: schDep - actArr of a given tail (schDep - IN_f) DONE
+	 Actual: actDep - actArr of a given tail (OUT_nf - IN_f) DONE
+----------------------------------
+TODO: 
+Create some filters: 
+- Remove flights with zero arrival delay (nodes)
+- Remove flights with conneciton time > 45 min (edges)
+- Remove both
+----------------------------------------------------------------------
+2021-08-03
+- In setup() (before onBeforeMount), call all the dispatches and setup the 
+store and do this asynchronously through promises that are fully resolved. 
+- in execution commands, 
+----------------------------------------------------------------------
+2021-08-06
+- Fixed connectionsGraph. I know understand (mostly), watches and computed variables.
+- TODO: Add back layers
+----------------------------------------------------------------------
+2021-08-07
+- Given a particular time, identify all the planes in flight and all the planes on the ground with a delay greater than x min. (note that the delay is not hardcoded). 
+
+function flightsInAir(curTime, minDelay) {
+    // Collect the nodes of all flights in the air
+
+	const graph = store.getters.fullGraph;
+	const nodes = graph.getNodes();
+
+	// PLANES IN FLIGHT
+	// departure time <= curTime
+	// arrival time >= curTime
+	// departure delay > minDelay
+
+	// or DELAYS of plane not yet departed (with fake data, hard to simulate, 
+	// since we only actual departure delays available to us, which would not 
+	// normally be known. 
+
+    // departure delay > minDelay
+	// departure time > curTime (better: OUT > curTime)
+
+	const fct = (node) => 
+}
+
+-------------------------------------------------
+2021-08-08
+- Created a file FlightsInAirTable.vue. I have only just started work on 
+it. The idea is to crete the table that Miguel envisioned. 
+- The Bookings/FSU database (feeder --> Outbound pairs) does not contain
+the return flight from stations (other than PTY). They only contain pair
+of flights: one that inbound at PTY, and the connecting outbound flight from 
+PTY. 
+- Therefore, I must create a file of pairs PTY-Station (outbound), 
+and station-PTY (inbound). These two flights will have the same tail. 
+- The question is: are these flights included in my current graph? 
+In other words, are there any edges where the tail are the same? ANSWER is 
+no. The nodes might be there, but even that is not for sure. 
+
+TODO: return to Python, and printout a table of connecting flights at all stations on 10/01/2019. Then see if these flights are included in my G6 graph. 
+-----------------------------------------------------
+that either arrive at PTY or depart from pTY
+-----------------------------------------------------
+2021-08-17
+- Somehow, there is a single node drawn above graph. No idea what that is. 
+  This was solved by drawing two graphs into two mount points, and with 
+  different configuration structures. Then I set v-show=false to one of them.
+- A single call to setupGraph is drawing two graphs. Or else it is clled twice.
+  It is only called once. SO THERE MUST BE AN ERROR IN SETUPGRAPH. 
+  STUDY THIS. Fixed. 
+----------------------------------------------------------
+2021-08-20
+- Study flight propagation. 
+- 1) Start with an incoming flight
+  2) Capture all the outgoing flights. 
+  3) For each outgoing flight, capture the return flight. 
+----------------------------------------------------------
+----------------------------------------------------------
