@@ -116,8 +116,8 @@ export function rigidModel(
     e.availRotP = calcPlannedRot; // scheduled
     e.availRotMinReq = calcPlannedRot < 60 ? calcPlannedRot : 60; // 60 min
     e.rotSlackP = e.availRotP - e.availRotMinReq;
-    e.ACT_availableP = actAvailable; // Based on best estimated information
-    e.ACTSlackP = e.ACT_availableP - 30; // not clear required
+    e.ACTAvailableP = actAvailable; // Based on best estimated information
+    e.ACTSlackP = e.ACTAvailableP - 30; // not clear required
   }
 
   bookings.forEach((e) => {
@@ -136,8 +136,8 @@ export function rigidModel(
       e.availRotP = 100000;
       e.availRotMinReq = 100000;
       e.rotSlackP = 100000;
-      e.ACT_availableP = actAvailable; // Based on best estimated information
-      e.ACTSlackP = e.ACT_availableP - 30; // not clear required
+      e.ACTAvailableP = actAvailable; // Based on best estimated information
+      e.ACTSlackP = e.ACTAvailableP - 30; // not clear required
     }
     if (e.fsu_f === undefined) {
       fsu_undefined._f++;
@@ -186,7 +186,7 @@ export function rigidModel(
       // outbound flights from PTY
       if (inbounds !== undefined) {
         n.minACT = computeMinACT(inbounds, FSUm);
-        n.minACP = n.minACT;
+        n.minACTP = n.minACT;
         n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
         // u.print("inbounds defined, id", n.id);
       } else {
@@ -199,14 +199,14 @@ export function rigidModel(
       n.ACTSlackP = 100000; //undefined;
     }
     n.slackP = Math.min(n.slackP, n.ACTSlackP);
-    n.depDelayP = 0;
+    n.depDelayP = 0; // If flight to study has no delay, it will have no impact.
     n.arrDelayP = 0;
   });
 
   /*
   e.availRotP;
   e.rotSlackP;
-  e.act_availableP = e.act_available; // Based on best estimated information
+  e.ACTAvailableP = e.ACTAvailable; // Based on best estimated information
   n.slackP;
   n.depDelayP;
   n.arrDelayP;
@@ -267,283 +267,128 @@ export function rigidModel(
   // At a Station, there is only a single returning flight to PTY we are
   // considering in the analysis with the same tail.
 
-  // Run through every node (i.e., flights). Among the flights arriving at
-  // the station, how many are found in TailsSta? I would expect most of them.
-  const zeroReturnFlightIds = [];
-  const zeroReturnFlightDeps = [];
-  const zeroReturnFlightArrs = [];
-  const undefinedTailSta = [];
-  const definedTailSta = [];
+  let countUndef = 0;
+  let countDef = 0;
+
+  const ids = [];
+
   graph.traverseBfs(id, (key, values) => {
     // outgoing flight from PTY
-    propDelay(key, bookings_in, bookings_out, FSUm);
-
-    /*
-    if (key.slice(10, 13) === "PTY") {
-      // rotation at STA (FSUm is FSU map: (id: record) )
-      const res = propDelaySta(
-        graph,
-        FSUm,
-        dTails,
-        tailsSta,
-        key, // outgoing is
-        zeroReturnFlightIds,
-        zeroReturnFlightDeps,
-        zeroReturnFlightArrs,
-        undefinedTailSta,
-        definedTailSta
-      );
-      if (res === undefined) {
-        countUndefined++;
-      } else {
-        countDefined++;
-      }
-    } else {
-      // key.slice(10,13) === Station, so rotation at PTY
-      const updateObj = propDelayPTY(
-        graph,
-        FSUm,
-        dTails,
-        tailm,
-        tailsSta,
-        key,
-        bookings_in, // Into PTY
-        bookings_out, // Out of PTY[]
-        feeders,
-        undefinedTailSta,
-        definedTailSta
-      );
-    }
-    */
-  });
-
-  Object.keys(FSUm).forEach((k) => {
-    const e = FSUm[k];
-    if (e === undefined) {
-      u.print("FSUm, undefined e. id", k);
-    } else {
-      if (e.depDelayP > 0) {
-        u.print("depDelayP", e.depDelayP);
-      }
-    }
-    e.gordon = "will this work";
-  });
-  u.print("end of rigid, FSUm", FSUm);
-  return null;
-}
-//--------------------------------------------------------
-function propDelay(id, bookings_in, bookings_out, FSUm) {
-  //
-  const b_in = bookings_in[id];
-  const b_out = bookings_out[id];
-  //u.print("bookings_in", b_in);
-  if (b_out === undefined) {
-    // arrivals the next day
-    const fsu = FSUm[id];
-    console.log("--------------------------");
-    console.log(`propDelay  ===> id: ${id}`);
-    console.log(
-      "arrival date/time: ",
-      `${fsu.SCH_ARR_DTZ}, ${fsu.SCH_ARR_TMZ}`
+    console.log("-------------------------------------");
+    const isUndefined = propDelay(
+      key,
+      bookings_in,
+      bookings_out,
+      FSUm,
+      bookings
     );
-    u.print("bookings_out", b_out);
-    return;
-  }
-
-  // update edge and node parameters (For Sunday Work)
-}
-//--------------------------------------------------------
-// Flight arrives at PTY, probably late. Find all sibling feeders
-// Find all the outbounds, and for each outbound, all the feeders
-function propDelayPTY(
-  graph,
-  FSUm,
-  tails,
-  tailm,
-  tailsSta,
-  id_f, // incoming flight to PTY
-  bookings_in,
-  bookings_out,
-  feeders,
-  undefinedTailSta,
-  definedTailSta
-) {
-  // Handle flights turning around at PTY. Use rotations from FSU file
-  // id_f are always feeders into PTY
-  const idSrc = id_f;
-  const idIn = id_f;
-
-  // Using tailsTable
-  // In an earlier function, I should compute all feeders of every node in tails
-
-  const nano2min = 1 / 1e9 / 60;
-  let arrDelay = (FSUm[idSrc].ETA_DTMZ - FSUm[idSrc].SCH_ARR_DTMZ) * nano2min;
-
-  const outbounds = bookings_out[id_f];
-
-  // Outbounds can be undefined if the inbound flight arrives at PTY too late
-  if (outbounds === undefined) {
-    return undefined;
-  }
-
-  // One of these outbounds should have the same tail as the outbounds
-  // For each outbound, collect the feeders
-
-  /*
-     e.depDelayP = 0;
-    e.arrDelayP = 0;
-    e.availRotP = e.ROTATION_PLANNED_TM;
-    e.rotSlackP = e.availRotP - 60; // DO NOT HARDCODE 60 min
-    e.minACTP = minACT; // use scheduled value
-    e.ACTSlackP = e.minACTP - 30; // DO NOT HARDCODE 30 mi
-   */
-  /*
-   n.minACT = computeMinACT(inbounds, FSUm);
-      n.minACP = n.minACT;
-      n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
-      n.slackP = Math.min(n.ACTSlackP, n.rotSlackP);
-      n.depDelayP = 0;
-      n.arrDelayP = 0;
-      n.availRotP = n.ROTATION_PLANNED_TM;
-      n.rotSlackP = n.availRotP - 60; // DO NOT HARDCODE 60 mi
-  */
-  /*
- // Fields to update
-  e.availRotP;
-  e.rotSlackP;
-  e.act_availableP = e.act_available; // Based on best estimated information
-  n.slackP;
-  n.depDelayP;
-  n.arrDelayP;
-  n.availRotP;
-  n.rotSlackP;
-*/
-
-  // all outbounds are defined
-  outbounds.forEach((o) => {
-    // all feeders of o
-    const inbounds = bookings_in[o.id_nf];
-    // Minimum connection time must take into account the predicted arrival delays!
-    const minACT = computeMinACT(inbounds, FSUm); // 2nd arg not used
-    const ACT_slack = minACT - 30;
-
-    let arrDelay = (FSUm[id_f].ETA_DTMZ - FSUm[id_f].SCH_ARR_DTMZ) * nano2min;
-    if (arrDelay < 0) {
-      // Early arrival.
-      // available rotation time increases
-      // rotation slack increases
-      // available ACTs increase
-      // Outbound departures remain unchanged
-    }
-
-    // Update edge information based on arrival delay
-    inbounds.forEach((e) => {
-      // u.print("inbound e", e);
-      e.rotSlackP -= arrDelay;
-      if (e.tail_f === e.tail_nf) {
-        if (e.rotSlackP < 0) {
-          e.availRotP = e.availRotMinReq; // Add this
-          e.rotSlackP = 0;
-        } else {
-          //e.availRotP; // does not change
-        }
-      }
-      e.act_availableP -= arrDelay;
-    });
-
-    if (ACT_slack < 0) {
-      // slacks are decreased, and delays are increased
-      FSUm[idIn].ACTP = minACT;
-      FSUm[idIn].slackP = ACT_slack;
-      FSUm[idIn].ACTSlackP = ACT_slack;
-      FSUm[idIn].depDelayP -= ACT_slack;
-      FSUm[idIn].arrDelayP = FSUm[idIn].depDelayP; // Rigid model assumption
-      FSUm[idIn].availRotP = FSUm[idIn].depDelayP; // Rigid model assumption
-      FSUm[idIn].rotSlackP;
-    } else {
-      FSUm[idIn].ACTP = minACT;
-      FSUm[idIn].slackP = ACT_slack;
-      FSUm[idIn].ACTSlackP = ACT_slack;
-      FSUm[idIn].depDelayP -= ACT_slack;
-      FSUm[idIn].arrDelayP = FSUm[idIn].depDelayP; // Rigid model assumption
-      FSUm[idIn].availRotP = FSUm[idIn].depDelayP; // Rigid model assumption
-      FSUm[idIn].rotSlackP;
-    }
-
-    // late flights might not have any tailOut that day
-    const tailOut = tailm[id_f];
-    if (tailOut !== undefined) {
-      // u.print("tailOut: ", tailOut);
-      // u.print("FSUm", FSUm[id_f]);
-      // const rotation = FSUm[id_f].
-    }
+    ids.push([key, isUndefined]);
+    countUndef += isUndefined;
+    countDef += 1 - isUndefined;
+    console.log("returned from propDelay");
   });
-
-  // Must now update edges
-  // e.availRotP;
-  // e.rotSlackP;
-  // e.act_availableP = e.act_available; // Based on best estimated information
-
-  return; // updateObj;
-}
-//-------------------------------------------------------------------------------
-// id is the key of a record in FSU
-function propDelaySta(
-  graph,
-  FSUm,
-  tails,
-  tailsSta,
-  idSrc,
-  zeroReturnFlightIds,
-  zeroReturnFlightDeps,
-  zeroReturnFlightArrs,
-  undefinedTailSta,
-  definedTailSta
-) {
-  const nano2min = 1 / 1e9 / 60;
-  const idDst = graph.targets[idSrc]; // list of return flights, should be only 1
-  if (idDst.length == 0) {
-    // 43 flights have no return flights to PTY
-    // Reasons: the connecting flight leaves the station the next day AM.
-    // All these flights depart anywhere from 20:30 to 23:45
-    zeroReturnFlightIds.push(idSrc);
-    zeroReturnFlightDeps.push(FSUm[idSrc].SCH_DEP_TMZ);
-    zeroReturnFlightArrs.push([
-      FSUm[idSrc].SCH_ARR_DTZ,
-      FSUm[idSrc].SCH_ARR_TMZ,
-    ]);
-  }
-  const tail = tailsSta[idSrc];
-
-  if (tail === undefined) {
-    undefinedTailSta.push(idSrc);
-    return undefined;
-  } else {
-    definedTailSta.push(idSrc);
-  }
-
-  const recDst = FSUm[idDst];
-  const recSrc = FSUm[idSrc];
-  // Early arrivals increases rotation slack
-  // Late arrivals decreases rotation slack
-
-  // (min) No delay with respect to scheduled time of arrival
-  // In reality, must look at ETA and compute it
-  // Where does ETA come from? Initially, set ETA to either zero, or a to value
-  // that is computed probabilistically from a model
-  let arrDelay = (FSUm[idSrc].ETA_DTMZ - FSUm[idSrc].SCH_ARR_DTMZ) * nano2min;
-
-  // I really should create a parallel structure FSUPm = Object.create(null)
-
-  tail.rotSlackP -= arrDelay;
-  if (tail.rotSlackP < 0) {
-    FSUm[idSrc].depDelayP = FSUm.depDelayP - tail.rotSlack;
-    FSUm.arrDelayP = FSUm.depDelayP;
-  }
-  // create fields: rotSlackP, depDelayP, arrDelayP, where P stands for (predicted)
+  console.log(`nb undefined in propDelay: ${countUndef}`);
+  console.log(`nb defined in propDelay: ${countDef}`);
+  u.print("ids traversed by graph [key,isUndefined]: ", ids);
   return null;
 }
+//--------------------------------------------------------
+/*
+  Starting with id, which is an incoming flight that departed late:
+      Estimate its arrival delay via the rigid model (same as depature delay)
+  outflights.forEach(out => {
+             processOutgoingFlight(out)
+        })
+    function processOutgoingFlight(outFlight)
+       - compute their feeders and the minimum ACT, and the ACT slack = minimum ACT - 30 min
+       - use the scheduled arrival for all the feeders. (In reality, should use ETAs of all the feeders)
+    1) compute min ACT - 30 = ACT slack
+    2) If the tails are the same, compute available rotation (based on sched departure of outbound 
+       and late arrival of feeder). RotSlack is   availRot - minConnectionRequirement
+       Compute the minimum between (ACT slack) and (RotSlack)  ==>  and store in SlackP
+    3) If the tails are different,  compute ACT slack and store it in SlackP
+    4) If SlackP < 0, the departure delay is increased by (-SlackP), and the arrival delay is also 
+       inreased by (-SlackP)
+    5) ATTENTION: ACT_P is updated on edges and not on nodes.   (P means Predict)
+  */
 
+function processOutboundFlight(outbound, bookings_in, bookings_out) {
+  // bookings_in: map of array of flight pairs, indexed by id_nf
+  // bookings_out: map of array of flight pairs, indexed by id_f
+
+  const feeders = bookings_in[outbound.id_nf];
+  let minACT = 10000;
+
+  if (feeders === undefined) {
+    u.print("feeders are undefined"); // never happens
+  } else {
+    minACT = computeMinACT(feeders);
+  }
+
+  const ACTSlack = minACT - 30;
+  outbound.ACTSlackP = ACTSlack;
+  outbound.fsu_nf.minACTP = minACT;
+  outbound.fsu_nf.slackP = ACTSlack; // if there is no rotation issue. Ignore Rotation for now.
+
+  if (ACTSlack < 0) {
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, depDelayP: ${outbound.fsu_nf.depDelayP}`
+    // );
+    // u.print("outbound.fsu_nf", outbound.fsu_nf);
+    outbound.fsu_nf.depDelayP -= outbound.fsu_nf.slackP;
+    outbound.fsu_nf.arrDelayP = outbound.fsu_nf.depDelayP;
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, depDelayP: ${outbound.fsu_nf.depDelayP}`
+    // );
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, slackP: ${outbound.fsu_nf.slackP}`
+    // );
+  } else if (ACTSlack > 0) {
+    // the dep and arrival delays get reduced.
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, depDelayP: ${outbound.fsu_nf.depDelayP}`
+    // );
+    // console.log("==> decrease the delay");
+    outbound.fsu_nf.depDelayP -= outbound.fsu_nf.slackP;
+    outbound.fsu_nf.depDelayP = Math.max(outbound.fsu_nf.depDelayP, 0);
+    outbound.fsu_nf.arrDelayP = outbound.fsu_nf.depDelayP;
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, depDelayP: ${outbound.fsu_nf.depDelayP}`
+    // );
+    // console.log(
+    //   `==> outbound id_nf: ${outbound.id_nf}, slackP: ${outbound.fsu_nf.slackP}`
+    // );
+  }
+  return;
+}
+
+function propDelay(id, bookings_in, bookings_out, FSUm, bookings) {
+  // id is an incoming flight (either to PTY or to Sta)
+  const outbounds = bookings_out[id];
+
+  // u.print("propDelay, FSUm", FSUm);
+  console.log(`Enter propDelay, incoming flight id: ${id}`);
+  u.print("bookings_out", bookings_out);
+  u.print("bookings", bookings);
+
+  if (true && outbounds === undefined) {
+    // true is not necessar
+    console.log("outbounds is undefined");
+    const fsu_idnf = FSUm[id];
+    // id arrives the next day, so its outbounds are not in the database
+    console.log(
+      `outbound arrives at: ${fsu_idnf.SCH_ARR_DTZ}, ${fsu_idnf.SCH_ARR_TMZ}`
+    );
+    return 1;
+  }
+  outbounds.forEach((outbound) => {
+    console.log(`Outbound id: ${outbound.id_nf}`);
+    processOutboundFlight(outbound, bookings_in, bookings_out);
+  });
+  return 0;
+}
+
+// update edge and node parameters (For Sunday Work)
 //--------------------------------------------------------------------------
 function initializePredictedDelaysAndSlacks(dFSU, dTailsSta) {
   const day = "2019/10/01";
@@ -638,7 +483,6 @@ function handleBookingsOut(bookings_out, targets, id) {
     if (id.slice(10, 13) !== "PTY") {
       console.log(`Undefined flight not from PTY. IMPOSSIBLE, id: ${id}`);
       // I found some impossible cases.
-      //
     }
     console.log(`bookings_out undefined, id: ${id}`);
   }
@@ -789,11 +633,12 @@ function checkEdgeSta(edges, tailsSta) {
 // Minimum Available Connection Time for Pax for flight "id"
 // id is an outgoing flight
 // function computeMinACT(feeders, bookings_f, bookings_nf, id) {
-function computeMinACT(inbounds, FSUm) {
+// function assumes that inbounds is well formed.
+function computeMinACT(inbounds, FSUm = undefined) {
   const nano2min = 1 / 1e9 / 60;
   let minACT = 100000;
   inbounds.forEach((i) => {
-    minACT = Math.min(minACT, i.act_availableP);
+    minACT = Math.min(minACT, i.ACTAvailableP);
   });
 
   return minACT;

@@ -99,15 +99,17 @@ export default {
           const id_f = tail.id_f;
           const id_nf = tail.id_nf;
           if (id_f.slice(13, 16) !== "PTY" && id_nf.slice(10, 13) !== "PTY") {
-            console.log("push dBookings.value");
+            // console.log("push dBookings.value");
             dBookings.value.push({ id_f, id_nf, tail });
           }
         });
 
-        u.print("dBookings.value:", dBookings.value); // tails are at the end
+        // u.print("dBookings.value:", dBookings.value); // tails are at the end
 
         bookings_in = u.createMappingOneToMany(dBookings.value, "id_nf");
         bookings_out = u.createMappingOneToMany(dBookings.value, "id_f");
+        // u.print("bookings_in", bookings_in);
+        // u.print("bookings_out", bookings_out);
 
         // Analyze the impact of an arrival delay (using historical data)
         rigidModel(
@@ -121,6 +123,7 @@ export default {
           edges,
           id
         );
+        // console.log("EXITED rigidModel");
       }
     });
 
