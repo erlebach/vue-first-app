@@ -3,7 +3,7 @@ import * as u from "./utils.js";
 
 export function computeFeeders(fsu, bookings) {
   // Run through bookings, and for each ID, collect the feeders and the outbounds
-
+  u.print("enter computeFeeders");
   const fsu_m = u.createMapping(fsu, "id");
 
   // attribute: incoming flight id

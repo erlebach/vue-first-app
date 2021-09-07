@@ -5,6 +5,8 @@ import * as u from "../Composition/utils.js";
 import { tail } from "lodash";
 
 export function analyzeData3(fsu, bookings, tails) {
+  //
+
   //u.print("bookings", bookings);
   //u.print("tails", tails);
   //u.print("fsu", fsu);
@@ -18,9 +20,15 @@ export function analyzeData3(fsu, bookings, tails) {
     fsu_m[b.id] = b;
   });
 
+  // There might be issues if the tails and bookings file are inconsistent
+  // and have a different date or date range. This can happen during debugging
   tails.value.forEach((t) => {
-    t.b_f = fsu_m[t.id_f];
-    t.b_nf = fsu_m[t.id_nf];
+    if (t.b_f) {
+      t.b_f = fsu_m[t.id_f];
+    }
+    if (t.b_nf) {
+      t.b_nf = fsu_m[t.id_nf];
+    }
   });
 
   // Count number of undefined
@@ -43,7 +51,11 @@ export function analyzeData3(fsu, bookings, tails) {
   const nano2min = 1 / 1e9 / 60;
 
   tails.value.forEach((t) => {
-    t.rot_avail = (t.b_nf.SCH_DEP_DTMZ - t.b_f.IN_DTMZ) * nano2min;
+    if (t.b_nf && t.b_f) {
+      t.rot_avail = (t.b_nf.SCH_DEP_DTMZ - t.b_f.IN_DTMZ) * nano2min;
+    } else {
+      t.rot_avail = 100000;
+    }
   });
   //u.print("tails with rotation", tails);
   return tails;

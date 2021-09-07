@@ -24,10 +24,12 @@
 </template>
 
 <script>
+import cloneDeep from "lodash/cloneDeep";
 import { computeFeeders } from "../Composition/computeFeeders.js";
 import { analyzeData3 } from "../Composition/AnalyzeData3.js";
 import * as t from "../Composition/TailConnections.js";
 import { propagation } from "../Composition/propagation.js";
+import { propagation_new } from "../Composition/propagation_new.js";
 import { rigidModel } from "../Composition/rigidModel.js";
 import * as u from "../Composition/utils.js";
 
@@ -59,9 +61,12 @@ export default {
     const nbRows = ref(0);
 
     const { dFSU, dTails, dBookings } = get3files(
-      "./data/node_attributes.json",
-      "./data/bookings_oneday.json",
-      "./data/tail_pairs.json"
+      "./data/node_attributes_daterange.json",
+      "./data/bookings_daterange.json",
+      "./data/tail_pairs_daterange.json" // Creates the problem (only when all three files used. WHY?)
+      // "./data/node_attributes.json",
+      // "./data/bookings_oneday.json"
+      // "./data/tail_pairs.json"
     );
 
     watchEffect(() => {
@@ -69,6 +74,7 @@ export default {
       // be executed possibly multiple times
       if (dTails.value && dFSU.value && dBookings.value) {
         // FSU might not be required
+
         const { keptFlights } = t.tailConnections(dTails.value);
         tailsTable.value = keptFlights;
         nbRows.value = keptFlights.length;
@@ -77,22 +83,16 @@ export default {
 
         // I will not change the data so reactivity not important
         // I will return reactive variables
-        const id = "2019/10/01MIAPTY10:00173";
-        const { edges, tailsSta } = propagation(
-          dFSU.value,
-          dTails.value,
-          dBookings.value,
-          id,
-          [] // edges
-        );
-        // Value returned is not a ref (at this time)
-        // These feeders should be checked against the Graph and table displays
-        let { bookings_in, bookings_out, feeders } = computeFeeders(
-          dFSU.value,
-          dBookings.value
-        );
-        //u.print("bookingsWithFeeders", bookingsWithFeeders);
-        // u.print("AFTER propagation, edges: ", edges);
+        const id = "2019/10/01MIAPTY10:00173"; // id should be chosen via interface
+
+        // const bookings = cloneDeep(dBookings.value);
+        // const tails = cloneDeep(dTails.value);
+        // const fsu = cloneDeep(dFSU.value);
+
+        const tailsSta = u.createMapping(dTails.value, "id_f");
+        u.print("dTails.value", dTails.value);
+        u.print("tailsSta", tailsSta);
+        u.print("dBookings", dBookings.value);
 
         // include tails in bookings
         dTails.value.forEach((tail) => {
@@ -104,10 +104,46 @@ export default {
           }
         });
 
+        // Propagation is recursive. An error might lead to infinite calls, so stack overflow
+        const count = [0];
+        const { edges } = propagation_new(
+          dFSU.value,
+          dTails.value,
+          dBookings.value,
+          id
+        );
+
+        u.print("edges: ", edges);
+        // const { edges } = propagation(
+        //   // fsu
+        //   // tails,
+        //   // bookings, // to check whether propagation is still called multi times
+        //   dFSU.value,
+        //   dTails.value,
+        //   tailsSta,
+        //   dBookings.value,
+        //   count,
+        //   id,
+        //   [] // edges
+        // );
+
+        // console.log(`Number of times propagation was called: ${count[0]}`);
+        // u.print("edges", edges);
+
+        // Value returned is not a ref (at this time)
+        // These feeders should be checked against the Graph and table displays
+        let { bookings_in, bookings_out, feeders } = computeFeeders(
+          dFSU.value,
+          dBookings.value
+        );
+        //u.print("bookingsWithFeeders", bookingsWithFeeders);
+        // u.print("AFTER propagation, edges: ", edges);
+
         // u.print("dBookings.value:", dBookings.value); // tails are at the end
 
-        bookings_in = u.createMappingOneToMany(dBookings.value, "id_nf");
-        bookings_out = u.createMappingOneToMany(dBookings.value, "id_f");
+        //bookings_in = u.createMappingOneToMany(dBookings.value, "id_nf");
+        //bookings_out = u.createMappingOneToMany(dBookings.value, "id_f");
+
         // u.print("bookings_in", bookings_in);
         // u.print("bookings_out", bookings_out);
 

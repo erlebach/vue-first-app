@@ -83,6 +83,7 @@ export function rigidModel(
   edges,
   startingId
 ) {
+  u.print("enter rigid model");
   // consider all the edges that start at a station -> PTY -> station.
   // These edges have e.src.OD.slice(13:16) == 'PTY'
 
@@ -271,9 +272,11 @@ export function rigidModel(
   let countDef = 0;
 
   const ids = [];
+  let count = 0;
 
   graph.traverseBfs(id, (key, values) => {
     // outgoing flight from PTY
+    count += 1;
     console.log("-------------------------------------");
     const isUndefined = propDelay(
       key,
@@ -285,11 +288,21 @@ export function rigidModel(
     ids.push([key, isUndefined]);
     countUndef += isUndefined;
     countDef += 1 - isUndefined;
-    console.log("returned from propDelay");
+    // console.log("returned from propDelay");
   });
+  console.log(`number nodes traversed: , ${count}`);
   console.log(`nb undefined in propDelay: ${countUndef}`);
   console.log(`nb defined in propDelay: ${countDef}`);
-  u.print("ids traversed by graph [key,isUndefined]: ", ids);
+  u.print("after graph traverse, bookings: ", bookings);
+  u.print("after graph traverse, FSU: ", dFSU);
+
+  dFSU.forEach((f) => {
+    const arrDelayP = f.arrDelayP;
+    if (arrDelayP > 0) {
+      console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
+    }
+  });
+  // u.print("ids traversed by graph [key,isUndefined]: ", ids);
   return null;
 }
 //--------------------------------------------------------
@@ -368,8 +381,8 @@ function propDelay(id, bookings_in, bookings_out, FSUm, bookings) {
 
   // u.print("propDelay, FSUm", FSUm);
   console.log(`Enter propDelay, incoming flight id: ${id}`);
-  u.print("bookings_out", bookings_out);
-  u.print("bookings", bookings);
+  // u.print("bookings_out", bookings_out);
+  // u.print("bookings", bookings);
 
   if (true && outbounds === undefined) {
     // true is not necessar
@@ -565,8 +578,7 @@ function createGraph(edges, bookings_in, bookings_out) {
   // Since the graph is defined in terms of ids, it is easy to access either Tails
   // or bookings as required.
 
-  let count = 0;
-
+  // let count = 0;
   // Object.keys(targets).forEach((id) => {
   //   count++;
   //   console.log(`count: ${count}`);
