@@ -38,6 +38,22 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import { useFetch } from "../Composition/IO_works.js";
 
+function findIDsInBookings(dBookings, id_f, id_nf, msg) {
+  // DEBUGGING
+  console.log(`*** + ${msg} + ***`);
+  const bookings_in = u.createMappingOneToMany(dBookings, "id_nf");
+  const bookings_out = u.createMappingOneToMany(dBookings, "id_f");
+  const b1_f = bookings_in[id_f];
+  const b2_nf = bookings_in[id_nf]; // found ==>  id1 is _nf (correct)
+  const c1_f = bookings_out[id_f]; // found ==> id2 is _f (correct)
+  const c2_nf = bookings_out[id_nf];
+  console.log(`id_f: ${id_f}, id_nf: ${id_nf}`);
+  console.log("bookings_in[id_f]", b1_f); // undefined
+  console.log("bookings_in[id_nf]", b2_nf); // undefined
+  console.log("bookings_out[c1_f]", c1_f); // undefined
+  console.log("bookings_out c2_nf", c2_nf); // undefined
+}
+
 function get3files(url1, url2, url3) {
   const { data: dFSU, error: e1, isPending: pend1 } = useFetch(() => url1);
   const { data: dBookings, error: e2, isPending: pend2 } = useFetch(() => url2);
@@ -64,9 +80,6 @@ export default {
       "./data/node_attributes_daterange.json",
       "./data/bookings_daterange.json",
       "./data/tail_pairs_daterange.json" // Creates the problem (only when all three files used. WHY?)
-      // "./data/node_attributes.json",
-      // "./data/bookings_oneday.json"
-      // "./data/tail_pairs.json"
     );
 
     watchEffect(() => {
@@ -79,19 +92,10 @@ export default {
         tailsTable.value = keptFlights;
         nbRows.value = keptFlights.length;
 
-        // console.log("WatchEffect in TailConnectionTable");
-
-        // I will not change the data so reactivity not important
-        // I will return reactive variables
         const id = "2019/10/01MIAPTY10:00173"; // id should be chosen via interface
-
-        // const bookings = cloneDeep(dBookings.value);
-        // const tails = cloneDeep(dTails.value);
-        // const fsu = cloneDeep(dFSU.value);
 
         const tailsSta = u.createMapping(dTails.value, "id_f");
         u.print("dTails.value", dTails.value);
-        u.print("tailsSta", tailsSta);
         u.print("dBookings", dBookings.value);
 
         // include tails in bookings
@@ -99,7 +103,6 @@ export default {
           const id_f = tail.id_f;
           const id_nf = tail.id_nf;
           if (id_f.slice(13, 16) !== "PTY" && id_nf.slice(10, 13) !== "PTY") {
-            // console.log("push dBookings.value");
             dBookings.value.push({ id_f, id_nf, tail });
           }
         });
@@ -114,38 +117,15 @@ export default {
         );
 
         u.print("edges: ", edges);
-        // const { edges } = propagation(
-        //   // fsu
-        //   // tails,
-        //   // bookings, // to check whether propagation is still called multi times
-        //   dFSU.value,
-        //   dTails.value,
-        //   tailsSta,
-        //   dBookings.value,
-        //   count,
-        //   id,
-        //   [] // edges
-        // );
-
-        // console.log(`Number of times propagation was called: ${count[0]}`);
-        // u.print("edges", edges);
-
         // Value returned is not a ref (at this time)
         // These feeders should be checked against the Graph and table displays
         let { bookings_in, bookings_out, feeders } = computeFeeders(
           dFSU.value,
           dBookings.value
         );
-        //u.print("bookingsWithFeeders", bookingsWithFeeders);
-        // u.print("AFTER propagation, edges: ", edges);
 
-        // u.print("dBookings.value:", dBookings.value); // tails are at the end
-
-        //bookings_in = u.createMappingOneToMany(dBookings.value, "id_nf");
-        //bookings_out = u.createMappingOneToMany(dBookings.value, "id_f");
-
-        // u.print("bookings_in", bookings_in);
-        // u.print("bookings_out", bookings_out);
+        // There does not appear to be propagation of delays. Why not?
+        const initialArrDelay = 7; // in min
 
         // Analyze the impact of an arrival delay (using historical data)
         rigidModel(
@@ -157,9 +137,9 @@ export default {
           bookings_out,
           feeders,
           edges,
+          initialArrDelay, // applied to id
           id
         );
-        // console.log("EXITED rigidModel");
       }
     });
 
