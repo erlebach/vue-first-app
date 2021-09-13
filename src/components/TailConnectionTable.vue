@@ -95,8 +95,8 @@ export default {
         const id = "2019/10/01MIAPTY10:00173"; // id should be chosen via interface
 
         const tailsSta = u.createMapping(dTails.value, "id_f");
-        u.print("dTails.value", dTails.value);
-        u.print("dBookings", dBookings.value);
+        // u.print("dTails.value", dTails.value);
+        // u.print("dBookings", dBookings.value);
 
         // include tails in bookings
         dTails.value.forEach((tail) => {
@@ -116,7 +116,7 @@ export default {
           id
         );
 
-        u.print("edges: ", edges);
+        // u.print("edges: ", edges);
         // Value returned is not a ref (at this time)
         // These feeders should be checked against the Graph and table displays
         let { bookings_in, bookings_out, feeders } = computeFeeders(
@@ -126,7 +126,7 @@ export default {
 
         // There does not appear to be propagation of delays. Why not?
         // const initialArrDelay = 217; // in min
-        const initialArrDelay = 5; // in min
+        const initialArrDelay = 25; // in min
 
         // Analyze the impact of an arrival delay (using historical data)
         rigidModel(

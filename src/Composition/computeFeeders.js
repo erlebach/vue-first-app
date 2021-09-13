@@ -16,8 +16,8 @@ export function computeFeeders(fsu, bookings) {
   // or equivalently, the bookings that connect all incoming flights to the outgoing flight id_f
   const bookings_in = u.createMappingOneToMany(bookings, "id_nf");
 
-  u.print("bookings_out", bookings_out);
-  u.print("bookings_in", bookings_in);
+  // u.print("bookings_out", bookings_out);
+  // u.print("bookings_in", bookings_in);
 
   const feeders = Object.create(null);
 
