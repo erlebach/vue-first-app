@@ -125,8 +125,8 @@ export default {
         );
 
         // There does not appear to be propagation of delays. Why not?
-        const initialArrDelay = 217; // in min
-        // const initialArrDelay = 17; // in min
+        // const initialArrDelay = 217; // in min
+        const initialArrDelay = 5; // in min
 
         // Analyze the impact of an arrival delay (using historical data)
         rigidModel(
