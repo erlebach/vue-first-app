@@ -126,10 +126,10 @@ export default {
 
         // There does not appear to be propagation of delays. Why not?
         // const initialArrDelay = 217; // in min
-        const initialArrDelay = 25; // in min
+        const initialArrDelay = 60; // in min
 
         // Analyze the impact of an arrival delay (using historical data)
-        rigidModel(
+        const { delayNodes, delayEdges } = rigidModel(
           dFSU.value,
           dTails.value,
           tailsSta,

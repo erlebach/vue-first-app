@@ -275,9 +275,12 @@ export function rigidModel(
   });
 
   console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
+  const nodesWithArrDelay = [];
+
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
     if (arrDelayP > 0) {
+      nodesWithArrDelay.opush(f);
       console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
       // printNodeData(f, "Nodes with delayP>0");
     }
@@ -286,9 +289,19 @@ export function rigidModel(
     }
   });
 
-  return null;
+  // All edges that have arrival delay_f > 0
+  const edgesWithInArrDelay = [];
+
+  bookings.forEach((b) => {
+    if (b.fsu_f.arrDelayP > 0) {
+      edgesWithInArrDelay.push(b);
+    }
+  });
+
+  console.log("Edges with In Arrival Delay");
+  console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
+  return { nodes: nodesWithArrDelay, edges: edgesWithInArrDelay };
 }
-//--------------------------------------------------------
 //---------------------------------------------------------------------
 function updateInEdges(outboundNode, bookings_in) {
   const nano2min = 1 / 1e9 / 60;
