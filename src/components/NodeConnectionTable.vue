@@ -13,6 +13,7 @@
 </template>
 
 <script>
+import * as u from "../Composition/utils.js";
 import { ref, computed, watch } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
@@ -29,16 +30,24 @@ export default {
       return store.getters.connectionNodes;
     });
 
+    const delayedArrivalsPTable = computed(() => {
+      //
+      const table = {};
+      return table;
+    });
+
     watch(nodesTable, (value) => {
+      // u.print("nodesTable", nodesTable);
       nbRows.value = value.length;
     });
 
     //onMounted(async () => {
-      // console.log(">>>> nodeConnectionTable, onMounted *****");
+    // console.log(">>>> nodeConnectionTable, onMounted *****");
     //});
 
     return {
       nodesTable,
+      delayedArrivalsPTable,
       nbRows,
     };
   },

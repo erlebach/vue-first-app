@@ -171,7 +171,7 @@ function resetDelays(dFSU, bookings) {
     n.INP_DTMZ = n.SCH_ARR_DTMZ;
     n.OUTP_DTMZ = n.SCH_DEP_DTMZ;
   });
-
+  u.print("bookings", bookings);
   bookings.forEach((b) => {
     b.INP_DTMZ_f = b.SCH_ARR_DTMZ_f;
     b.INP_DTMZ_nf = b.SCH_ARR_DTMZ_nf;
@@ -182,12 +182,9 @@ function resetDelays(dFSU, bookings) {
 //---------------------------------------------------------------
 export function rigidModel(
   dFSU, // values
-  dTails,
-  tailsSta,
   bookings,
   bookings_in,
   bookings_out,
-  feeders,
   edges,
   initialArrDelayP, // delay applied to startingid
   startingId
@@ -280,7 +277,7 @@ export function rigidModel(
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
     if (arrDelayP > 0) {
-      nodesWithArrDelay.opush(f);
+      nodesWithArrDelay.push(f);
       console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
       // printNodeData(f, "Nodes with delayP>0");
     }
@@ -385,18 +382,6 @@ function updateOutboundNode(node, bookings_in, bookings_out) {
   return undefined;
 }
 //-------------------------------------------------------------------------
-//----------------------------------------------------
-function processOutboundFlight(outbound, bookings_in, bookings_out, FSUm) {
-  // bookings_in: map of array of flight pairs, indexed by id_nf
-  // bookings_out: map of array of flight pairs, indexed by id_f
-
-  updateInEdges(outbound.fsu_nf, bookings_in);
-  updateOutboundNode(outbound.fsu_nf, bookings_in, bookings_out);
-
-  return undefined;
-}
-
-//-----------------------------------------------------------------------
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookings_in, bookings_out, FSUm, bookings) {
   // id is an incoming flight (either to PTY or to Sta)
@@ -407,49 +392,6 @@ function propDelayNew(id, bookings_in, bookings_out, FSUm, bookings) {
 }
 
 //--------------------------------------------------------------------------
-function initializePredictedDelaysAndSlacks(dFSU, dTailsSta) {
-  const day = "2019/10/01";
-  Object.values(dTailsSta).forEach((v) => {
-    const milli2min = 1 / 1e3 / 60;
-    const arr_f_ts = d.datetimeZToTimestamp(day, v.arr_f); // scheduled
-    const dep_nf_ts = d.datetimeZToTimestamp(day, v.dep_nf); // scheduled
-    // Rotation slack (i.e., rotation to spare)
-    v.rotSlackPlanned = (dep_nf_ts - arr_f_ts) * milli2min - 60; // planned initial
-    v.rotSlackP = v.rotSlackPlanned; // correct
-  });
-
-  return; // dTailsSta is mutable  (it is the value of a ref)
-}
-
-// CHECKS
-// For each edge of the graph (constructed from an initial id), check whether the
-// extremities can be found in the tailsSta list.
-function checkEdgePTY(edges, tailsSta) {
-  // edge represents PAX at PTY
-  let undefined_src = 0;
-  let undefined_dst = 0;
-  let undefined_src_edges = [];
-  let undefined_dst_edges = [];
-
-  edges.forEach((e) => {
-    if (e.src.slice(13, 16) === "PTY") {
-      // rotation at station
-      const id_src = e.src;
-      const id_dst = e.dst;
-      const tail_id_src = tailsSta[id_src];
-      const tail_id_dst = tailsSta[id_dst];
-      if (tail_id_src === undefined) {
-        undefined_src++;
-        undefined_src_edges.push(id_src);
-      }
-      if (tail_id_dst === undefined) {
-        undefined_dst++;
-        undefined_dst_edges.push(id_dst);
-      }
-    }
-  });
-}
-//----------------------------------------------------------------------------
 function createGraph(edges, bookings_in, bookings_out) {
   // Enter the edges into a graph
   const graph = new DirectedGraph();
@@ -509,32 +451,6 @@ function createGraph(edges, bookings_in, bookings_out) {
   return graph;
 }
 //--------------------------------------------------------------------------
-function checkEdgeSta(edges, tailsSta) {
-  // Rotation at station
-  let undefined_src = 0;
-  let undefined_dst = 0;
-  let undefined_src_edges = [];
-  let undefined_dst_edges = [];
-
-  edges.forEach((e) => {
-    if (e.src.slice(10, 13) === "PTY") {
-      // rotation at station
-      const id_src = e.src;
-      const id_dst = e.dst;
-      const tail_id_src = tailsSta[id_src];
-      const tail_id_dst = tailsSta[id_dst];
-      if (tail_id_src === undefined) {
-        undefined_src++;
-        undefined_src_edges.push(id_src);
-      }
-      if (tail_id_dst === undefined) {
-        undefined_dst++;
-        undefined_dst_edges.push(id_dst);
-      }
-    }
-  });
-}
-//----------------------------------------------------
 // Minimum Available Connection Time for Pax for flight "id"
 // id is an outgoing flight
 // function computeMinACT(feeders, bookings_f, bookings_nf, id) {
@@ -556,7 +472,5 @@ function computeMinACT(inbounds, FSUm = undefined, verbose = false) {
     }
   });
 
-  // Does not work
-  // return { minACT: minACT, inboundMinId: inboundMinId };
   return obj;
 }

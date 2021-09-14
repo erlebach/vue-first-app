@@ -166,46 +166,6 @@ export default {
       return city;
     });
 
-    // WHERE IS new_data defined in row_select? ?????? Deal with text input
-    // It is defined as a global at the top of setup()
-
-    // The graph requires a container to draw, and the container
-    // is only defined within onMount.
-
-    // onMounted(() => {
-    //   g6();
-    //   console.log("graph, onMounted");
-    // });
-
-    // async function createFullGraphWithoutVuex() {
-    //   console.log("enter createFullGraphWithoutVuex");
-    //   const container = "mountNode";
-    //   const configuration = setupConfiguration({
-    //     container: container,
-    //     defaultNodeSize: defaultNodeSize.value,
-    //     width: props.width,
-    //     height: props.height,
-    //   });
-    //   const io = new IO_works();
-    //   // The path must start relative to ../../public/
-    //   const filePath = "./data/bookings_oneday.json";
-    //   console.log("before await io.readFile");
-    //   let data = await io.readFile(filePath);
-
-    //   // The change is trackable in watch
-    //   isInitialDataRead.value = true;
-
-    //   // console.log("after await io.readFile");
-    //   // console.log("...... data after readFile");
-    //   // console.log(data);
-
-    //   // Data is read correctly.
-    //   const results = convertCopaData(data);
-    //   const data1 = results[0];
-
-    //   // console.log("exit createFullGraphWithoutVuex");
-    // }
-
     return {
       nodesTable,
       // onRowSelect,

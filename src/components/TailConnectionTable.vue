@@ -21,6 +21,20 @@
       </Column>
     </DataTable>
   </div>
+
+  <div>
+    <h3>Propagated Delay Table, {{ nbRowsDelayed }} entries</h3>
+    <DataTable
+      :value="delayedArrivalsTable"
+      :scrollable="true"
+      scrollHeight="300px"
+    >
+      <Column field="id" header="Flight ID" :sortable="true"> </Column>
+      <Column field="depDelay" header="depDelayZ" :sortable="true"> </Column>
+      <Column field="arrDelay" header="arrDelayZ" :sortable="true"> </Column>
+      <Column field="tail" header="tail" :sortable="true"></Column>
+    </DataTable>
+  </div>
 </template>
 
 <script>
@@ -28,7 +42,6 @@ import cloneDeep from "lodash/cloneDeep";
 import { computeFeeders } from "../Composition/computeFeeders.js";
 import { analyzeData3 } from "../Composition/AnalyzeData3.js";
 import * as t from "../Composition/TailConnections.js";
-import { propagation } from "../Composition/propagation.js";
 import { propagation_new } from "../Composition/propagation_new.js";
 import { rigidModel } from "../Composition/rigidModel.js";
 import * as u from "../Composition/utils.js";
@@ -37,22 +50,6 @@ import { ref, watchEffect, watch } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import { useFetch } from "../Composition/IO_works.js";
-
-function findIDsInBookings(dBookings, id_f, id_nf, msg) {
-  // DEBUGGING
-  console.log(`*** + ${msg} + ***`);
-  const bookings_in = u.createMappingOneToMany(dBookings, "id_nf");
-  const bookings_out = u.createMappingOneToMany(dBookings, "id_f");
-  const b1_f = bookings_in[id_f];
-  const b2_nf = bookings_in[id_nf]; // found ==>  id1 is _nf (correct)
-  const c1_f = bookings_out[id_f]; // found ==> id2 is _f (correct)
-  const c2_nf = bookings_out[id_nf];
-  console.log(`id_f: ${id_f}, id_nf: ${id_nf}`);
-  console.log("bookings_in[id_f]", b1_f); // undefined
-  console.log("bookings_in[id_nf]", b2_nf); // undefined
-  console.log("bookings_out[c1_f]", c1_f); // undefined
-  console.log("bookings_out c2_nf", c2_nf); // undefined
-}
 
 function get3files(url1, url2, url3) {
   const { data: dFSU, error: e1, isPending: pend1 } = useFetch(() => url1);
@@ -75,6 +72,7 @@ export default {
   },
   setup(props) {
     const nbRows = ref(0);
+    const nbRowsDelayed = ref(0);
 
     const { dFSU, dTails, dBookings } = get3files(
       "./data/node_attributes_daterange.json",
@@ -92,11 +90,10 @@ export default {
         tailsTable.value = keptFlights;
         nbRows.value = keptFlights.length;
 
-        const id = "2019/10/01MIAPTY10:00173"; // id should be chosen via interface
+        // id should be chosen via interface
+        const id = "2019/10/01MIAPTY10:00173";
 
         const tailsSta = u.createMapping(dTails.value, "id_f");
-        // u.print("dTails.value", dTails.value);
-        // u.print("dBookings", dBookings.value);
 
         // include tails in bookings
         dTails.value.forEach((tail) => {
@@ -116,7 +113,6 @@ export default {
           id
         );
 
-        // u.print("edges: ", edges);
         // Value returned is not a ref (at this time)
         // These feeders should be checked against the Graph and table displays
         let { bookings_in, bookings_out, feeders } = computeFeeders(
@@ -124,27 +120,36 @@ export default {
           dBookings.value
         );
 
-        // There does not appear to be propagation of delays. Why not?
-        // const initialArrDelay = 217; // in min
         const initialArrDelay = 60; // in min
 
         // Analyze the impact of an arrival delay (using historical data)
-        const { delayNodes, delayEdges } = rigidModel(
+        const delayObj = rigidModel(
           dFSU.value,
-          dTails.value,
-          tailsSta,
           dBookings.value,
           bookings_in,
           bookings_out,
-          feeders,
           edges,
           initialArrDelay, // applied to id
           id
         );
+        const delayNodes = delayObj.nodes;
+
+        const table = [];
+        delayNodes.forEach((d) => {
+          table.push({
+            id: d.id,
+            depDelay: d.depDelayP,
+            arrDelay: d.arrDelayP,
+            tail: d.TAIL,
+          });
+        });
+        nbRowsDelayed.value = table.length;
+        delayedArrivalsTable.value = table;
       }
     });
 
     const tailsTable = ref(null);
+    const delayedArrivalsTable = ref(null);
 
     const rotStyle = (rotData) => {
       const col = rotData < 45 ? "green" : "red";
@@ -154,6 +159,8 @@ export default {
     return {
       tailsTable,
       nbRows,
+      delayedArrivalsTable,
+      nbRowsDelayed,
       rotStyle,
     };
   },

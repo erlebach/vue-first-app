@@ -14,14 +14,14 @@ vue/no-unused-components */
       <CityTable filePath="./data/bookings_oneday.json"></CityTable>
       <!--  -->
       <NodeConnectionTable />
-      <EdgeConnectionTable /> 
+      <EdgeConnectionTable />
       <!-- -->
     </div>
     <!-- <div class="p-flex-column"> -->
     <div class="p-flex-column">
       <!--  p-flex-column and p-flex-row have the same effect -->
       <CityGraphControls />
-      <Layouts /> 
+      <Layouts />
     </div>
     <div class="p-d-flex">
       <div class="flex-start">
@@ -36,6 +36,7 @@ vue/no-unused-components */
         />
         <!-- Must be below <CityGraph> -->
         <ConnectionsGraph :width="800" :height="600" v-show="false" />
+        <DelayPropagationGraph :width="800" :height="600" v-show="false" />
       </div>
     </div>
   </div>
@@ -48,24 +49,16 @@ They cannot be used independently -->
 Make sure that does not happen!! Could bge the cause of request headers too large. -->
 
 <script>
-//import * as a from "./js/Analysis.js";
-import { LoadTable } from "../Composition/loadTableClass.js";
-import * as u from "../Composition/utils.js";
 import CityTable from "./CityTable.vue";
 import NodeConnectionTable from "./NodeConnectionTable.vue";
 import EdgeConnectionTable from "./EdgeConnectionTable.vue";
 import CityGraph from "./CityGraphNewExp.vue"; // newest experimental
-import TailConnectionTable from "./TailConnectionTable.vue"; 
+import TailConnectionTable from "./TailConnectionTable.vue";
 import FlightsInAirTable from "./FlightsInAirTable.vue"; // newest experimental
-// import CityGraph from "./CityGraphNew.vue"; // experimental
 import CityGraphControls from "./CityGraphControlsNew.vue";
 import ConnectionsGraph from "./ConnectionsGraph.vue";
+import DelayPropagationGraph from "./DelayPropGraph.vue";
 import Layouts from "./Layouts.vue";
-import { useStore } from "vuex";
-import { ref, watch, computed } from "vue";
-import { boundingBox } from "../Composition/graphImpl.js";
-import { findConnectedNodesEdges } from "../Composition/graphSupport.js";
-import { onMounted } from "vue";
 
 export default {
   components: {
@@ -78,23 +71,16 @@ export default {
     EdgeConnectionTable,
     FlightsInAirTable,
     ConnectionsGraph,
+    DelayPropagationGraph,
   },
 };
 
 //a.analyze();
-
 </script>
 
 <style>
 /* Not clear how this works! */
 /* Seems to have no effect! */
-/*
-#GETooltipId {
-  background-color: red;
-  border-color: red;
-  left: "2in";
-}
-*/
 /* position: 'static'; */
 </style>
 
