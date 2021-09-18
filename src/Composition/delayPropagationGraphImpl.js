@@ -1,5 +1,8 @@
+/* eslint-disable no-unreachable */
 import G6 from "@antv/g6";
 import store from "../store/index.js";
+import * as u from "../Composition/utils.js";
+import { watchWithFilter } from "@vueuse/core";
 
 export function setupConfiguration(parameters) {
   const configuration = {
@@ -10,11 +13,11 @@ export function setupConfiguration(parameters) {
       //trigger: 'mouseleave',
       size: parameters.defaultNodeSize,
       // selection of rects works. Circles have a halo around them. WHY?
-      type: "circle",
+      type: "rect",
       style: {
         fill: "steelBlue",
         stroke: "#666",
-        lineWidth: 0.2,
+        lineWidth: 0.8,
       },
       labelCfg: {
         style: {
@@ -25,14 +28,10 @@ export function setupConfiguration(parameters) {
     defaultEdge: {
       type: "line",
       style: {
-        stroke: "darkorange",
-        lineWidth: 1.5,
+        stroke: "green",
+        //lineDash: [150, 3],
+        lineWidth: 6.5,
         lineAppendWidth: 3, // only used to help select the edge
-        endArrow: {
-          path: G6.Arrow.triangle(4, 6, 5), // width, length, offset
-          d: 5,
-        },
-        startArrow: false,
       },
     },
     labelCfg: {
@@ -69,11 +68,10 @@ export function setupConfiguration(parameters) {
     height: parameters.height, //"fit-content", //600,
     //autofit: true,
     layout: {
-      type: "random",
-      preventOverlap: true,
-      nodeSize: 2, // diameter of node (not working correctly)
-      minNodeSpacing: 5, // diameter of node
-      equidistant: false,
+      type: "dagre",
+      // rankdir: "TB",
+      rankdir: "LR",
+      // align: "DL",
     },
     plugins: [myTooltip],
   };
@@ -83,13 +81,15 @@ export function setupConfiguration(parameters) {
 export function colorEdges(graph) {
   let color;
   graph.edge((edge) => {
-    if (edge.actAvail < 5) {
+    // WHY IS THIS NOT CALLED?
+    const avail = edge.data.ACTAvailableP;
+    if (avail < 5) {
       color = "black";
-    } else if (edge.actAvail < 15) {
+    } else if (avail < 15) {
       color = "darkred";
-    } else if (edge.actAvail < 30) {
+    } else if (avail < 30) {
       color = "red";
-    } else if (edge.actAvail < 45) {
+    } else if (avail < 45) {
       color = "darkorange";
     } else {
       color = "green";
@@ -113,14 +113,14 @@ export function colorNodes(graph) {
   graph.node((node) => {
     let delay;
     let strokeDelay;
-    const O = node.id.slice(10, 13);
-    const D = node.id.slice(13, 16);
+    const O = node.data.id.slice(10, 13);
+    const D = node.data.id.slice(13, 16);
     if (O === "PTY") {
-      delay = node.depDelay;
-      strokeDelay = node.arrDelay;
+      delay = node.data.depDelayP;
+      strokeDelay = node.data.arrDelayP;
     } else if (D === "PTY") {
-      delay = node.arrDelay;
-      strokeDelay = node.depDelay;
+      delay = node.data.arrDelayP;
+      strokeDelay = node.data.depDelayP;
     } else {
       console.log("Neither O or D are PTY. Should not happen!");
       console.log(node);
@@ -160,7 +160,7 @@ export function colorNodes(graph) {
   });
 }
 //-------------------------------------
-export function colorByCity(graph, city) {
+export function colorByCity(graph) {
   // Graph controlled by Vuex, so value not required
   colorEdges(graph);
   colorNodes(graph);
@@ -338,7 +338,7 @@ export function setupState(graph) {
     const id = node.id;
     console.log("nodeselectchange");
     store.commit("setNodeIdForConnections", id);
-	// since the id is committed, I should not sent it again
+    // since the id is committed, I should not sent it again
     store.dispatch("computeNodeConnections", id);
     store.dispatch("computeEdgeConnections", id);
   });
@@ -390,16 +390,43 @@ export function updateNodeTypes(nodes, city) {
   return nodes;
 }
 //-----------------------------------------------------
-export function assignNodeLabels(graph, nodes) {
+function pausecomp(millis) {
+  var date = new Date();
+  var curDate = null;
+  do {
+    curDate = new Date();
+  } while (curDate - date < millis);
+}
+
+export function assignNodeLabels(graph) {
+  // Some kind of stack overflow. THIS is identical to the version in graphImpl.js,
+  // so the error must be an Antv/G6 bug! I DO NOT UNDERSTAND how this bug is possible.
+  //await new Promise (r => setTimeout(r, 2000)); // wait 2 sec
+
+  console.log("before pausecomp");
+  // pausecomp(10000);
+
+  console.log("Enter delayPropagationGraph::assignNodeLabels: ");
+  const nodes = graph.getNodes();
+  u.print("delayProps::assignNodeLabels, graph: ", graph);
+  u.print("delayProps::assignNodeLabels, typeof nodes: ", typeof nodes);
+  console.log("delayProps::assignNodeLabels, nodes: ");
+  console.log(nodes);
+  u.print("delayProps::assignNodeLabels, nodes[3]: ", nodes[3]);
+
   nodes.forEach((node) => {
-    const degree = graph.getNodeDegree(node, "total");
-    // console.log("node.getNodeDegree");
-    // console.log(degree);
+    u.print("delayPropagationGraph::>> node", node);
+    // const degree = graph.getNodeDegree(node, "total");
+    const degree = 3;
+    console.log("before updateItem");
     graph.updateItem(node, {
-      label: node.getModel().hubConnections,
+      // <<< ERROR, infinite recursion
+      label: "gor",
     });
-    return nodes;
+    console.log("after updateItem");
   });
+  console.log("Exit delayPropagationGraph::assignNodeLabels");
+  return nodes;
 }
 //-----------------------------------------------------
 export function findNodesWithArrivalDelays(graph, delay = 0) {
@@ -452,7 +479,7 @@ export function boundingBox(graph) {
     nodes.map((o) => {
       return o.getModel().x;
     })
-);
+  );
   const maxX = Math.max.apply(
     Math,
     nodes.map((o) => {

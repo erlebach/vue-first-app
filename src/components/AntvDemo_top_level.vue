@@ -22,7 +22,7 @@
         :width="800"
         :height="600"
       />
-      <ConnectionsGraph :width="800" :height="600" v-show="false" />
+      <ConnectionsGraph :width="100" :height="600" v-show="false" />
       <!-- removed connectionsToolTipId -->
     </div>
   </div>

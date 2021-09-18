@@ -1,8 +1,9 @@
 /* eslint-disable no-unreachable */
 import { DirectedGraph } from "@datastructures-js/graph";
-import { max, tail, update } from "lodash";
-import * as d from "./dates.js";
+// import { max, tail, update } from "lodash";
+// import * as d from "./dates.js";
 import * as u from "./utils.js";
+// import { watchEffect } from "vue";
 
 //--------------------------------------------------------------------
 //-------------------------------------------------------
@@ -189,6 +190,9 @@ export function rigidModel(
   initialArrDelayP, // delay applied to startingid
   startingId
 ) {
+  // watchEffect(() => {
+  //   console.log(`top of rigidModel, r= ${r.getPost.value}`);
+  // });
   // checkEdgeSta(); // Debugging
   // checkEdgePTY(); // Debugging
 

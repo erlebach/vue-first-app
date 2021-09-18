@@ -29,6 +29,7 @@
 </template>
 
 <script>
+import { colorByCity } from "../Composition/graphImpl.js";
 import { ensureConditionIsMet } from "../Composition/IO_works.js";
 import { transferNodesEdgesToGraph } from "../Composition/graphImpl.js";
 // import G6 from "@antv/g6";
@@ -61,21 +62,10 @@ export default {
 
     // let new_data = null;
     const graph_city = ref();
-    // const defaultNodeSize = ref(10);
-    // const cityNodeSize = ref(15); // dep or arr === city
-    // const nodeIdMap = ref();
-    // const cityMap = ref();
-    // const isInitialDataRead = ref(false);
-    // const checkRef = ref(false);
 
     const city = computed(() => {
       return store.getters.city;
     });
-
-    // watch(checkRef, (curVal, oldVal) => {
-    //   console.log(">>>> watch checkRef: ");
-    //   console.log(`curVal: ${curVal}, oldVal: ${oldVal}`);
-    // });
 
     watch(city, () => {
       // console.log("inside watch(city)");
@@ -84,8 +74,10 @@ export default {
 
       graph.data(graphData);
       transferNodesEdgesToGraph(graph);
-      assignNodeLabels(graph, graph.getNodes());
+      assignNodeLabels(graph);
 
+      graph.render();
+      colorByCity(graph);
       graph.render();
       store.commit("setGraph", graph);
     });

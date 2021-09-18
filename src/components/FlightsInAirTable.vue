@@ -97,7 +97,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
 import { findCityInCityMap, filterData } from "../Composition/graphSupport";
-import { colorByCity } from "../Composition/graphImpl";
+//import { colorByCity } from "../Composition/graphImpl";
 import { useStore } from "vuex";
 import { onMounted } from "vue";
 import { useKeydown } from "../Composition/useKeydown.js";

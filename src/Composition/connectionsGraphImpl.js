@@ -160,7 +160,7 @@ export function colorNodes(graph) {
   });
 }
 //-------------------------------------
-export function colorByCity(graph, city) {
+export function colorByCity(graph) {
   // Graph controlled by Vuex, so value not required
   colorEdges(graph);
   colorNodes(graph);
@@ -390,7 +390,8 @@ export function updateNodeTypes(nodes, city) {
   return nodes;
 }
 //-----------------------------------------------------
-export function assignNodeLabels(graph, nodes) {
+export function assignNodeLabels(graph) {
+  const nodes = graph.getNodes();
   nodes.forEach((node) => {
     const degree = graph.getNodeDegree(node, "total");
     // console.log("node.getNodeDegree");

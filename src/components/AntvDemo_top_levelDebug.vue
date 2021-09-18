@@ -11,6 +11,7 @@ vue/no-unused-components */
     <div>
       <FlightsInAirTable filePath="./data/bookings_oneday.json" />
       <TailConnectionTable filePath="./data/tail_pairs.json" />
+      <DelayPropagationTable />
       <CityTable filePath="./data/bookings_oneday.json"></CityTable>
       <!--  -->
       <NodeConnectionTable />
@@ -36,7 +37,7 @@ vue/no-unused-components */
         />
         <!-- Must be below <CityGraph> -->
         <ConnectionsGraph :width="800" :height="600" v-show="false" />
-        <DelayPropagationGraph :width="800" :height="600" v-show="false" />
+        <!-- <DelayPropagationGraph :width="800" :height="800" v-show="false" /> -->
       </div>
     </div>
   </div>
@@ -49,6 +50,7 @@ They cannot be used independently -->
 Make sure that does not happen!! Could bge the cause of request headers too large. -->
 
 <script>
+import DelayPropagationTable from "./DelayPropagationTable.vue";
 import CityTable from "./CityTable.vue";
 import NodeConnectionTable from "./NodeConnectionTable.vue";
 import EdgeConnectionTable from "./EdgeConnectionTable.vue";
@@ -57,7 +59,7 @@ import TailConnectionTable from "./TailConnectionTable.vue";
 import FlightsInAirTable from "./FlightsInAirTable.vue"; // newest experimental
 import CityGraphControls from "./CityGraphControlsNew.vue";
 import ConnectionsGraph from "./ConnectionsGraph.vue";
-import DelayPropagationGraph from "./DelayPropGraph.vue";
+// import DelayPropagationGraph from "./DelayPropGraph.vue";
 import Layouts from "./Layouts.vue";
 
 export default {
@@ -65,13 +67,14 @@ export default {
     CityTable,
     CityGraph,
     CityGraphControls,
+    DelayPropagationTable,
     TailConnectionTable,
     Layouts,
     NodeConnectionTable,
     EdgeConnectionTable,
     FlightsInAirTable,
     ConnectionsGraph,
-    DelayPropagationGraph,
+    // DelayPropagationGraph,
   },
 };
 

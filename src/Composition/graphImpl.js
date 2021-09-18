@@ -1,3 +1,5 @@
+/* eslint-disable no-unreachable */
+import * as u from "../Composition/utils.js";
 import G6 from "@antv/g6";
 import store from "../store/index.js";
 import {
@@ -38,11 +40,12 @@ export function setupConfiguration(parameters) {
         position: "middle",
       },
       style: {
-        stroke: "darkorange",  // I could not overide
+        stroke: "darkorange", // I could not overide
         lineWidth: 2.0,
         lineAppendWidth: 3, // only used to help select the edge
         startArrow: false,
-        endArrow: {  // ARROWS ARE NOT DISPLAYING. THEY USED TO. 
+        endArrow: {
+          // ARROWS ARE NOT DISPLAYING. THEY USED TO.
           path: G6.Arrow.triangle(4, 6, 7), // width, length, offset
           //d: 5, // not part of the style
         },
@@ -122,7 +125,13 @@ export function setupConfiguration(parameters) {
 //-----------------------------------------
 export function colorEdges(graph) {
   let color;
+  //console.log("Enter colorEdges in graphImpl.js");
+  //u.print("graphImpl, graph: ", graph);
+
+  // Why is this not entered until first city called?
+
   graph.edge((edge) => {
+    // u.print("graphImpl: colorEdges: ", edge);
     if (edge.actAvail < 5) {
       color = "black";
     } else if (edge.actAvail < 15) {
@@ -192,7 +201,7 @@ export function colorNodes(graph) {
     return {
       id: node.id,
       style: {
-        fill: color, 
+        fill: color,
         lineWidth: lineWidth,
         stroke: stroke,
       },
@@ -200,7 +209,7 @@ export function colorNodes(graph) {
   });
 }
 //-------------------------------------
-export function colorByCity(graph, city) {
+export function colorByCity(graph) {
   colorEdges(graph);
   colorNodes(graph);
 }
@@ -425,20 +434,22 @@ export function updateNodeTypes(nodes, city) {
   return nodes;
 }
 //-----------------------------------------------------
-export function assignNodeLabels(graph, nodes) {
-  //console.log("Hub Connections");
-  //console.log(nodes);
-  //console.log(graph.get('data'));
+export function assignNodeLabels(graph) {
+  console.log("Enter graphImpl::assignNodeLabel");
+  const nodes = graph.getNodes();
+  u.print("graphImpl::assignNodeLabels, graph: ", graph);
+  u.print("graphImpl::assignNodeLabels, typeof nodes: ", typeof nodes);
+  console.log("graphImpl::assignNodeLabels, nodes: ");
+  console.log(nodes);
+  u.print("graphImpl::assignNodeLabels, nodes[3]: ", nodes[3]);
   nodes.forEach((node) => {
-    //const degree = graph.getNodeDegree(node, "total");
-    // console.log("node.getNodeDegree");
-    // console.log(degree);
-    //console.log(node.getModel().hubConnections);
+    u.print("graphImpl::>> node in  assignNodes", node);
     graph.updateItem(node, {
       label: node.getModel().hubConnections,
     });
-    return nodes;
   });
+  console.log("Exit graphImpl::assignNodeLabels");
+  return nodes;
 }
 //-----------------------------------------------------
 //public findAll<T extends Item>(type: ITEM_TYPE, fn: (item: T, index?: number) => boolean): T[] {

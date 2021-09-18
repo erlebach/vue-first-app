@@ -1,5 +1,6 @@
 //import G6 from "@antv/g6";
 import store from "../store/index.js";
+import { colorByCity } from "../Composition/graphImpl.js"; // should not be called from here
 import { assignNodeLabels, transferNodesEdgesToGraph } from "./graphImpl.js"; // not good practice for utils
 
 export function print(strg, val) {
@@ -158,17 +159,15 @@ export const setupGraphs = (configurationFull, configuration, setupState) => {
   // Normally this is done via render
   transferNodesEdgesToGraph(graph);
 
-  assignNodeLabels(graph, graph.getNodes());
-  //console.log("\n\n setupGraphs: graph.render \n\n");
+  assignNodeLabels(graph);
   graph.setMinZoom(0.1);
+  colorByCity(graph);
   graph.render(); // The correct graph
   store.commit("setGraph", graph);
 
   // Calculate the degree of all nodes
-  //console.log("Compute node degrees");
   graph.getNodes().forEach((node) => {
     const degree = graph.getNodeDegree(node, "total", "false");
-    //console.log(degree);
     if (degree === 0) {
       console.log("node degree is zero");
     }

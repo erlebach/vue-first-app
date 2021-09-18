@@ -53,11 +53,11 @@ export function ensureConditionIsMet(timeout, fct_condition) {
   // this promise will be rejected
   function waitForCondition(resolve, reject) {
     if (fct_condition()) {
-        resolve(true);
+      resolve(true);
     } else if (timeout && Date.now() - start >= timeout) {
       reject(new Error("timeout, condition not satisfied"));
     } else {
-        setTimeout(waitForCondition.bind(this, resolve, reject), 50);
+      setTimeout(waitForCondition.bind(this, resolve, reject), 50);
     }
   }
 }
@@ -87,5 +87,22 @@ export function useFetch(getUrl) {
   return { data, error, isPending };
 }
 //------------------------------------------------------------
+export function get1file(url1) {
+  const { data, error, isPending: pend1 } = useFetch(() => url1);
+  return { data, error, pend1 };
+}
+
+export function get2files(url1, url2) {
+  const { data: data1, error: error1, isPending: pend1 } = useFetch(() => url1);
+  const { data: data2, error: error2, isPending: pend2 } = useFetch(() => url2);
+  return { data1, data2, error1, error2, pend1, pend2 };
+}
+
+export function get3files(url1, url2, url3) {
+  const { data: data1, error: error1, isPending: pend1 } = useFetch(() => url1);
+  const { data: data2, error: error2, isPending: pend2 } = useFetch(() => url2);
+  const { data: data3, error: error3, isPending: pend3 } = useFetch(() => url3);
+  return { data1, data2, data3, error1, error2, error3, pend1, pend2, pend3 };
+}
 //------------------------------------------------------------
 //------------------------------------------------------------

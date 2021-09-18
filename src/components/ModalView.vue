@@ -13,6 +13,9 @@
   background-color: rgb(211, 211, 211);
   opacity: 0.9;
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   /* left: 100px; */
   /* right: 100px; */
   z-index: 99;
