@@ -4,8 +4,8 @@ import * as f from "../Composition/FlightsInAir.js";
 import * as u from "../Composition/utils.js";
 
 export function analyzeData(bookings, tails) {
-  u.print("bookings", bookings);
-  u.print("tails", tails);
+  //u.print("bookings", bookings);
+  //u.print("tails", tails);
 
   const book_f = {};
   const book_nf = {};

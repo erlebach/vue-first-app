@@ -9,14 +9,12 @@ vue/no-unused-components */
 <template>
   <div class="p-d-flex flex-start">
     <div>
-      <FlightsInAirTable filePath="./data/bookings_oneday.json" />
+      <FlightsInAirTable filePath="./data/bookings_oneday.json" /> -->
       <TailConnectionTable filePath="./data/tail_pairs.json" />
       <DelayPropagationTable />
       <CityTable filePath="./data/bookings_oneday.json"></CityTable>
-      <!--  -->
       <NodeConnectionTable />
       <EdgeConnectionTable />
-      <!-- -->
     </div>
     <!-- <div class="p-flex-column"> -->
     <div class="p-flex-column">
@@ -55,15 +53,16 @@ import CityTable from "./CityTable.vue";
 import NodeConnectionTable from "./NodeConnectionTable.vue";
 import EdgeConnectionTable from "./EdgeConnectionTable.vue";
 import CityGraph from "./CityGraphNewExp.vue"; // newest experimental
+import CityGraphControls from "./CityGraphControlsNew.vue";
 import TailConnectionTable from "./TailConnectionTable.vue";
 import FlightsInAirTable from "./FlightsInAirTable.vue"; // newest experimental
-import CityGraphControls from "./CityGraphControlsNew.vue";
 import ConnectionsGraph from "./ConnectionsGraph.vue";
-// import DelayPropagationGraph from "./DelayPropGraph.vue";
+import DelayPropagationGraph from "./DelayPropGraph.vue";
 import Layouts from "./Layouts.vue";
 
 export default {
   components: {
+    // 'C'omponents allows use of unused components. Else use "components"
     CityTable,
     CityGraph,
     CityGraphControls,
@@ -77,8 +76,6 @@ export default {
     // DelayPropagationGraph,
   },
 };
-
-//a.analyze();
 </script>
 
 <style>

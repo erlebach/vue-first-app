@@ -37,9 +37,9 @@ function get2files(url1, url2) {
 
 function analyzeData3(bookings, tails, fsu) {
   // fsu are nodes from the FSU table, so no _f/_nf pairs
-  u.print("bookings", bookings);
-  u.print("tails", tails);
-  u.print("fsu", fsu);
+  //u.print("bookings", bookings);
+  //u.print("tails", tails);
+  //u.print("fsu", fsu);
   return null;
 }
 

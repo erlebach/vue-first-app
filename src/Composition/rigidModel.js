@@ -275,7 +275,7 @@ export function rigidModel(
     countDef += 1 - isUndefined;
   });
 
-  console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
+  // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
   const nodesWithArrDelay = [];
 
   dFSU.forEach((f) => {
@@ -299,8 +299,8 @@ export function rigidModel(
     }
   });
 
-  console.log("Edges with In Arrival Delay");
-  console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
+  // console.log("Edges with In Arrival Delay");
+  // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
   return { nodes: nodesWithArrDelay, edges: edgesWithInArrDelay };
 }
 //---------------------------------------------------------------------

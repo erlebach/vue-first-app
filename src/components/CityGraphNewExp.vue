@@ -57,10 +57,8 @@ export default {
     keepSufficientACT: Boolean,
   },
   setup(props) {
-    // console.log("inside CityGraphExp setup");
     const store = useStore();
 
-    // let new_data = null;
     const graph_city = ref();
 
     const city = computed(() => {
@@ -68,7 +66,6 @@ export default {
     });
 
     watch(city, () => {
-      // console.log("inside watch(city)");
       const graphData = store.getters.graphData;
       const graph = store.getters.graph;
 
@@ -103,7 +100,6 @@ export default {
         height: props.height,
       });
 
-      // console.log("SETUP GRAPH");
       u.setupGraphs(configurationFull, configuration, setupState);
     };
 
@@ -117,7 +113,6 @@ export default {
         ensureConditionIsMet(timeout, () => {
           return isDataLoaded.value === true;
         }).then(() => {
-          // console.log("==> Exp, Mounted, Data read succesfully!!");
           setupGraphs();
         });
       } catch (error) {
@@ -125,7 +120,6 @@ export default {
         console.log("isDataLoaded");
         console.log(store.getters.isDataLoaded);
       }
-      // console.log("... Setting up graph");
     });
 
     const nodesTable = computed(() => {
@@ -138,20 +132,10 @@ export default {
     const edges = computed(() => {
       return store.getters.edges;
     });
-    // const graph = computed(() => {
-    //   return store.getters.graph;
-    // });
 
     const graphProps = computed(() => {
-      // console.log("**** CityGrapNew, graphProps, computed");
-      // console.log(store.getters.graphProps); // null. WHY?
       return store.getters.graphProps;
     });
-
-    // const graphData = computed(() => {
-    //   const data = store.getters.graphData;
-    //   return data;
-    // });
 
     const newCity = computed(() => {
       const city = store.getters.city;

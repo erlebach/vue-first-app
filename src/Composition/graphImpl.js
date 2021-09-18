@@ -435,20 +435,19 @@ export function updateNodeTypes(nodes, city) {
 }
 //-----------------------------------------------------
 export function assignNodeLabels(graph) {
-  console.log("Enter graphImpl::assignNodeLabel");
+  // console.log("Enter graphImpl::assignNodeLabel");
   const nodes = graph.getNodes();
-  u.print("graphImpl::assignNodeLabels, graph: ", graph);
-  u.print("graphImpl::assignNodeLabels, typeof nodes: ", typeof nodes);
-  console.log("graphImpl::assignNodeLabels, nodes: ");
-  console.log(nodes);
-  u.print("graphImpl::assignNodeLabels, nodes[3]: ", nodes[3]);
+  // u.print("graphImpl::assignNodeLabels, graph: ", graph);
+  // u.print("graphImpl::assignNodeLabels, typeof nodes: ", typeof nodes);
+  // console.log("graphImpl::assignNodeLabels, nodes: ");
+  // console.log(nodes);
+  // u.print("graphImpl::assignNodeLabels, nodes[3]: ", nodes[3]);
   nodes.forEach((node) => {
-    u.print("graphImpl::>> node in  assignNodes", node);
     graph.updateItem(node, {
       label: node.getModel().hubConnections,
     });
   });
-  console.log("Exit graphImpl::assignNodeLabels");
+  // console.log("Exit graphImpl::assignNodeLabels");
   return nodes;
 }
 //-----------------------------------------------------

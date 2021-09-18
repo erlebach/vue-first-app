@@ -84,4 +84,6 @@ that either arrive at PTY or depart from pTY
   2) Capture all the outgoing flights. 
   3) For each outgoing flight, capture the return flight. 
 ----------------------------------------------------------
+2021-09-18
+- Allow a choice of different starting flights. Click on the City graph to create a new Delay Propagation Graph. 
 ----------------------------------------------------------

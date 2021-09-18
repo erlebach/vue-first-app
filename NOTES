@@ -54,3 +54,6 @@ NOTE: load.isDataLoaded() returns a ref().
 2021-09-06
 Even if the flight from MIA does not have an arrival delay, there is still delay propagation because of the feeders connecting to the departing flights from PTY that are connected to the inbound flight from MIA. I should probably set the arrival times and all departure times of all flights downstream of the original flight from MIA to be their scheduled values. Rotation is still not taken into account.
 ---------------------------------------------------------
+2021-09-18
+TOEO
+---------------------------------------------------------

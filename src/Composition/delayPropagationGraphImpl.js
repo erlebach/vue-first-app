@@ -22,6 +22,7 @@ export function setupConfiguration(parameters) {
       labelCfg: {
         style: {
           fill: "#fff",
+          fontSize: 30,
         },
       },
     },
@@ -33,9 +34,10 @@ export function setupConfiguration(parameters) {
         lineWidth: 6.5,
         lineAppendWidth: 3, // only used to help select the edge
       },
-    },
-    labelCfg: {
-      autoRotate: true,
+      labelCfg: {
+        autoRotate: true,
+        fontSize: 140,
+      },
     },
     nodeStateStyles: {
       hover: {
@@ -82,7 +84,8 @@ export function colorEdges(graph) {
   let color;
   graph.edge((edge) => {
     // WHY IS THIS NOT CALLED?
-    const avail = edge.data.ACTAvailableP;
+    // console.log(edge);
+    const avail = edge.ACTAvailableP;
     if (avail < 5) {
       color = "black";
     } else if (avail < 15) {
@@ -113,14 +116,14 @@ export function colorNodes(graph) {
   graph.node((node) => {
     let delay;
     let strokeDelay;
-    const O = node.data.id.slice(10, 13);
-    const D = node.data.id.slice(13, 16);
+    const O = node.id.slice(10, 13);
+    const D = node.id.slice(13, 16);
     if (O === "PTY") {
-      delay = node.data.depDelayP;
-      strokeDelay = node.data.arrDelayP;
+      delay = node.depDelayP;
+      strokeDelay = node.arrDelayP;
     } else if (D === "PTY") {
-      delay = node.data.arrDelayP;
-      strokeDelay = node.data.depDelayP;
+      delay = node.arrDelayP;
+      strokeDelay = node.depDelayP;
     } else {
       console.log("Neither O or D are PTY. Should not happen!");
       console.log(node);
@@ -185,7 +188,7 @@ const myTooltip = new G6.Tooltip({
   getContent: (e) => {
     const outDiv = document.createElement("div");
     outDiv.style.width = "40rem"; // font size in root element
-    outDiv.style.height = "22rem";
+    outDiv.style.height = "25rem";
     outDiv.style.position = "absolute"; // position and z-index necessary
     outDiv.style.zIndex = "100"; // be draw above datatable header
     // Right edge of tootip is against viewport edge (fixed pos)
@@ -204,8 +207,10 @@ const myTooltip = new G6.Tooltip({
 
     const nano2min = 1 / 1e9 / 60;
     const node = e.item.getModel(); // Is this the best way?
-    const depDelay = (node.outZ - node.schDepZ) * nano2min;
-    const arrDelay = (node.inZ - node.schArrZ) * nano2min;
+    // const depDelay = (node.outZ - node.schDepZ) * nano2min;
+    const depDelay = node.depDelayP;
+    // const arrDelay = (node.inZ - node.schArrZ) * nano2min;
+    const arrDelay = node.arrDelayP;
 
     if (e.item.getType() == "node") {
       let depDelayColor;
@@ -248,13 +253,15 @@ const myTooltip = new G6.Tooltip({
         <li>OD: ${node.id.slice(10, 13)}-${node.id.slice(13, 16)}</li>
         <li>Flt#: ${node.id.slice(21)}</li>
         <li>Tail: ${node.tail}</li>
-        <li>Sch Dep: ${node.depTMZ} UTC</li>
-        <li>Sch Arr: ${node.arrTMZ} UTC</li>
+        <li>Sch Dep: ${node.schDepTMZ} UTC</li>
+        <li>Sch Arr: ${node.schArrTMZ} UTC</li>
         <li style="color:${depDelayColor};">Dep Delay: ${depDelay} min</li>
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
-        <li>Availab Rotation: ${node.rot_avail} min</li>
-        <li>Real Rotation: ${node.rot_real} min</li>
-        <li>Planned Rotation: ${node.rot_planned} min</li>
+        <li>Planned Rotation: ${node.plannedRot} min</li>
+        <li>Predicted Rotation Slack: ${node.rotSlackP} min</li>
+        <li>Predicted Slack: ${node.slackP} min</li>
+        <li>Predicted ACT Slack: ${node.ACTSlackP} min</li>
+        <li>min ACTP: ${node.minACTP} min</li>
         <li>${connectLabel}: ${node.hubConnections}</li>
       </ul>
       </div>`;
@@ -279,23 +286,30 @@ const myTooltip = new G6.Tooltip({
       }
       const minConnectTime = 45;
       const actAvail = edge.actAvail;
-      // const actAvail2 = (outbound.schDepZ - inbound.inZ) * nano2min; // Correct
       const actSched = edge.actSched;
       const actActual = (outbound.outZ - inbound.inZ) * nano2min;
-      // console.log("2nd edge, edgeSource, edgeTarget");
-      // console.log(edge);
-      // console.log(edgeSource);
-      // console.log(edgeTarget);
-      // const schedConnect =
-      // const schRot
       outDiv.innerHTML = `<div>
+
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
         <li>Inbound from: ${inbound.id.slice(10, 13)}</li>
         <li>Outbound to: ${outbound.id.slice(13, 16)}</li>
         <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
         <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
+        <li>ACTSlack: ${edge.ACTSlack} min</li>
+        <li>ACTSlackP: ${edge.ACTSlackP} min</li>
+        <li>ACTAvailable: ${edge.ACTAvailable} min</li>
+        <li>ACTAvailableP: ${edge.ACTAvailableP} min</li>
+        <li>Nb incoming flights connecting <br> with outbound flight: ${
+          edge.inDegree
+        }</li>
+        <li>Nb outgoing flights connection <br> with inbound flight: ${
+          edge.outDegree
+        }</li>
+        <li>rotSlackP: ${edge.rotSlackP} min</li>
+        <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
         <!-- If the slack < 45 min, draw in red --> 
+        <!-- 
         <li style="color:${actColor};">Available Connection Time: ${actAvail} min </li>
         <li>Minimum Connection Time: ${minConnectTime} min</li>
         <li>Planned Connection Time (outbound.schDep-inbound.schArr): ${actSched} min </li>
@@ -304,6 +318,7 @@ const myTooltip = new G6.Tooltip({
         <li>Tail (inbound=>oubound): ${inbound.tail} => ${outbound.tail}</li>
         <li>Connection Time Slack: ${actAvail} - ${minConnectTime}
           = ${actAvail - minConnectTime} min</li>
+          -->
       </ul> 
       </div>`;
       // <li>Available Connection Time (2) (outbound.schDep-inbound.inZ): ${actAvail2} min </li>
@@ -336,7 +351,7 @@ export function setupState(graph) {
     const node = e.target.getModel(); // assumes single click
     // send nodeID to vuex store
     const id = node.id;
-    console.log("nodeselectchange");
+    // console.log("nodeselectchange");
     store.commit("setNodeIdForConnections", id);
     // since the id is committed, I should not sent it again
     store.dispatch("computeNodeConnections", id);
@@ -399,33 +414,14 @@ function pausecomp(millis) {
 }
 
 export function assignNodeLabels(graph) {
-  // Some kind of stack overflow. THIS is identical to the version in graphImpl.js,
-  // so the error must be an Antv/G6 bug! I DO NOT UNDERSTAND how this bug is possible.
-  //await new Promise (r => setTimeout(r, 2000)); // wait 2 sec
-
-  console.log("before pausecomp");
-  // pausecomp(10000);
-
-  console.log("Enter delayPropagationGraph::assignNodeLabels: ");
   const nodes = graph.getNodes();
-  u.print("delayProps::assignNodeLabels, graph: ", graph);
-  u.print("delayProps::assignNodeLabels, typeof nodes: ", typeof nodes);
-  console.log("delayProps::assignNodeLabels, nodes: ");
-  console.log(nodes);
-  u.print("delayProps::assignNodeLabels, nodes[3]: ", nodes[3]);
 
   nodes.forEach((node) => {
-    u.print("delayPropagationGraph::>> node", node);
-    // const degree = graph.getNodeDegree(node, "total");
-    const degree = 3;
-    console.log("before updateItem");
+    const degree = graph.getNodeDegree(node, "total");
     graph.updateItem(node, {
-      // <<< ERROR, infinite recursion
-      label: "gor",
+      label: degree,
     });
-    console.log("after updateItem");
   });
-  console.log("Exit delayPropagationGraph::assignNodeLabels");
   return nodes;
 }
 //-----------------------------------------------------
@@ -434,8 +430,6 @@ export function findNodesWithArrivalDelays(graph, delay = 0) {
     return node.getModel().arrDelay < delay;
   };
   const nodes = graph.findAll("node", fct);
-  //const xxx = graph.findAll("node", fct);
-  //console.log(`findNodes, nb: ${xxx.length}`);
   nodes.forEach((node) => {
     node.hide();
   });
@@ -464,14 +458,6 @@ export function showAllEdges(graph) {
   graph.paint();
 }
 //-------------------------------------------------------
-export function showAllNodes(graph) {
-  const allNodes = graph.getNodes();
-  allNodes.forEach((node) => {
-    node.show();
-  });
-  graph.paint();
-}
-//----------------------------------------------------------
 export function boundingBox(graph) {
   const nodes = graph.getNodes();
   const minX = Math.min.apply(
@@ -498,18 +484,18 @@ export function boundingBox(graph) {
       return o.getModel().y;
     })
   );
-  console.log(`min/max x: ${minX}, ${maxX}`);
-  console.log(`min/max y: ${minY}, ${maxY}`);
+  // console.log(`min/max x: ${minX}, ${maxX}`);
+  // console.log(`min/max y: ${minY}, ${maxY}`);
   //graph.fitView();
 }
 //----------------------------------------------------------
 export function transferNodesEdgesToGraph(graph) {
   const nodes = graph.get("data").nodes;
   const edges = graph.get("data").edges;
-  console.log("transfer ..., graph, nodes, edges:");
-  console.log(graph);
-  console.log(nodes);
-  console.log(edges);
+  // console.log("transfer ..., graph, nodes, edges:");
+  // console.log(graph);
+  // console.log(nodes);
+  // console.log(edges);
   nodes.forEach((node) => {
     graph.add("node", node, false, false);
   });

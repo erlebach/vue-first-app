@@ -11,22 +11,14 @@
 </template>
 
 <script>
-//import { colorByCity } from "../Composition/DelayPropagationGraphImpl.js";
 import ModalView from "./ModalView.vue";
 import * as r from "../Composition/Tableref";
 import G6 from "@antv/g6";
-import _now from "lodash/now";
+// import _now from "lodash/now";
 import { useStore } from "vuex";
 import * as u from "../Composition/utils.js";
-import flightsInAir from "../Composition/FlightsInAir.js";
-import * as cg from "../Composition/connectionsGraphImpl.js";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 import { ref, computed, watch, watchEffect, onMounted } from "vue";
-import {
-  setupConfiguration,
-  setupState,
-  assignNodeLabels,
-} from "../Composition//delayPropagationGraphImpl.js";
 
 // Draw the graph once the Delay table exists.
 
@@ -50,58 +42,81 @@ export default {
     const showGraph = ref(null);
 
     watch(r.getTable, (value, o) => {
-      console.log("watch r.getTable");
+      // Only copy what I need
       if (value) {
         const obj = r.getTable.value;
         const nodes = [];
+
+        // copy needed attributes to avoid infinite recursions due to inbounds and outbounds fields
         obj.nodes.forEach((e) => {
-          nodes.push({ id: e.id, data: e });
+          nodes.push({
+            id: e.id,
+            actSlackP: e.actSlackP,
+            depDelayP: e.depDelayP,
+            minACTP: e.minACTP,
+            rotSlackP: e.rotSlackP,
+            slackP: e.slackP,
+            ACTSlackP: e.ACTSlackP,
+            plannedRot: e.ROTATION_PLANNED_TM,
+            arrDelayP: e.arrDelayP,
+            fltNum: e.FLT_NUM,
+            tail: e.TAIL,
+            schDepTMZ: e.SCH_DEP_TMZ,
+            schArrTMZ: e.SCH_ARR_TMZ,
+          });
+          console.log(e);
         });
+        u.print("nodes", nodes);
+
         const edges = [];
+        u.print("obj.edges", obj.edges);
         obj.edges.forEach((e) => {
-          edges.push({ source: e.id_f, target: e.id_nf, data: e });
+          edges.push({
+            source: e.id_f,
+            target: e.id_nf,
+            ACTSlack: e.ACTSlack,
+            ACTSlackP: e.ACTSlackP,
+            ACTAvailable: e.ACTAvailable,
+            ACTAvailableP: e.ACTAvailableP,
+            inDegree: e.in_degree_nf,
+            outDegree: e.out_degree_f,
+            pax: e.pax_f,
+            rotSlackP: e.rotSlackP,
+          });
         });
+
+        edges.forEach((e) => {
+          if (e.inDegree == undefined) e.inDegree = 1;
+          if (e.outDegree == undefined) e.outDegree = 1;
+          if (e.pax == undefined) {
+            e.pax = 0;
+            // e.rotAvail = edges[0].
+          }
+          // Need rotation?
+        });
+        u.print("new edges: ", edges);
+
+        // This element must be mounted before creating the graph
         graph.value = new G6.Graph(configuration);
         graph.value.data({ nodes, edges });
         graph.value.render();
         dp.colorByCity(graph.value);
 
-        graph.value.render();
+        graph.value.render(); // not sure required
         dp.assignNodeLabels(graph.value);
-        console.log("before graph.value.render");
         graph.value.render();
-        console.log("after graph.value.render");
-
-        u.print("edges", edges);
-        u.print("nodes", nodes);
         showGraph.value = true; // make graph visible
       }
     });
 
-    const configurationFull = setupConfiguration({
-      container: "mountDelayPropGraph",
-      defaultNodeSize: 20,
-      width: 10,
-      height: 10,
-    });
-
     // Initially, the connection graph will be empty
     onMounted(() => {
-      console.log("DelayProp: onMounted"); // occurs very early
-      const data = store.getters.connectionData;
+      // Should only draw graph when mounted
+      // console.log("DelayProp: onMounted"); // occurs very early
+      // const data = store.getters.connectionData;
       // This line is required. WHY? Empty graph is only created once.
-      store.dispatch("createConnectionsGraph", configuration);
+      // store.dispatch("createConnectionsGraph", configuration);
     });
-
-    // const showGraph = computed(() => {
-    //   // Must make sure graph is created
-    //   const data = store.getters.connectionData;
-    //   if (data === null) {
-    //     return false;
-    //   } else {
-    //     return true;
-    //   }
-    // });
 
     const connectionData = computed(() => {
       return store.getters.connectionData;
