@@ -16,7 +16,7 @@ const store = createStore({
       nodesIdMap: null,
       graphData: null,
       allGraphData: null,
-      city: "PUJ",  // Ideally, city should be set from higher up
+      city: "PUJ", // Ideally, city should be set from higher up
       cityMap: null,
       delayThresh: null,
       delayThreshSlider: null,
@@ -42,10 +42,10 @@ const store = createStore({
       connectionsGraph: null,
       cityGraphControls: null,
       graphProps: {
-          nbNodes: null,
-          nbEdges: null,
-          nbVisNodes: null,
-          nbVisEdges: null,
+        nbNodes: null,
+        nbEdges: null,
+        nbVisNodes: null,
+        nbVisEdges: null,
       },
 
       // Graph Coordinates
@@ -53,9 +53,14 @@ const store = createStore({
       coordsDagre: null,
       coordsForce: null,
       //graphProps: {nbNodes: 10},
-    
+
       // FlightsInAir
       curTime: null, // Zulu
+
+      // Propagation
+      dFSU: null,
+      dTails: null,
+      dBookings: null,
     };
   },
   mutations: rootMutations,

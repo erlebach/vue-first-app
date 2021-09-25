@@ -28,15 +28,21 @@ export function setupConfiguration(parameters) {
     },
     defaultEdge: {
       type: "line",
-      style: {
-        stroke: "green",
-        //lineDash: [150, 3],
-        lineWidth: 6.5,
-        lineAppendWidth: 3, // only used to help select the edge
-      },
       labelCfg: {
         autoRotate: true,
-        fontSize: 140,
+        position: "middle",
+        fontsize: 40,
+      },
+      style: {
+        stroke: "darkorange", // I could not overide
+        lineWidth: 6.0,
+        lineAppendWidth: 3, // only used to help select the edge
+        startArrow: false,
+        endArrow: {
+          // ARROWS ARE NOT DISPLAYING. THEY USED TO.
+          path: G6.Arrow.triangle(4, 6, 7), // width, length, offset
+          // d: 5, // not part of the style
+        },
       },
     },
     nodeStateStyles: {
@@ -355,7 +361,6 @@ export function setupState(graph) {
     store.commit("setNodeIdForConnections", id);
     // since the id is committed, I should not sent it again
     store.dispatch("computeNodeConnections", id);
-    store.dispatch("computeEdgeConnections", id);
   });
 
   // Mouse leaves a node

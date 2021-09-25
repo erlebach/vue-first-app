@@ -123,9 +123,20 @@ export default {
   setCoordsForce(state, coords) {
     state.coordsForce = coords;
   },
-  
-// FlightsInAir
+
+  // FlightsInAir
   setCurTime(state, curTime) {
     state.curTime = curTime;
+  },
+
+  // related to propagationGraph
+  setFSU(state, dFSU) {
+    state.dFSU = dFSU;
+  },
+  setTails(state, dTails) {
+    state.dTails = dTails;
+  },
+  setBookings(state, dBookings) {
+    state.dBookings = dBookings;
   },
 };

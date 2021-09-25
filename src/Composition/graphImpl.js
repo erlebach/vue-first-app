@@ -375,12 +375,11 @@ export function setupState(graph) {
     // send nodeID to vuex store
     //console.log("graphInpl, nodeselectchange");
     const id = node.id;
-    console.log(`id: ${id}`);
+    // console.log(`Gorddon id: ${id}`);
     store.commit("setNodeIdForConnections", id);
     // I could also compute the next two lines lazily, when I need the
     // data. On the other hand, I compute them before they are required,
     // soft of a pre-fetch.
-    store.dispatch("computeNodeConnections", id);
     store.dispatch("computeEdgeConnections", id);
     // setup connectionGraphData
     const data = {};

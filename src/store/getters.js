@@ -121,7 +121,7 @@ export default {
     return state.isDataLoaded;
   },
 
-// Layout Coordinates
+  // Layout Coordinates
   coordsConcentric(state) {
     return state.coordsConcentric;
   },
@@ -132,9 +132,21 @@ export default {
     return state.coordsForce;
   },
 
-// FlightsInAir
+  // FlightsInAir
   curTime(state) {
-    return state.curTime; 
-  }
+    return state.curTime;
+  },
 
+  // Propagation
+  dFSU(state) {
+    return state.dFSU;
+  },
+
+  dTails(state) {
+    return state.dTails;
+  },
+
+  dBookings(state) {
+    return state.dBookings;
+  },
 };

@@ -4,18 +4,11 @@
 </template>
 
 <script>
-// import AntvDemo from "./components/AntvDemo_compositionAPI.vue";
-// import AntvDemo from "./components/DataTable_with_styling.vue";
-// import AntvDemo from "./components/AntvDemo_flex_compAPI.vue";
-// import CityTable from "./components/CityTable.vue";
-
-// import TopLevel from "./components/AntvDemo_top_level.vue";
-// Only keep CityTable and investigate vuex and how it works. 
-// Especially watchers. 
-
-
 // CORRECT VERSION (last set at 2021-08-18)
-import TopLevel from "./components/AntvDemo_top_levelDebug.vue";
+//import TopLevel from "./components/AntvDemo_top_levelDebug.vue";
+
+// Duplicate our interface in Streamlit
+import TopLevel from "./components/AntvDemo_streamlit.vue";
 
 // Experimental code to analyze bookings and Tails one-day datasets
 // Created on 2021-08-18
@@ -25,8 +18,7 @@ import TopLevel from "./components/AntvDemo_top_levelDebug.vue";
 //import TopLevel from "./components/OverlayDemo.vue";
 //import TopLevel from "./components/OverlayPanelStackOverflow.vue";
 
-
-// Experiment with Blog: 
+// Experiment with Blog:
 // https://vueschool.io/articles/vuejs-tutorials/state-management-with-composition-api/
 //import TopLevel from "./components/top_level_felipe_debug.vue";
 
