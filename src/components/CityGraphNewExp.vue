@@ -58,7 +58,6 @@ export default {
   },
   setup(props) {
     const store = useStore();
-
     const graph_city = ref();
 
     const city = computed(() => {

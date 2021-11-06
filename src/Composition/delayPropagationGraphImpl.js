@@ -3,17 +3,21 @@ import G6 from "@antv/g6";
 import store from "../store/index.js";
 import * as u from "../Composition/utils.js";
 import { watchWithFilter } from "@vueuse/core";
+//import { reduce } from "core-js/core/array";
 
 export function setupConfiguration(parameters) {
+  const scale = 10; // scale for arrow, depends on monitor resolution
   const configuration = {
     fitView: true, // do not fit canvas to the viewport
     fitViewPadding: [20, 20, 20, 20],
     animate: false,
     defaultNode: {
       //trigger: 'mouseleave',
-      size: parameters.defaultNodeSize,
+      // size: parameters.defaultNodeSize,
+      size: 80,
       // selection of rects works. Circles have a halo around them. WHY?
-      type: "rect",
+      type: "circle",
+      // type: "rect",
       style: {
         fill: "steelBlue",
         stroke: "#666",
@@ -22,7 +26,7 @@ export function setupConfiguration(parameters) {
       labelCfg: {
         style: {
           fill: "#fff",
-          fontSize: 30,
+          fontSize: 60,
         },
       },
     },
@@ -34,15 +38,18 @@ export function setupConfiguration(parameters) {
         fontsize: 40,
       },
       style: {
-        stroke: "darkorange", // I could not overide
+        //stroke: "darkorange", // I could not overide
         lineWidth: 6.0,
         lineAppendWidth: 3, // only used to help select the edge
-        startArrow: false,
         endArrow: {
           // ARROWS ARE NOT DISPLAYING. THEY USED TO.
-          path: G6.Arrow.triangle(4, 6, 7), // width, length, offset
-          // d: 5, // not part of the style
+          // measurement in pixels.
+          path: G6.Arrow.triangle(3 * scale, 4 * scale, 2.5 * scale), // width, length, offset
+          d: 2 * scale, // not part of the style
+          //fill: "red",
+          //stroke: "red",
         },
+        startArrow: false,
       },
     },
     nodeStateStyles: {
@@ -79,6 +86,8 @@ export function setupConfiguration(parameters) {
       type: "dagre",
       // rankdir: "TB",
       rankdir: "LR",
+      ranksep: 200,
+      nodesep: 50,
       // align: "DL",
     },
     plugins: [myTooltip],
@@ -309,7 +318,7 @@ const myTooltip = new G6.Tooltip({
         <li>Nb incoming flights connecting <br> with outbound flight: ${
           edge.inDegree
         }</li>
-        <li>Nb outgoing flights connection <br> with inbound flight: ${
+        <li>Nb outgoing flights connecting <br> with inbound flight: ${
           edge.outDegree
         }</li>
         <li>rotSlackP: ${edge.rotSlackP} min</li>
