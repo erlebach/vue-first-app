@@ -2,8 +2,8 @@
   <div class="p-d-flex flex-start">
     <div>
       <FlightsInAirTable filePath="./data/bookings_oneday.json" /> -->
-      <DelayPropagationTable tiers="3" />
-      <DelayPropagationGraph width="800" height="600" />
+      <DelayPropagationTable tiers="2" />
+      <DelayPropagationGraph width="1200" height="800" />
     </div>
   </div>
 </template>

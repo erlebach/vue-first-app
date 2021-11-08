@@ -4,6 +4,9 @@ const state = ref(null);
 
 function setTable(post) {
   state.value = post;
+  console.log("setTable(post), post");
+  console.log(post);
+  // nb edges keeps increasing. Nb nodes constant. Why?
 }
 
 // The advantage of returning the value and not the reference

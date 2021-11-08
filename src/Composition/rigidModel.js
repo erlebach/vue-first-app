@@ -3,6 +3,7 @@ import { DirectedGraph } from "@datastructures-js/graph";
 // import { max, tail, update } from "lodash";
 // import * as d from "./dates.js";
 import * as u from "./utils.js";
+import * as tier from "./Tierref.js";
 // import { watchEffect } from "vue";
 
 //--------------------------------------------------------------------
@@ -172,13 +173,74 @@ function resetDelays(dFSU, bookings) {
     n.INP_DTMZ = n.SCH_ARR_DTMZ;
     n.OUTP_DTMZ = n.SCH_DEP_DTMZ;
   });
-  u.print("bookings", bookings);
+  // u.print("bookings", bookings);
   bookings.forEach((b) => {
     b.INP_DTMZ_f = b.SCH_ARR_DTMZ_f;
     b.INP_DTMZ_nf = b.SCH_ARR_DTMZ_nf;
     b.OUTP_DTMZ_f = b.SCH_DEP_DTMZ_f;
     b.OUTP_DTMZ_nf = b.SCH_DEP_DTMZ_nf;
   });
+}
+//---------------------------------------------------------------
+function getOrig(id) {
+  return id.slice(10, 13);
+}
+function getDest(id) {
+  return id.slice(13, 16);
+}
+//---------------------------------------------------------------
+function createId2Level(ids) {
+  // const nb_tiers = tier.getTier.value;
+  // console.log(`====> enter createId2Level, nb_tiers: ${nb_tiers}`);
+  // u.print(`nb_tiers: ${nb_tiers.value}`);
+
+  const id2level = {};
+  const level2ids = {};
+  const nb_tiers = 6;
+  for (let i = 0; i <= nb_tiers; i++) {
+    level2ids[i] = [];
+  }
+
+  // ids.forEach((id) => {
+  //   console.log(`id: ${id}`);
+  // });
+
+  let nextId = 0;
+
+  for (let level = 0; level < nb_tiers; level++) {
+    while (nextId >= 0) {
+      const id = ids[nextId];
+      if (typeof id === "undefined") break;
+      const from = getOrig(id);
+      if (level % 2 === 0) {
+        if (from === "PTY") break;
+      } else {
+        if (from !== "PTY") break;
+      }
+      id2level[id] = level;
+      level2ids[level].push(id);
+      nextId++;
+    }
+  }
+
+  // Depending on the number of tiers, select a susbset
+
+  // u.print("id2level: ", { ...id2level });
+  // u.print("level2ids: ", { ...level2ids });
+
+  // Recreate ids using only the useful Tiers
+  console.log(`nb ids: ${ids.length}`);
+  // How to remove all elements from ids array without changing its address
+  ids.length = 0;
+  for (let tier = 0; tier < nb_tiers; tier++) {
+    ids.push(...level2ids[tier]);
+  }
+  // // // // console.log(`nb_tiers: ${nb_tiers}`);
+  // // // u.print("ids: ", ids);
+  // // console.log(`length ids: ${ids.length}`);
+  // console.log("--------------------------------");
+  // u.print("new ids: ", ids);
+  return { id2level, level2ids };
 }
 //---------------------------------------------------------------
 export function rigidModel(
@@ -263,13 +325,7 @@ export function rigidModel(
     idsTraversed.push(key);
     count += 1;
     // console.log("-------------------------------------");
-    const isUndefined = propDelayNew(
-      key,
-      bookings_in,
-      bookings_out,
-      FSUm,
-      bookings
-    );
+    const isUndefined = propDelayNew(key, bookings_in, FSUm);
     ids.push([key, isUndefined]);
     countUndef += isUndefined;
     countDef += 1 - isUndefined;
@@ -277,12 +333,24 @@ export function rigidModel(
 
   // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
   const nodesWithArrDelay = [];
+  // u.print("idsTraversed: ", idsTraversed);
+
+  // return a dictionary that returns the level for any id
+  // also return a dictionary that returns a list of ids for each level
+  console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
+  const obj = createId2Level(idsTraversed);
+  console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
+  const id2level = obj.id2level; // there is better approach.
+  const level2ids = obj.level2ids;
+
+  // idsTraversed is not used later
+  // Rather, arrDelayP, and other attributes are computed in dFSU
 
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
     if (arrDelayP > 0) {
       nodesWithArrDelay.push(f);
-      console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
+      // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
       // printNodeData(f, "Nodes with delayP>0");
     }
     if (f.count > 1) {
@@ -301,10 +369,15 @@ export function rigidModel(
 
   // console.log("Edges with In Arrival Delay");
   // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
-  return { nodes: nodesWithArrDelay, edges: edgesWithInArrDelay };
+  return {
+    nodes: nodesWithArrDelay,
+    edges: edgesWithInArrDelay,
+    level2ids,
+    id2level,
+  };
 }
 //---------------------------------------------------------------------
-function updateInEdges(outboundNode, bookings_in) {
+function updateInboundEdges(outboundNode, bookings_in) {
   const nano2min = 1 / 1e9 / 60;
 
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
@@ -331,7 +404,7 @@ function updateInEdges(outboundNode, bookings_in) {
   return null;
 }
 //-------------------------------------------------------------
-function updateOutboundNode(node, bookings_in, bookings_out) {
+function updateOutboundNode(node, bookings_in) {
   const n = node;
 
   // if an ETA changes, the flight arrival delay increases or decreases.
@@ -387,10 +460,10 @@ function updateOutboundNode(node, bookings_in, bookings_out) {
 }
 //-------------------------------------------------------------------------
 // Remove duplicated class to processOutboundFlightss
-function propDelayNew(id, bookings_in, bookings_out, FSUm, bookings) {
+function propDelayNew(id, bookings_in, FSUm) {
   // id is an incoming flight (either to PTY or to Sta)
-  updateInEdges(FSUm[id], bookings_in);
-  updateOutboundNode(FSUm[id], bookings_in, bookings_out);
+  updateInboundEdges(FSUm[id], bookings_in);
+  updateOutboundNode(FSUm[id], bookings_in);
 
   return 0; // not sure what I am returning
 }

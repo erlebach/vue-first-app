@@ -1,21 +1,28 @@
 <template>
-  <!-- <ModalView class="modal" v-show="true"> -->
-  <ModalView class="modal" v-show="showGraph">
-    <h1>Delay Propagation Graph</h1>
-    <div>
-      <div id="GEConnectionsToolTip"></div>
-      <div id="mountDelayPropGraph"></div>
-    </div>
+  <!-- <ModalView class="modal" v-show="showGraph"> -->
+  <h1>Delay Propagation Graph</h1>
+  <div>
+    <div id="GEConnectionsToolTip"></div>
+    <div id="mountDelayPropGraph"></div>
+  </div>
 
-    <div class="p-field-radiobutton">
-      <RadioButton id="tier2" name="tiers" value="2 tiers" v-model="tiers" />
-      <label for="tier2">Tier 2</label>
-    </div>
-    <div class="p-field-radiobutton">
-      <RadioButton id="tier3" name="tiers" value="3 tiers" v-model="tiers" />
-      <label for="tier3">Tier 3</label>
-    </div>
-  </ModalView>
+  <div class="p-field-radiobutton">
+    <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
+    <label for="tier2">Tier 2</label>
+  </div>
+  <div class="p-field-radiobutton">
+    <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
+    <label for="tier3">Tier 3</label>
+  </div>
+  <div class="p-field-radiobutton">
+    <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
+    <label for="tier3">Tier 4</label>
+  </div>
+  <div class="p-field-radiobutton">
+    <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
+    <label for="tier3">Tier 5</label>
+  </div>
+  <!-- </ModalView> -->
 
   <!-- <h1>Delay Propagation Graph</h1>
   <div>
@@ -35,29 +42,31 @@ import { useStore } from "vuex";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 import { ref, computed, watch, watchEffect, onMounted } from "vue";
 
-function defineNodes(obj) {
+function defineNodes(obj, nb_tiers) {
   const nodes = [];
   obj.nodes.forEach((e) => {
-    nodes.push({
-      id: e.id,
-      actSlackP: e.actSlackP,
-      depDelayP: e.depDelayP,
-      minACTP: e.minACTP,
-      rotSlackP: e.rotSlackP,
-      slackP: e.slackP,
-      ACTSlackP: e.ACTSlackP,
-      plannedRot: e.ROTATION_PLANNED_TM,
-      arrDelayP: e.arrDelayP,
-      fltNum: e.FLT_NUM,
-      tail: e.TAIL,
-      schDepTMZ: e.SCH_DEP_TMZ,
-      schArrTMZ: e.SCH_ARR_TMZ,
-    });
+    if (obj.id2level[e.id] < nb_tiers) {
+      nodes.push({
+        id: e.id,
+        actSlackP: e.actSlackP,
+        depDelayP: e.depDelayP,
+        minACTP: e.minACTP,
+        rotSlackP: e.rotSlackP,
+        slackP: e.slackP,
+        ACTSlackP: e.ACTSlackP,
+        plannedRot: e.ROTATION_PLANNED_TM,
+        arrDelayP: e.arrDelayP,
+        fltNum: e.FLT_NUM,
+        tail: e.TAIL,
+        schDepTMZ: e.SCH_DEP_TMZ,
+        schArrTMZ: e.SCH_ARR_TMZ,
+      });
+    }
   });
   return nodes;
 }
 
-function defineEdges(obj) {
+function defineEdges(obj, nb_tiers) {
   const edges = [];
   obj.edges.forEach((e) => {
     edges.push({
@@ -79,7 +88,8 @@ function defineEdges(obj) {
 // Draw the graph once the Delay table exists.
 
 export default {
-  components: { ModalView, RadioButton },
+  components: { RadioButton },
+  //components: { ModalView, RadioButton },
   props: {
     width: Number,
     height: Number,
@@ -96,14 +106,20 @@ export default {
 
     const graph = ref(null);
     const showGraph = ref(null);
-    const tiers = ref("tier2");
+    const tiers = ref("3");
+    let graphCreated = false;
 
-    watch(r.getTable, (value, o) => {
+    // console.log("configuration");
+    // console.log(configuration);
+
+    watch([r.getTable, tier.getTier], (value, o) => {
       // Only copy what I need
-      if (value) {
-        const obj = value;
-        const nodes = defineNodes(obj);
-        const edges = defineEdges(obj);
+      if (!r.getTable) return;
+      if (value[0]) {
+        const nb_tiers = value[1]; //tier.getTier.value;
+        const obj = value[0];
+        const nodes = defineNodes(obj, nb_tiers);
+        const edges = defineEdges(obj, nb_tiers);
 
         edges.forEach((e) => {
           if (e.inDegree == undefined) e.inDegree = 1;
@@ -111,19 +127,24 @@ export default {
           if (e.pax == undefined) e.pax = 0;
         });
 
-        // This element must be mounted before creating the graph
-        graph.value = new G6.Graph(configuration);
-        graph.value.data({ nodes, edges });
-        // u.print("nodes", nodes);
-        // u.print("edges", edges);
-        // u.print("graph.value", graph.value);
-        graph.value.render();
-        dp.colorByCity(graph.value);
+        if (!graphCreated) {
+          graph.value = new G6.Graph(configuration);
+          graphCreated = true;
+        }
 
-        // graph.value.render(); // not sure required
-        dp.assignNodeLabels(graph.value);
-        // console.log("render"); //ok
+        // This element must be mounted before creating the graph
+        graph.value.data({ nodes, edges });
         graph.value.render();
+
+        dp.colorByCity(graph.value);
+        graph.value.render(); // not sure required
+
+        dp.assignNodeLabels(graph.value);
+        graph.value.render();
+
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        // WHY IS A NEW GRAPH ADDED EACH TIME? Not what I want!! <<<<<<<
+        // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         // Temporarily disable, just for the streamlit version, for which  graph does not appear in a modal
         showGraph.value = true; // make graph visible (no content)
@@ -134,11 +155,12 @@ export default {
     // Take this watchEffect outside this module
     // compute graph depth depending on tiers.value
     watchEffect(() => {
-      if (tiers.value == "3 tiers") {
-        console.log("3 tiers xx");
-      } else {
-        console.log("2 tiers xx");
-      }
+      tier.setTier(tiers.value);
+      // if (tiers.value == "3 tiers") {
+      //   console.log("3 tiers xx");
+      // } else {
+      //   console.log("2 tiers xx");
+      // }
     });
 
     // Initially, the connection graph will be empty
