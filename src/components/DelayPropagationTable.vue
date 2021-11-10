@@ -82,7 +82,7 @@ export default {
       ) {
         filesRead.value = true; // NEW
 
-        saveAtIntervals(5); // save every 5 sec
+        saveAtIntervals(10); // save every 5 sec
         // console.log("set ref.value to true");
         store.commit("setFSU", dFSU);
         store.commit("setTails", dTails);

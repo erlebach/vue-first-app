@@ -4,28 +4,27 @@ import { saveAs } from "file-saver";
 import { post } from "axios";
 import moment from "moment";
 
-const REQUEST_HEADERS = {
-  // POST
-  pwd: "M$h52NQV4_%N}mvc$w)-z*EuZ_^bf3",
-  arr_DTL: "2021-11-7",
-  days: 1,
-};
+const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
 
-const GetTableData = async () => {
+// I removed aynch () . No progress. Still 400 Bad request
+const GetTableData = () => {
   let data = post(
     "http://35.223.143.175/api/dmhit",
-    JSON.stringify({
-      pwd: "M$h`52NQV4_%N}mvc$w)-z$EuZ`_^bf3",
-      arr_DTL: moment()
-        .utc()
-        .subtract(24, "hours")
-        .format("YYYY-MM-DD"),
+    //JSON.stringify({
+    {
+      pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
+      arr_DTL: "2021-11-07",
       days: 1,
-    }),
+    },
+    //}),
     {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
+        //"Access-Control-Allow-Origin": "*",
+        // "Access-Control-Allow-Credentials": "true",
+        // "Access-Control-Allow-Headers": "Content-Type",
+        // "Access-Control-Allow-Methods": "Post",
       },
     }
   )
@@ -72,6 +71,8 @@ const allUpdates = [];
 export function saveAtIntervals(nbSec) {
   setInterval(() => {
     const keptRows = saveData();
+    console.log("keptRows");
+    console.log(keptRows);
     allUpdates.push(keptRows);
     const now = moment().calendar();
     console.log(`time: ${now}`);
