@@ -1,12 +1,12 @@
 <template>
-  <div class="p-d-flex flex-start">
-    <div>
-      <FlightsInAirTable filePath="./data/bookings_oneday.json" />
-      <FlightsInAirEndpointTable />
-      <DelayPropagationTable tiers="2" />
-      <DelayPropagationGraph width="1200" height="800" />
-    </div>
+  <!-- <div class="p-d-flex flex-start"> -->
+  <div>
+    <FlightsInAirTable filePath="./data/bookings_oneday.json" />
+    <FlightsInAirEndpointTable />
+    <DelayPropagationTable tiers="2" />
+    <DelayPropagationGraph width="1200" height="800" />
   </div>
+  <!-- </div> -->
 </template>
 
 <script>

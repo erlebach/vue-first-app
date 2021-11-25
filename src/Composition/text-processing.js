@@ -328,14 +328,14 @@ function saveData() {
     u.print("saveData, before return, allFlights", allFlights);
     console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
 
-    // remove flights whose id_f or id_nf are longer than 16 characters
+    // remove pairs if dest != orig for either _f or _nf
     ptyPairs = [];
     allFlights.forEach((r) => {
-      // Standard id length is 25 characters
-      // if (r.id_f.length <= 25) {
-      //   newFlights.push(r);
-      // }
-      ptyPairs.push(r);
+      // console.log(`${r.orig_f}, ${r.dest_f}, ${r.orig_nf}, ${r.dest_nf}`);
+      if (r.orig_f !== r.dest_f && r.orig_nf !== r.dest_nf) {
+        // console.log("   keep");
+        ptyPairs.push(r);
+      }
     });
     // console.log(`newFlightsllength: ${newFlights.length}`);
     // Delete allFlights
