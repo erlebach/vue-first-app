@@ -58,7 +58,7 @@ export function setupConfiguration(parameters) {
         lineWidth: 4,
       },
       table: {
-        stroke: "green",
+        stroke: "red",
         lineWidth: 3,
         width: 30,
         height: 30,

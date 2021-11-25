@@ -262,3 +262,10 @@ export function getCoords(graph) {
 //   return coords;
 // }
 //----------------------------------------------------------------------
+export function removeDuplicatesFromArrayOfObjs(arrayOfObjs) {
+  // Create a unique array of objects from arrayOfObjs
+  const jsonObject = arrayOfObjs.map(JSON.stringify);
+  const uniqueSet = new Set(jsonObject);
+  const uniqueArray = Array.from(uniqueSet).map(JSON.parse);
+  return uniqueArray;
+}

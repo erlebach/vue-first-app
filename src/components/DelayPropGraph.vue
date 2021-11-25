@@ -6,22 +6,49 @@
     <div id="mountDelayPropGraph"></div>
   </div>
 
-  <div class="p-field-radiobutton">
-    <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
-    <label for="tier2">Tier 2</label>
+  <!-- Add a panel surrounding the radio buttons -->
+  <!-- <span width="200"> -->
+  <div class="p-d-flex flex-start">
+    <Panel
+      class="dark-panel"
+      header="# Tiers"
+      :toggleable="true"
+      :collapsed="false"
+    >
+      <div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
+          <label for="tier2">2</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
+          <label for="tier3">3</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
+          <label for="tier3">4</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
+          <label for="tier3">5</label>
+        </div>
+      </div>
+    </Panel>
+    <Panel
+      class="dark-panel"
+      header="# Tiers"
+      :toggleable="true"
+      :collapsed="false"
+    >
+      <div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
+          <label for="tier2">2</label>
+        </div>
+      </div>
+    </Panel>
   </div>
-  <div class="p-field-radiobutton">
-    <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
-    <label for="tier3">Tier 3</label>
-  </div>
-  <div class="p-field-radiobutton">
-    <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
-    <label for="tier3">Tier 4</label>
-  </div>
-  <div class="p-field-radiobutton">
-    <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
-    <label for="tier3">Tier 5</label>
-  </div>
+  <!-- </span> -->
   <!-- </ModalView> -->
 
   <!-- <h1>Delay Propagation Graph</h1>
@@ -35,6 +62,7 @@
 import * as r from "../Composition/Tableref";
 import ModalView from "./ModalView.vue";
 import RadioButton from "primevue/radiobutton";
+import Panel from "primevue/panel";
 import * as u from "../Composition/utils";
 import * as tier from "../Composition/Tierref";
 import G6 from "@antv/g6";
@@ -88,7 +116,7 @@ function defineEdges(obj, nb_tiers) {
 // Draw the graph once the Delay table exists.
 
 export default {
-  components: { RadioButton },
+  components: { Panel, RadioButton },
   //components: { ModalView, RadioButton },
   props: {
     width: Number,
@@ -207,12 +235,22 @@ export default {
 } */
 </style>
 
-<style scoped>
-#p-field-radiobutton {
-  color: blue;
+<style>
+.p-field-radiobutton {
+  color: black;
+  font-size: 16pt;
+  background-color: var(--gray-200);
 }
-#graph-button {
-  width: 200;
+
+.p-panel {
+  width: 1.3in;
+  font-size: 20pt;
+  border: solid;
+  border-color: black;
+}
+
+.p-panel-title {
+  font-size: 20pt;
 }
 
 .canvasview {
@@ -224,7 +262,7 @@ export default {
   height: 600px;*/
   border-style: solid;
   border-color: red;
-  border: "2px solid red"; /* Not working */
+  border: "2px solid red"; /* not working */
 }
 
 .origclass {
@@ -239,7 +277,7 @@ export default {
   color: black;
 }
 
-/* Not sure v-deep is required. Copied from PrimeVue Docs. */
+/* not sure v-deep is required. copied from primevue docs. */
 </style>
 
 <style scope>

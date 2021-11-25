@@ -31,13 +31,18 @@
 import { computePropagationDelays } from "../Composition/propagationLibrary.js";
 // import DelayPropagationGraph from "./DelayPropGraph.vue";
 import * as io from "../Composition/IO_works";
+import * as u from "../Composition/utils";
 import { ref, watchEffect, watch } from "vue";
 import DataTable from "primevue/datatable";
 // import Button from "primevue/button";
 import Column from "primevue/column";
 import * as tier from "../Composition/Tierref";
 import { useStore } from "vuex";
-import { saveAtIntervals } from "../Composition/text-processing.js";
+import {
+  saveAtIntervals,
+  saveOnce,
+  getEndpointFiles,
+} from "../Composition/text-processing.js";
 
 const {
   data1: dFSU,
@@ -67,7 +72,14 @@ export default {
     tier.setTier(props.tiers);
     const filesRead = ref(false);
 
-    // computed functions must be accessed by value (they are references)
+    // saveOnce, saveAtIntervals, should be called from a single file for it
+    // to work properly in order to periodically update tables
+    // saveOnce(2);
+    // // saveAtIntervals(15); // Retrieves data at fixed intervals
+
+    // watchEffect(() => {
+    //   getEndpointFiles(); // only returns the files when avaialble
+    // });
 
     watchEffect(() => {
       // If I do not check all three conditions, even if not required, the contents will
@@ -82,7 +94,9 @@ export default {
       ) {
         filesRead.value = true; // NEW
 
-        saveAtIntervals(10); // save every 5 sec
+        // saveAtIntervals(2); // save every arg sec
+        //saveOnce(2);
+
         // console.log("set ref.value to true");
         store.commit("setFSU", dFSU);
         store.commit("setTails", dTails);
@@ -90,6 +104,10 @@ export default {
 
         // id should be chosen via interface
         const initialID = "2019/10/01MIAPTY10:00173";
+
+        u.print("dFSU", dFSU);
+        u.print("dTails", dTails);
+        u.print("dBookings", dBookings);
 
         const table = computePropagationDelays(
           dFSU,
