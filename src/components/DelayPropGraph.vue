@@ -162,7 +162,16 @@ export default {
 
         // This element must be mounted before creating the graph
         graph.value.data({ nodes, edges });
+        console.log("================================================");
+        u.print("nodes", nodes);
+        u.print("edges", edges);
+        console.log("================================================");
         graph.value.render();
+
+        // return items, not data models
+        // getNodes() only works after render()
+        u.print("getNodes", graph.value.getNodes());
+        u.print("getEdges", graph.value.getEdges());
 
         dp.colorByCity(graph.value);
         graph.value.render(); // not sure required

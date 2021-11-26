@@ -57,3 +57,12 @@ Even if the flight from MIA does not have an arrival delay, there is still delay
 2021-09-18
 TOEO
 ---------------------------------------------------------
+2021-11-26
+I plot data from endPoints. I create a graph and get the correct degrees. 
+But when the graph is regenerated for another cities, most of the degrees 
+are zero. I do not know why. Everything is fine the first time the graph is drawn (regardless of the city). But the next city produces the wrong 
+result. That implies that the graph is not being updated properly. I could solve this by regenerating the graph, but I would rather simply replace the nodes and edges. 
+
+Solved: do a graph.destroy() and recreate the graph with different edges/nodes. 
+I can  draw the graph with new edges/nodes without destroying it. However, the calculation of degree of the nodes will be incorrect. 
+---------------------------------------------------------

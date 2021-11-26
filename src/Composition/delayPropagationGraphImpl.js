@@ -97,6 +97,7 @@ export function setupConfiguration(parameters) {
 //-----------------------------------------
 export function colorEdges(graph) {
   let color;
+
   graph.edge((edge) => {
     // WHY IS THIS NOT CALLED?
     // console.log(edge);
@@ -128,7 +129,10 @@ export function colorNodes(graph) {
   let stroke;
   let lineWidth;
 
+  console.log("colorNodes,  nodes");
+
   graph.node((node) => {
+    console.log(node);
     let delay;
     let strokeDelay;
     const O = node.id.slice(10, 13);
@@ -154,6 +158,9 @@ export function colorNodes(graph) {
     } else {
       color = "black";
     }
+
+    console.log(`color: ${color}, delay: ${delay}`);
+
     if (strokeDelay < 5) {
       stroke = "green";
     } else if (strokeDelay < 15) {
@@ -429,12 +436,43 @@ function pausecomp(millis) {
     curDate = new Date();
   } while (curDate - date < millis);
 }
-
+//-------------------------------------------------------------
 export function assignNodeLabels(graph) {
   const nodes = graph.getNodes();
+  u.print("assignNodeLabels, nodes", nodes);
+  u.print("graph", graph);
+  const degrees = graph.get("degrees");
+  u.print("degrees", degrees);
 
   nodes.forEach((node) => {
-    const degree = graph.getNodeDegree(node, "total");
+    const Node = graph.findById(node.id);
+    // u.print("node.id", node.id);
+    // u.print("findById, Node", Node);
+    const degree = graph.getNodeDegree(node.getModel().id, "total");
+    //const degree = graph.getNodeDegree(node, "total"); // original
+    // u.print("node", node);
+    // u.print("degree", degree);
+    graph.updateItem(node, {
+      label: degree,
+    });
+  });
+  return nodes;
+}
+//-------------------------------------------------------------
+export function assignNodeLabelsNew(graph) {
+  const nodes = graph.getNodes();
+  u.print("assignNodeLabelsNew, nodes", nodes);
+
+  const degrees = graph.get("degrees");
+  u.print("degrees", degrees);
+
+  nodes.forEach((node) => {
+    console.log(`node id: ${node.getModel().id}`);
+    // const Node = graph.findById(node.getModel().id);
+    // u.print("findById, Node", Node);
+    const degree = graph.getNodeDegree(node.getModel().id, "total");
+    // u.print("node", node);
+    // u.print("degree", degree);
     graph.updateItem(node, {
       label: degree,
     });

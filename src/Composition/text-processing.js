@@ -301,6 +301,7 @@ const GetTableData = () => {
 function saveData() {
   GetTableData().then((response) => {
     const data = response[0];
+    u.print("readin data", data);
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
 
@@ -318,6 +319,7 @@ function saveData() {
       ...outboundInFlight,
       ...outboundLanded,
     ];
+    allFlights.forEach((r) => {});
     console.log(`total nb flights: ${allFlights.length}`);
     //u.print("inboundNotDeparted", inboundNotDeparted);
     //u.print("inboundInFlight", inboundInFlight);
@@ -338,6 +340,9 @@ function saveData() {
         ptyPairs.push(r);
       }
     });
+
+    u.print("==> allFlights", allFlights);
+
     // console.log(`newFlightsllength: ${newFlights.length}`);
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
@@ -352,9 +357,9 @@ function saveData() {
     stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
 
-    u.print("stationPairsMap", stationPairsMap);
-    console.log(`==> stationPairs count: ${stationPairs.length}`);
-    console.log(`==> ptyPairs (pairs): ${ptyPairs.length}`); // 144
+    // u.print("stationPairsMap", stationPairsMap);
+    // console.log(`==> stationPairs count: ${stationPairs.length}`);
+    // console.log(`==> ptyPairs (pairs): ${ptyPairs.length}`); // 144
 
     // concatenate stationPairs and ptyPairs into allPairs
     // set a completion ref
@@ -364,16 +369,37 @@ function saveData() {
     // });
 
     const flightIdMap = u.createMapping(flightTable, "id");
+    // u.print("==> flightIdMap", flightIdMap);
+
+    // for (const r in flightIdMap) {
+    // const row_f = flightIdMap[r];
+    // const row_nf = flightIdMap[r.id_nf];
+    // u.print("row_f", row_f);
+    // if (row_f.in == undefined) {
+    // console.log("==> row_f.in is undefined");
+    // }
+    // console.log(`row_nf, in_nf: ${row_nf}`);
+    // }
 
     stationPairs.forEach((r) => {
       const row_f = flightIdMap[r.id_f];
       const row_nf = flightIdMap[r.id_nf];
+      // u.print("stationPairs, row_f", row_f);
+      // u.print("stationPairs, row_nf", row_nf);
       const row = {
         id_f: row_f.id,
         id_nf: row_nf.id,
+        in_f: row_f.in,
+        in_nf: row_nf.in,
+        out_f: row_f.out,
+        out_nf: row_nf.out,
         orig_f: row_f.orig,
         dest_f: row_f.dest,
         dest_nf: row_nf.dest,
+        sch_dep_f: row_f.sch_dep,
+        sch_dep_nf: row_nf.sch_dep,
+        sch_arr_f: row_f.sch_arr,
+        sch_arr_nf: row_nf.sch_arr,
         sch_dep_z_f: row_f.sch_dep_z,
         sch_dep_z_nf: row_nf.sch_dep_z,
         sch_arr_z_f: row_f.sch_arr_z,
@@ -390,9 +416,51 @@ function saveData() {
     ptyPairs.forEach((e) => {
       allPairs.push(e);
     });
-    // u.print("e in ptyPairs", e);
-    // }
+
+    // I am waiting on Miguel's endpoint (once a day) to provide me with the connection pattern between flights
+    // - For a feeder, what are the outgoing flights
+    // - For an outgoing flight, what are the feeders
+    allPairs.forEach((r) => {
+      // In general, the tails will be different. Here they are the same.
+      r.ACTAvailable = (r.sch_dep_nf - r.sch_arr_f) / 60000;
+      r.ACTAvailableP = (r.out_nf - r.in_f) / 60000; // 60000 ms per min
+      r.ACTSlack = r.ACTAvailable - 30;
+      r.ACTSlackP = r.ACTSlack; // initial conditions
+      // only applies if tails are the same
+      r.plannedRotation = (r.sch_dep_nf - r.sch_arr_f) / 60000;
+      if (r.plannedRotation < 60) {
+        r.availRotMinReq = r.plannedRotation;
+      } else {
+        r.availRotMinReq = 60; // hardcoded
+      }
+      // const actAvailable =
+      //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
+      r.inDegree = "undef";
+      r.outDegree = "undef";
+
+      // At this stage, all pairs have the same tail
+      r.rotSlack = r.ACTAvailable - 60;
+      r.rotSlackP = r.ACT;
+      r.pax = "undef"; // probably not required
+    });
     u.print("allPairs", allPairs);
+
+    // <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
+    // <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
+    // <li>ACTSlack: ${edge.ACTSlack} min</li>
+    // <li>ACTSlackP: ${edge.ACTSlackP} min</li>
+    // <li>ACTAvailable: ${edge.ACTAvailable} min</li>
+    // <li>ACTAvailableP: ${edge.ACTAvailableP} min</li>
+
+    // <li>Nb incoming flights connecting <br> with outbound flight: ${
+    //   edge.inDegree
+    // }</li>
+    // <li>Nb outgoing flights connecting <br> with inbound flight: ${
+    //   edge.outDegree
+    // }</li>
+    // <li>rotSlackP: ${edge.rotSlackP} min</li>
+    // <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
+    // <!-- If the slack < 45 min, draw in red -->
 
     setStatus(true);
 
@@ -511,7 +579,54 @@ function computeFlightList(ptyPairs) {
       flights.push(row_nf);
     }
   });
+  // update with information necesary for rigid body model
+  // for nodes: need: departureDelayP, arrDelayP
+  // for edges: need: ACTAvailableP
+  // ALL THESE FLIGHTSS APPEAR TO HAVE LANDED. Strange.
+  // This must have to do with my removing certain rows
+  flights.forEach((r) => {
+    console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
+    r.depDelayP = (r.on - r.sch_dep) / 60000; // 60000 ms per minute
+    r.arrDelayP = (r.in - r.sch_arr) / 60000;
+    r.schDepTMZ = "undef";
+    r.schArrTMZ = "undef";
+    r.depDelay = "undef";
+    r.arrDelay = "undef";
+    r.plannedRot = "undef";
+    r.rotSlackP = "undef";
+    r.slackP = "undef";
+    r.ACTSSlackP = "undef";
+    r.minACTP = "undef";
+    r.hubConnections = "undef";
+  });
+  // <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
+  // <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
+  // <li>ACTSlack: ${edge.ACTSlack} min</li>
+  // <li>ACTSlackP: ${edge.ACTSlackP} min</li>
+  // <li>ACTAvailable: ${edge.ACTAvailable} min</li>
+  // <li>ACTAvailableP: ${edge.ACTAvailableP} min</li>
+
+  // <li>Nb incoming flights connecting <br> with outbound flight: ${
+  //   edge.inDegree
+  // }</li>
+  // <li>Nb outgoing flights connecting <br> with inbound flight: ${
+  //   edge.outDegree
+  // }</li>
+  // <li>rotSlackP: ${edge.rotSlackP} min</li>
+  // <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
+  // <!-- If the slack < 45 min, draw in red -->
+  // <!--
+  // <li style="color:${actColor};">Available Connection Time: ${actAvail} min </li>
+  // <li>Minimum Connection Time: ${minConnectTime} min</li>
+  // <li>Planned Connection Time (outbound.schDep-inbound.schArr): ${actSched} min </li>
+  // <li>Actual Connection Time (outbound.outZ-inbound.inZ): ${actActual} min </li>
+  // <li>Available Connection Time (outbound.schDep-inbound.inZ): ${actAvail} min </li>
+  // <li>Tail (inbound=>oubound): ${inbound.tail} => ${outbound.tail}</li>
+  // <li>Connection Time Slack: ${actAvail} - ${minConnectTime}
+  //   = ${actAvail - minConnectTime} min</li>
+
   console.log(`number of flights: ${flights.length}`);
+  u.print("flights", flights);
   return flights;
 }
 
