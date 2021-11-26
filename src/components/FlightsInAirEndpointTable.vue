@@ -81,6 +81,51 @@ is returned from the endpoint. -->
   </DataTable>
 
   <DataTable
+    :value="allPairsRef.table"
+    :scrollable="true"
+    :resizableColumns="true"
+    scrollHeight="300px"
+  >
+    <template #header>
+      <h2>
+        All Flight Pairs through (endpoint), {{ allPairsRef.nbRows }} entries
+      </h2>
+      <span>Time of day: </span>
+      <!-- Only show when table is visible -->
+      <!-- What is type=? -->
+      <InputText type="text" v-model.trim="allPairsRef.time" />
+      <!-- v-on:keyup.enter="confirmEntry" -->
+      <!-- Consider a set of checkboxes to turn columns on and off -->
+      <span>City (for graph): </span>
+      <InputText type="text" v-model.trim="allPairsRef.city" />
+    </template>
+    <Column field="id_f" header="In id" :sortable="true" style="display: none;">
+    </Column>
+    <Column
+      field="id_nf"
+      header="Out id"
+      :sortable="true"
+      style="display: none;"
+    >
+    </Column>
+    <Column field="orig_f" header="Org" :sortable="true" :style="col"> </Column>
+    <Column field="dest_f" header="Stop" :sortable="true" :style="col">
+    </Column>
+    <Column field="dest_nf" header="Dst" :sortable="true"> </Column>
+    <Column field="fltnumPair" header="Flt#s" :sortable="true"> </Column>
+    <Column field="status_f" header="StatusIn" :sortable="true"> </Column>
+    <Column field="status_nf" header="Statusout" :sortable="true"> </Column>
+    <Column field="tail" header="Tail" :sortable="true"> </Column>
+
+    <Column field="sch_dep_z_f" header="sch_dep_f" :sortable="true"> </Column>
+    <Column field="sch_arr_z_f" header="sch_arr_f" :sortable="true"> </Column>
+    <Column field="est_rotation" header="estRot(min)" :sortable="true">
+    </Column>
+    <Column field="sch_dep_z_nf" header="sch_dep_nf" :sortable="true"> </Column>
+    <Column field="sch_arr_z_nf" header="sch_arr_nf" :sortable="true"> </Column>
+  </DataTable>
+
+  <DataTable
     :value="stationPairsRef.table"
     :scrollable="true"
     :resizableColumns="true"
@@ -130,7 +175,7 @@ is returned from the endpoint. -->
 
   <!-- start with hidden graph. Show when graph created -->
   <div>
-    <h2>Endpoint Graph (based on {{ ptyPairsRef.city }})</h2>
+    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
     <div id="GEConnectionsToolTip"></div>
     <div id="mountEndPointGraph"></div>
   </div>
@@ -206,6 +251,15 @@ export default {
     });
 
     const stationPairsRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      time: null,
+      cityEntered: null,
+      timeEntered: null,
+    });
+
+    const allPairsRef = reactive({
       nbRows: 0,
       table: null,
       city: null,
@@ -307,6 +361,10 @@ export default {
           edges.push({
             source: e.id_f,
             target: e.id_nf,
+            orig_f: e.orig_f,
+            orig_nf: e.orig_nf,
+            dest_f: e.dest,
+            dest_nf: e.dest,
             ACTSlack: e.ACTSlack,
             ACTSlackP: e.ACTSlackP,
             ACTAvailable: e.ACTAvailable,
@@ -315,10 +373,6 @@ export default {
             outDegree: e.out_degree_f,
             pax: e.pax_f,
             rotSlackP: e.rotSlackP,
-            orig_f: e.orig_f,
-            orig_nf: e.orig_nf,
-            dest_f: e.dest,
-            dest_nf: e.dest,
           });
         }
       });
@@ -328,10 +382,9 @@ export default {
     watchEffect(() => {
       // const city = ptyPairsRef.city;
       // const time = ptyPairsRef.time;
-      if (checkEntries(ptyPairsRef)) {
+      if (checkEntries(allPairsRef)) {
         const data = getEndPointFilesComputed.value;
-        const ptyPairs = data.ptyPairs;
-        const city = ptyPairsRef.city.toUpperCase();
+        const city = allPairsRef.city.toUpperCase();
         // u.print("ptyPairs", ptyPairs);
         drawGraph(city, data);
       }
@@ -349,12 +402,12 @@ export default {
     function drawGraph(city, data) {
       const nb_tiers = 0; // not used
       const flights = data.flightTable;
-      const ptyPairs = data.ptyPairs;
+      const allPairs = data.allPairs;
       u.print("data", data);
-      u.print("ptyPairs", ptyPairs);
+      u.print("allPairs", allPairs);
       const flightIdMap = u.createMapping(flights, "id");
       // I should combine ptyPairs with stationPairs to create allPairs array
-      const edges = defineEdges(city, ptyPairs, nb_tiers);
+      const edges = defineEdges(city, allPairs, nb_tiers);
       const nodes = defineNodes(city, edges, flights, nb_tiers);
       u.print("edges", edges);
       u.print("nodes", nodes);
@@ -410,6 +463,10 @@ export default {
         });
         stationPairsRef.table = stationIdPairs;
         stationPairsRef.nbRows = stationIdPairs.length;
+
+        const allPairs = data.value.allPairs;
+        allPairsRef.table = allPairs;
+        allPairsRef.nbRows = allPairs.length;
       }
     });
 
@@ -439,6 +496,7 @@ export default {
       ifhelp,
       flightsRef,
       ptyPairsRef,
+      allPairsRef,
       stationPairsRef,
       //nodes,
       inputTime,

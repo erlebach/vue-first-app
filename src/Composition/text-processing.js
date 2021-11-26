@@ -17,6 +17,7 @@ const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
 let flightTable = [];
 let ptyPairs = [];
 let stationPairs = [];
+let allPairs = []; // combine ptyPairs and stationPairs
 
 const status = ref(null);
 
@@ -350,12 +351,49 @@ function saveData() {
 
     stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
+
     u.print("stationPairsMap", stationPairsMap);
     console.log(`==> stationPairs count: ${stationPairs.length}`);
-
     console.log(`==> ptyPairs (pairs): ${ptyPairs.length}`); // 144
 
+    // concatenate stationPairs and ptyPairs into allPairs
     // set a completion ref
+    // for (const e in ptyPairs) {
+    // ptyPairs.forEach((e) => {
+    // allPairs.push(e);
+    // });
+
+    const flightIdMap = u.createMapping(flightTable, "id");
+
+    stationPairs.forEach((r) => {
+      const row_f = flightIdMap[r.id_f];
+      const row_nf = flightIdMap[r.id_nf];
+      const row = {
+        id_f: row_f.id,
+        id_nf: row_nf.id,
+        orig_f: row_f.orig,
+        dest_f: row_f.dest,
+        dest_nf: row_nf.dest,
+        sch_dep_z_f: row_f.sch_dep_z,
+        sch_dep_z_nf: row_nf.sch_dep_z,
+        sch_arr_z_f: row_f.sch_arr_z,
+        sch_arr_z_nf: row_nf.sch_arr_z,
+        status_f: row_f.status,
+        status_nf: row_nf.status,
+        tail: row_f.tail,
+        fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
+        est_rotation: -1, // MUST FIX
+      };
+      allPairs.push(row);
+    });
+
+    ptyPairs.forEach((e) => {
+      allPairs.push(e);
+    });
+    // u.print("e in ptyPairs", e);
+    // }
+    u.print("allPairs", allPairs);
+
     setStatus(true);
 
     //return { flightTable, ptyPairs, stationPairs };
@@ -364,7 +402,7 @@ function saveData() {
 }
 
 const getEndPointFilesComputed = computed(() => {
-  return { flightTable, ptyPairs, stationPairs };
+  return { flightTable, ptyPairs, stationPairs, allPairs };
 });
 
 export { getEndPointFilesComputed };

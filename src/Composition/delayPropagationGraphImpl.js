@@ -203,7 +203,7 @@ const myTooltip = new G6.Tooltip({
   getContent: (e) => {
     const outDiv = document.createElement("div");
     outDiv.style.width = "40rem"; // font size in root element
-    outDiv.style.height = "25rem";
+    outDiv.style.height = "35rem";
     outDiv.style.position = "absolute"; // position and z-index necessary
     outDiv.style.zIndex = "100"; // be draw above datatable header
     // Right edge of tootip is against viewport edge (fixed pos)
@@ -307,8 +307,11 @@ const myTooltip = new G6.Tooltip({
 
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
+        <li>Inbound id: ${inbound.id}</li>
+        <li>Outbound id: ${outbound.id}</li>
         <li>Inbound from: ${inbound.id.slice(10, 13)}</li>
         <li>Outbound to: ${outbound.id.slice(13, 16)}</li>
+        <li>Tail: ${outbound.tail}</li>
         <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
         <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
         <li>ACTSlack: ${edge.ACTSlack} min</li>
