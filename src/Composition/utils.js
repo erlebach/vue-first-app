@@ -269,3 +269,91 @@ export function removeDuplicatesFromArrayOfObjs(arrayOfObjs) {
   const uniqueArray = Array.from(uniqueSet).map(JSON.parse);
   return uniqueArray;
 }
+//--------------------------------------------------------------------
+// https://www.the-art-of-web.com/javascript/validate-date/
+export function checkDate(field) {
+  var allowBlank = true;
+  var minYear = 1902;
+  var maxYear = new Date().getFullYear();
+
+  var errorMsg = "";
+
+  // regular expression to match required date format
+  const re = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+
+  if (field.value != "") {
+    const regs = field.value.match(re);
+    if (regs) {
+      if (regs[1] < 1 || regs[1] > 31) {
+        errorMsg = "Invalid value for day: " + regs[1];
+      } else if (regs[2] < 1 || regs[2] > 12) {
+        errorMsg = "Invalid value for month: " + regs[2];
+      } else if (regs[3] < minYear || regs[3] > maxYear) {
+        errorMsg =
+          "Invalid value for year: " +
+          regs[3] +
+          " - must be between " +
+          minYear +
+          " and " +
+          maxYear;
+      }
+    } else {
+      errorMsg = "Invalid date format: " + field.value;
+    }
+  } else if (!allowBlank) {
+    errorMsg = "Empty date not allowed!";
+  }
+
+  if (errorMsg != "") {
+    alert(errorMsg);
+    field.focus();
+    return false;
+  }
+
+  return true;
+}
+//--------------------------------------------------------------------
+// Original JavaScript code by Chirp Internet: chirpinternet.eu
+// Please acknowledge use of this code by including this header.
+// https://www.the-art-of-web.com/javascript/validate-date/
+
+export function checkTime(field) {
+  var errorMsg = "";
+
+  // regular expression to match required time format
+  const re = /^(\d{1,2}):(\d{2})(:00)?([ap]m)?$/;
+
+  if (field.value != "") {
+    // const regs = field.value.match(re);
+    const regs = field.match(re);
+    if (regs) {
+      if (regs[4]) {
+        // 12-hour time format with am/pm
+        if (regs[1] < 1 || regs[1] > 12) {
+          errorMsg = "Invalid value for hours: " + regs[1];
+        }
+      } else {
+        // 24-hour time format
+        if (regs[1] > 23) {
+          errorMsg = "Invalid value for hours: " + regs[1];
+        }
+      }
+      if (!errorMsg && regs[2] > 59) {
+        errorMsg = "Invalid value for minutes: " + regs[2];
+      }
+    } else {
+      errorMsg = "Invalid time format: " + field.value;
+    }
+  }
+
+  if (errorMsg != "") {
+    // console.log(errorMsg);
+    //alert(errorMsg);
+    //field.focus();
+    return false;
+  }
+
+  return true;
+}
+//--------------------------------------------------------------------
+//--------------------------------------------------------------------

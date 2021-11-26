@@ -6,21 +6,21 @@ is returned from the endpoint. -->
   <FlightsInAirHelp show-help="false" />
 
   <DataTable
-    :value="flightTable"
+    :value="flightsRef.table"
     :scrollable="true"
     resizableColumns="true"
     scrollHeight="300px"
   >
     <template #header>
-      <h2>Flights (endpoint), {{ flights_nbRows }} entries</h2>
+      <h2>Flights (endpoint), {{ flightsRef.nbRows }} entries</h2>
       <span>Time of day (Zulu): </span>
       <!-- Only show when table is visible -->
       <!-- What is type=? -->
-      <InputText type="text" v-model="inputTime" />
+      <InputText type="text" v-model.trim="flightsRef.time" />
       <!-- v-on:keyup.enter="confirmEntry" -->
       <!-- Consider a set of checkboxes to turn columns on and off -->
       <span>City (for graph): </span>
-      <InputText type="text" v-model="inputCity" />
+      <InputText type="text" v-model.trim="flightsRef.city" />
     </template>
     <Column field="id" header="id" :sortable="true" style="display: none;">
     </Column>
@@ -34,22 +34,25 @@ is returned from the endpoint. -->
     <Column field="eta" header="ETA" :sortable="true"> </Column>
   </DataTable>
 
+  <!-- :value="ptyPairTable" -->
   <DataTable
-    :value="ptyPairTable"
+    :value="ptyPairsRef.table"
     :scrollable="true"
     :resizableColumns="true"
     scrollHeight="300px"
   >
     <template #header>
-      <h2>Flight Pairs through PTY (endpoint), {{ pty_nbRows }} entries</h2>
+      <h2>
+        Flight Pairs through PTY (endpoint), {{ ptyPairsRef.nbRows }} entries
+      </h2>
       <span>Time of day: </span>
       <!-- Only show when table is visible -->
       <!-- What is type=? -->
-      <InputText type="text" v-model="inputTime" />
+      <InputText type="text" v-model.trim="ptyPairsRef.time" />
       <!-- v-on:keyup.enter="confirmEntry" -->
       <!-- Consider a set of checkboxes to turn columns on and off -->
       <span>City (for graph): </span>
-      <InputText type="text" v-model="inputCity" />
+      <InputText type="text" v-model.trim="ptyPairsRef.city" />
     </template>
     <Column field="id_f" header="In id" :sortable="true" style="display: none;">
     </Column>
@@ -78,7 +81,7 @@ is returned from the endpoint. -->
   </DataTable>
 
   <DataTable
-    :value="stationPairTable"
+    :value="stationPairsRef.table"
     :scrollable="true"
     :resizableColumns="true"
     scrollHeight="300px"
@@ -86,17 +89,19 @@ is returned from the endpoint. -->
     <template #header>
       <h2>
         Flight Pairs through Station using Endpoint,
-        {{ station_nbRows }} entries
+        {{ stationPairsRef.nbRows }} entries
       </h2>
       <span>Time of day: </span>
       <!-- Only show when table is visible -->
       <!-- What is type=? -->
-      <InputText type="text" v-model="inputTime" />
+      <InputText type="text" v-model.trim="stationPairsRef.time" />
       <!-- v-on:keyup.enter="confirmEntry" -->
       <!-- Consider a set of checkboxes to turn columns on and off -->
       <span>City (for graph): </span>
-      <InputText type="text" v-model="inputCity" />
+      <InputText type="text" v-model.trim="stationPairsRef.city" />
+      <!-- <InputText type="text" v-model="inputCity" /> -->
     </template>
+
     <Column field="id_f" header="In id" :sortable="true" style="display: none;">
     </Column>
     <Column
@@ -122,25 +127,35 @@ is returned from the endpoint. -->
     <Column field="sch_dep_z_nf" header="sch_dep_nf" :sortable="true"> </Column>
     <Column field="sch_arr_z_nf" header="sch_arr_nf" :sortable="true"> </Column>
   </DataTable>
+
+  <!-- start with hidden graph. Show when graph created -->
+  <div>
+    <h2>Endpoint Graph (based on {{ ptyPairsRef.city }})</h2>
+    <div id="GEConnectionsToolTip"></div>
+    <div id="mountEndPointGraph"></div>
+  </div>
 </template>
 
 <script>
-import FlightsInAirHelp from "./FlightsInAirHelp.vue";
 import { convertCopaData } from "../Composition/graphSupport.js";
 import * as l from "../Composition/loadTableClass.js";
 import * as f from "../Composition/FlightsInAir.js";
-import * as u from "../Composition/utils.js";
 import { IO_works, ensureConditionIsMet } from "../Composition/IO_works.js";
-import { ref, reactive, isReactive, computed, watch, watchEffect } from "vue";
 import ModalView from "./ModalView.vue";
+import { findCityInCityMap, filterData } from "../Composition/graphSupport";
+import { onMounted } from "vue";
+import { useKeydown } from "../Composition/useKeydown.js";
+import FlightsInAirHelp from "./FlightsInAirHelp.vue";
+import * as u from "../Composition/utils.js";
+import { ref, reactive, isReactive, computed, watch, watchEffect } from "vue";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
-import { findCityInCityMap, filterData } from "../Composition/graphSupport";
+import G6 from "@antv/g6";
+// I should factor all the graph routines into a single function called commonGraphImpl.js
+import * as dp from "../Composition/delayPropagationGraphImpl.js";
 //import { colorByCity } from "../Composition/graphImpl";
 import { useStore } from "vuex";
-import { onMounted } from "vue";
-import { useKeydown } from "../Composition/useKeydown.js";
 import {
   setStatus,
   getStatus,
@@ -154,9 +169,11 @@ export default {
   components: { DataTable, Column, InputText, FlightsInAirHelp },
   props: {
     filePath: String,
+    width: Number,
+    height: Number,
   },
   setup(props, { emit }) {
-    const store = useStore();
+    //const store = useStore();
     const ifhelp = ref(false);
     //const overlayref = ref(); // gives access to component
     const inputTime = ref(null); // variable in component
@@ -167,6 +184,54 @@ export default {
     const flightTable = ref(null);
     const ptyPairTable = ref(null);
     const stationPairTable = ref(null);
+    let graphCreated = false;
+    let graph = null;
+    const showGraph = ref(null);
+
+    const flightsRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      cityEntered: null,
+      timeEntered: null,
+    });
+
+    const ptyPairsRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      time: null,
+      cityEntered: null,
+      timeEntered: null,
+    });
+
+    const stationPairsRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      time: null,
+      cityEntered: null,
+      timeEntered: null,
+    });
+
+    const configuration = dp.setupConfiguration({
+      container: "mountEndPointGraph",
+      width: props.width,
+      height: props.height,
+      defaultNodeSize: 40,
+    });
+
+    function checkCity(city) {
+      return city && city.length === 3;
+    }
+
+    function checkTime(time) {
+      return time && time.length == 5 && u.checkTime(time);
+    }
+
+    function checkEntries(tableRef) {
+      return checkCity(tableRef.city) && checkTime(tableRef.time);
+    }
 
     // useKeydown([
     //   {
@@ -208,34 +273,125 @@ export default {
 
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
-    saveOnce(2);
+    saveOnce(1);
     //saveAtIntervals(3); // Retrieves data at fixed intervals
 
+    function defineNodes(city, edges, flights, nb_tiers) {
+      const nodes = [];
+      const ids = [];
+      edges.forEach((e) => {
+        // u.print("e", e);
+        ids.push(e.source);
+        ids.push(e.target);
+      });
+      const flightIds = u.createMapping(flights, "id");
+      // All nodes have degree two
+      // u.print("ids", ids);
+      // u.print("flightIds", flightIds);
+      ids.forEach((id) => {
+        // if (obj.id2level[e.id] < nb_tiers) {
+        // if (city === e.orig || city === e.dest) {
+        // u.print("id/e", id);
+        nodes.push(flightIds[id]);
+        // }
+      });
+      return nodes;
+    }
+
+    function defineEdges(city, obj, nb_tiers) {
+      u.print("defineEdges, obj", obj);
+      const edges = [];
+      obj.forEach((e) => {
+        // console.log(`${city}, ${e.orig_f}, ${e.dest_f}, ${e.dest_nf}`);
+        if (city === e.orig_f || city === e.dest_f || city === e.dest_nf) {
+          edges.push({
+            source: e.id_f,
+            target: e.id_nf,
+            ACTSlack: e.ACTSlack,
+            ACTSlackP: e.ACTSlackP,
+            ACTAvailable: e.ACTAvailable,
+            ACTAvailableP: e.ACTAvailableP,
+            inDegree: e.in_degree_nf,
+            outDegree: e.out_degree_f,
+            pax: e.pax_f,
+            rotSlackP: e.rotSlackP,
+            orig_f: e.orig_f,
+            orig_nf: e.orig_nf,
+            dest_f: e.dest,
+            dest_nf: e.dest,
+          });
+        }
+      });
+      return edges;
+    }
+
     watchEffect(() => {
-      // const data = 0;
+      // const city = ptyPairsRef.city;
+      // const time = ptyPairsRef.time;
+      if (checkEntries(ptyPairsRef)) {
+        const data = getEndPointFilesComputed.value;
+        const ptyPairs = data.ptyPairs;
+        const city = ptyPairsRef.city.toUpperCase();
+        // u.print("ptyPairs", ptyPairs);
+        drawGraph(city, data);
+      }
+      if (checkEntries(stationPairsRef)) {
+        // const flights = getEndPointfilesComputed.value.flightTable;
+        console.log(
+          `city: ${stationPairsRef.city}, time: ${stationPairsRef.time}`
+        );
+      }
+      if (checkEntries(flightsRef)) {
+        const flights = getEndPointFilesComputed.value.flightTable;
+      }
+    });
+
+    function drawGraph(city, data) {
+      const nb_tiers = 0; // not used
+      const flights = data.flightTable;
+      const ptyPairs = data.ptyPairs;
+      u.print("data", data);
+      u.print("ptyPairs", ptyPairs);
+      const flightIdMap = u.createMapping(flights, "id");
+      // I should combine ptyPairs with stationPairs to create allPairs array
+      const edges = defineEdges(city, ptyPairs, nb_tiers);
+      const nodes = defineNodes(city, edges, flights, nb_tiers);
+      u.print("edges", edges);
+      u.print("nodes", nodes);
+
+      if (!graphCreated) {
+        graph = new G6.Graph(configuration);
+        graphCreated = true;
+      }
+
+      // This element must be mounted before creating the graph
+      graph.data({ nodes, edges });
+      graph.render();
+      console.log("===> render graph");
+      return;
+    }
+
+    watchEffect(() => {
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
-        // u.print("===> data, watchEffect", data.value);
-        // u.print("===> data, flightTable", data.value.flightTable);
-        flightTable.value = data.value.flightTable;
-        flights_nbRows.value = flightTable.value.length;
 
-        const flightIdMap = u.createMapping(flightTable.value, "id");
+        flightsRef.table = data.value.flightTable;
+        flightsRef.nbRows = data.value.flightTable.length;
+
+        const flightIdMap = u.createMapping(data.value.flightTable, "id");
 
         const ptyPairs = data.value.ptyPairs;
         ptyPairs.forEach((r) => {
           r.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
         });
-        ptyPairTable.value = ptyPairs;
-        pty_nbRows.value = ptyPairs.length;
+        ptyPairsRef.table = ptyPairs;
+        ptyPairsRef.nbRows = ptyPairs.length;
 
         const stationPairs = data.value.stationPairs;
         const stationIdPairs = [];
         stationPairs.forEach((r) => {
           const row_f = flightIdMap[r.id_f];
           const row_nf = flightIdMap[r.id_nf];
-          u.print("row_f", row_f);
-          u.print("row_nf", row_nf);
           const row = {
             orig_f: row_f.orig,
             dest_f: row_f.dest,
@@ -244,17 +400,16 @@ export default {
             sch_dep_z_nf: row_nf.sch_dep_z,
             sch_arr_z_f: row_f.sch_arr_z,
             sch_arr_z_nf: row_nf.sch_arr_z,
+            status_f: row_f.status,
+            status_nf: row_nf.status,
             tail: row_f.tail,
             fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
-            est_rotation: -1,
+            est_rotation: -1, // MUST FIX
           };
           stationIdPairs.push(row);
-          // row.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
         });
-        stationPairTable.value = stationIdPairs;
-        station_nbRows.value = stationIdPairs.length;
-        u.print("==> stationPairs", stationPairs);
-        u.print("==> flightIdMap", flightIdMap);
+        stationPairsRef.table = stationIdPairs;
+        stationPairsRef.nbRows = stationIdPairs.length;
       }
     });
 
@@ -282,15 +437,12 @@ export default {
 
     return {
       ifhelp,
-      flightTable,
-      ptyPairTable,
-      stationPairTable,
+      flightsRef,
+      ptyPairsRef,
+      stationPairsRef,
       //nodes,
       inputTime,
       listedTime,
-      flights_nbRows,
-      pty_nbRows,
-      station_nbRows,
       // confirmEntry,
       // arrStatusStyle,
       // inFlightStyle,
