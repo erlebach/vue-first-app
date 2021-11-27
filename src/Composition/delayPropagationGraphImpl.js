@@ -129,10 +129,10 @@ export function colorNodes(graph) {
   let stroke;
   let lineWidth;
 
-  console.log("colorNodes,  nodes");
+  //console.log("colorNodes,  nodes");
 
   graph.node((node) => {
-    console.log(node);
+    // console.log(node);
     let delay;
     let strokeDelay;
     const O = node.id.slice(10, 13);
@@ -159,7 +159,7 @@ export function colorNodes(graph) {
       color = "black";
     }
 
-    console.log(`color: ${color}, delay: ${delay}`);
+    // console.log(`color: ${color}, delay: ${delay}`);
 
     if (strokeDelay < 5) {
       stroke = "green";

@@ -451,27 +451,81 @@ export { getEndPointFilesComputed };
 export function syntheticConnections(ptyPairs) {
   u.print("syntheticConnections", ptyPairs);
   const synthPairs = []; // id_f, id_nf pairs
-  const idMap = u.createMapping(ptyPairs, "id_f");
   const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
   const arr_f = sortBy(ptyPairs, "sch_arr_f");
+
+  // Establish a common frame of reference
   const earliest_dep_nf = dep_nf[0].sch_dep_nf;
   const earliest_arr_f = arr_f[0].sch_arr_f;
+  const earliest = Math.min(earliest_dep_nf, earliest_arr_f);
 
+  const in_arrivals = [];
+  arr_f.forEach((r) => {
+    r.delta_arr_f = (r.sch_arr_f - earliest) / 60000;
+    r.delta_dep_nf = (r.sch_dep_nf - earliest) / 60000;
+    in_arrivals.push(r);
+    console.log(`arr_f, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
+  });
+
+  const out_departures = [];
   dep_nf.forEach((r) => {
-    r.delta_arr_f = (r.sch_arr_f - earliest_arr_f) / 60000;
-    r.delta_dep_nf = (r.sch_dep_nf - earliest_dep_nf) / 60000;
+    r.delta_arr_f = (r.sch_arr_f - earliest) / 60000;
+    r.delta_dep_nf = (r.sch_dep_nf - earliest) / 60000;
+    out_departures.push(r);
     console.log(`dep_nf, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
   });
+
+  const feederIds = [];
   arr_f.forEach((r) => {
-    r.delta_arr_f = (r.sch_arr_f - earliest_arr_f) / 60000;
-    r.delta_dep_nf = (r.sch_dep_nf - earliest_dep_nf) / 60000;
-    console.log(`arr_f, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
+    feederIds.push(r.id_f);
+  });
+
+  const outgoingIds = [];
+  dep_nf.forEach((r) => {
+    outgoingIds.push(r.id_nf);
+  });
+  u.print("feederIds", feederIds);
+  u.print("outgoingIds", outgoingIds);
+
+  const idfMap = u.createMapping(ptyPairs, "id_f");
+  const idnfMap = u.createMapping(ptyPairs, "id_nf");
+
+  // For each feeder ids, identify the 20 outgoing flights that depart closest to the time of arrival
+  // For now: Brute force. Per day, about 150 flights, so 150*150 = 22,500 combinations. Still low.
+  feederIds.forEach((id_f) => {
+    console.log(`feeder: ${id_f}`);
+    const deltas = [];
+    const keep_outgoings = [];
+    const keep_deltas = [];
+    outgoingIds.forEach((id_nf) => {
+      // u.print("idnfMap[id_nf]", idnfMap[id_nf]);
+      const delta = idnfMap[id_nf].delta_dep_nf - idfMap[id_f].delta_arr_f;
+      if (delta > 45) {
+        keep_outgoings.push(id_nf);
+        keep_deltas.push(delta);
+      }
+      deltas.push(delta);
+      // console.log(`delta: ${delta}`);
+    });
+    const nb_outgoings = keep_outgoings.length;
+    // u.print(`id: ${id_f}, nb_outgoings: ${nb_outgoings}, deltas`, deltas);
+    // Only keep top 20
+    if (keep_outgoings.length > 20) {
+      keep_outgoings.length = 20;
+      keep_deltas.length = 20;
+    }
+    u.print(`   kept outgoing ids`, keep_outgoings);
+    u.print(`   kept deltas`, keep_deltas);
+    // Keep top 20 greater than 45 min (to give PAX time to connect)
   });
 
   // How to use the above structures to do KNN. Construct nearest 30 points for each node
 
   console.log(`earliest_arr_f: ${earliest_arr_f}`);
   console.log(`earliest_dep_nf: ${earliest_dep_nf}`);
+  u.print("in_arrivals", in_arrivals);
+  u.print("out_departures", out_departures);
+
   const arrMap_f = u.createMapping(arr_f, "sch_arr_f");
   const depMap_nf = u.createMapping(dep_nf, "sch_dep_nf");
   u.print("=>arrMap_f", arrMap_f);
