@@ -9,6 +9,7 @@ import { date } from "check-types";
 import lodash from "lodash";
 import { ArgumentOutOfRangeError } from "rxjs";
 import { watchEffect, computed, ref } from "vue";
+import { sortBy } from "lodash";
 
 const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
 
@@ -341,45 +342,17 @@ function saveData() {
       }
     });
 
-    u.print("==> allFlights", allFlights);
-
-    // console.log(`newFlightsllength: ${newFlights.length}`);
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
     const ids2flights = u.createMapping(flightTable, "id");
 
-    u.print("flight list (singles): ", ids2flights);
-    console.log(`nb flights: ${flightTable.length}`); // 240
-
-    u.print("==> ptyPairs", ptyPairs);
-    u.print("==> flightTable", flightTable);
-
     stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
 
-    // u.print("stationPairsMap", stationPairsMap);
-    // console.log(`==> stationPairs count: ${stationPairs.length}`);
-    // console.log(`==> ptyPairs (pairs): ${ptyPairs.length}`); // 144
-
-    // concatenate stationPairs and ptyPairs into allPairs
-    // set a completion ref
-    // for (const e in ptyPairs) {
-    // ptyPairs.forEach((e) => {
-    // allPairs.push(e);
-    // });
-
     const flightIdMap = u.createMapping(flightTable, "id");
-    // u.print("==> flightIdMap", flightIdMap);
 
-    // for (const r in flightIdMap) {
-    // const row_f = flightIdMap[r];
-    // const row_nf = flightIdMap[r.id_nf];
-    // u.print("row_f", row_f);
-    // if (row_f.in == undefined) {
-    // console.log("==> row_f.in is undefined");
-    // }
-    // console.log(`row_nf, in_nf: ${row_nf}`);
-    // }
+    // Create a list of feeder-outgoing pairs modeling connections
+    const synthPairs = syntheticConnections(ptyPairs);
 
     stationPairs.forEach((r) => {
       const row_f = flightIdMap[r.id_f];
@@ -475,29 +448,48 @@ const getEndPointFilesComputed = computed(() => {
 
 export { getEndPointFilesComputed };
 
-// export function getEndpointFiles() {
-//   console.log(`====> inside getEndpointFiles, status: ${getStatus.value}`);
-//   // Do not return anything from watchEffect. Use it to set refs when other
-//   // refs change
-//   watchEffect(() => {
-//     console.log(`watchEffect: getStatus.value: ${getStatus.value}`);
-//     if (getStatus.value) {
-//       console.log("======> status changed, data is retrieved");
-//       //return { flightTable, ptyPairs, stationPairs };
-//       // console.log(flightTable);
-//       // console.log(ptyPairs);
-//       // console.log(stationPairs);
-//       const obj = { a: flightTable, b: ptyPairs, c: stationPairs };
-//       // u.print("inside getEndpointFiles, obj: ", obj);
-//       // u.print("getEndPointComputed: ", getEndPointFilesComputed.value);
-//       return getEndPointFilesComputed.value;
-//       //return obj;
-//       //return { a: flightTable, b: ptyPairs, c: stationPairs };
-//     }
-//     return "not found";
-//   });
-//   return "NOT FOUND";
-// }
+export function syntheticConnections(ptyPairs) {
+  u.print("syntheticConnections", ptyPairs);
+  const synthPairs = []; // id_f, id_nf pairs
+  const idMap = u.createMapping(ptyPairs, "id_f");
+  const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
+  const arr_f = sortBy(ptyPairs, "sch_arr_f");
+  const earliest_dep_nf = dep_nf[0].sch_dep_nf;
+  const earliest_arr_f = arr_f[0].sch_arr_f;
+
+  dep_nf.forEach((r) => {
+    r.delta_arr_f = (r.sch_arr_f - earliest_arr_f) / 60000;
+    r.delta_dep_nf = (r.sch_dep_nf - earliest_dep_nf) / 60000;
+    console.log(`dep_nf, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
+  });
+  arr_f.forEach((r) => {
+    r.delta_arr_f = (r.sch_arr_f - earliest_arr_f) / 60000;
+    r.delta_dep_nf = (r.sch_dep_nf - earliest_dep_nf) / 60000;
+    console.log(`arr_f, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
+  });
+
+  // How to use the above structures to do KNN. Construct nearest 30 points for each node
+
+  console.log(`earliest_arr_f: ${earliest_arr_f}`);
+  console.log(`earliest_dep_nf: ${earliest_dep_nf}`);
+  const arrMap_f = u.createMapping(arr_f, "sch_arr_f");
+  const depMap_nf = u.createMapping(dep_nf, "sch_dep_nf");
+  u.print("=>arrMap_f", arrMap_f);
+  u.print("=>depMap_nf", depMap_nf);
+
+  const arr = [];
+  arr_f.forEach((r) => {
+    arr.push(r.sch_arr_f);
+  });
+  const dep = [];
+  dep_nf.forEach((r) => {
+    dep.push(r.sch_dep_nf);
+  });
+  u.print("=>dep", dep);
+  u.print("=>arr", arr);
+
+  return synthPairs;
+}
 
 // 2021-11-15 : WORK ON THIS CODE
 export function computeTails(ptyPairs, flightTable, id2flights) {
