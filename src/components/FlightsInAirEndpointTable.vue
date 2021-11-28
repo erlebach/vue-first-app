@@ -52,6 +52,8 @@ is returned from the endpoint. -->
       <!-- Consider a set of checkboxes to turn columns on and off -->
       <span>City (for graph): </span>
       <InputText type="text" v-model.trim="allPairsRef.city" />
+      <span>Initial Id to propagate: </span>
+      <InputText type="text" v-model.trim="initialId" />
     </template>
     <Column field="id_f" header="In id" :sortable="true" style="display: none;">
     </Column>
@@ -115,6 +117,7 @@ import {
   getEndpointFiles,
   getEndPointFilesComputed,
 } from "../Composition/text-processing.js";
+import { computePropagationDelays } from "../Composition/endPointLibrary.js";
 
 export default {
   components: { DataTable, Column, InputText, FlightsInAirHelp },
@@ -173,6 +176,8 @@ export default {
       cityEntered: "",
       timeEntered: null,
     });
+
+    const initialId = ref(null);
 
     const configuration = dp.setupConfiguration({
       container: "mountEndPointGraph",
@@ -286,12 +291,8 @@ export default {
     }
 
     watchEffect(() => {
-      // const city = ptyPairsRef.city;
-      // const time = ptyPairsRef.time;
-
       if (getStatus.value > 0) {
         u.print("allPairsref", allPairsRef);
-        // if (checkEntries(allPairsRef) && checkEntries(flightsRef)) {
         if (checkEntries(allPairsRef)) {
           if (flightsRef) {
             flightsRef.city = allPairsRef.city;
@@ -299,13 +300,13 @@ export default {
             console.log("===> after checkEntries allPairsRef");
             const data = getEndPointFilesComputed.value;
             const city = allPairsRef.city.toUpperCase();
-            // u.print("ptyPairs", ptyPairs);
-            console.log(`before drawGraph(city, data, city: ${city}`);
-            u.print("data", data);
+            // console.log(`before drawGraph(city, data, city: ${city}`);
+            // u.print("data", data);
             drawGraph(city, data);
           }
         }
       }
+      // Perhaps setStatus(false)? But that would start the watchEffect again, so bad idea.
     });
 
     function drawGraph(city, data) {
@@ -313,14 +314,11 @@ export default {
       const nb_tiers = 0; // not used
       const flights = data.flightTable;
       const allPairs = data.allPairs;
-      // u.print("data", data);
-      // u.print("allPairs", allPairs);
+
       const flightIdMap = u.createMapping(flights, "id");
       // I should combine ptyPairs with stationPairs to create allPairs array
       const edges = defineEdges(city, allPairs, nb_tiers);
       const nodes = defineNodes(city, edges, flights, nb_tiers);
-      // u.print("edges", edges);
-      // u.print("nodes", nodes);
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
@@ -333,42 +331,24 @@ export default {
       graph.data({ nodes, edges });
       graph.render();
 
-      // u.print("graph", graph);
-      // u.print("graph.edge", graph.edge);
-
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
 
       dp.colorByCity(graph);
       graph.render(); // not sure required
 
-      // u.print("nodes", nodes);
-      // u.print("edges", edges);
-      const nnodes = graph.getNodes();
-      const eedges = graph.getEdges();
-      // u.print("nnodes", nnodes);
-      // u.print("eedges", eedges);
-      // u.print("nnodes[0].id", nnodes[0].id); // undefined
-      // const idd = graph.findById(nodes[0].id); // found
-      // u.print("idd", idd);
-      // u.print("idd.id", idd.getModel());
-      // const iidd = graph.findById(nnodes[0].id); // undefined. WHY?
-      // u.print("iidd", iidd);
-
       dp.assignNodeLabelsNew(graph);
       graph.render();
       return;
-
-      // console.log("===> render graph");
-      // return;
     }
 
     watchEffect(() => {
-      u.print("watcheffect, getStatus", getStatus.value);
+      // u.print("watcheffect, getStatus", getStatus.value);
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
-        u.print("getStatus > 0, data: ", data.value);
+        // u.print("getStatus > 0, data: ", data.value);
 
+        u.print("==> data", data.value);
         flightsRef.table = data.value.flightTable;
         flightsRef.nbRows = data.value.flightTable.length;
 
@@ -378,6 +358,7 @@ export default {
         ptyPairs.forEach((r) => {
           r.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
         });
+
         // ptyPairsRef.table = ptyPairs;
         // ptyPairsRef.nbRows = ptyPairs.length;
 
@@ -402,53 +383,35 @@ export default {
           };
           stationIdPairs.push(row);
         });
+
         // stationPairsRef.table = stationIdPairs;
         // stationPairsRef.nbRows = stationIdPairs.length;
 
         const allPairs = data.value.allPairs;
         allPairsRef.table = allPairs;
         allPairsRef.nbRows = allPairs.length;
+
+        const { flightTable, inboundsMap, outboundsMap } = data.value;
+
+        const table = computePropagationDelays(
+          flightTable,
+          inboundsMap,
+          outboundsMap,
+          ptyPairs,
+          stationPairs,
+          allPairs,
+          initialId.value
+        );
       }
     });
-
-    // watch(load.isDataLoaded(), (curVal, old) => {
-    //   flightsInAir("2019-10-01", "14:00");
-    // });
-
-    // function flightsInAir(dtz, tmz) {
-    //   const timeShift = 8;
-    //   const nodes = load.data()[0].nodes;
-    //   // ANALYZE and FIX. Then clean.
-    //   const { keptFlights } = f.flightsInAir(nodes, dtz, tmz, timeShift);
-    //   flightTable.value = keptFlights;
-    //   nbRows.value = keptFlights.length;
-    // }
-
-    //onMounted(() => {
-    //console.log(">>>>> FlightInAir, Inside onMounted (this) <<<<<");
-    //});
-
-    // const confirmEntry = () => {
-    //   flightsInAir("2019-10-01", inputTime.value);
-    //   listedTime.value = inputTime.value;
-    // };
 
     return {
       ifhelp,
       flightsRef,
-      // ptyPairsRef,
       allPairsRef,
-      // stationPairsRef,
-      //nodes,
       inputTime,
       listedTime,
-      // confirmEntry,
-      // arrStatusStyle,
-      // inFlightStyle,
-      // arrDelayStyle,
-      // depDelayStyle,
-      // rotStyle,
-      //overlayref,
+      initialId,
     };
   },
 };

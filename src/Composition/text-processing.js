@@ -20,6 +20,16 @@ let ptyPairs = [];
 let stationPairs = [];
 let allPairs = []; // combine ptyPairs and stationPairs
 
+// incomingsMap[outgoing] is the list of associated feeder flights
+// Note that there is no guarantee that there will be a feeder flight with the same tail as the outgoing tail number.
+// Most of the time, there will be.
+const inboundsMap = {};
+
+// outboundsMap[feeder] is the list of associated outbound flights
+// Note that there is no guarantee that there will be an outgoing flight with the same tail as the incoming flight.
+// Most of the time, there will be.
+const outboundsMap = {};
+
 const status = ref(null);
 
 const getStatus = computed(() => status.value);
@@ -352,7 +362,9 @@ function saveData() {
     const flightIdMap = u.createMapping(flightTable, "id");
 
     // Create a list of feeder-outgoing pairs modeling connections
-    const synthPairs = syntheticConnections(ptyPairs);
+    const { inboundsMap, outboundsMap } = syntheticConnections(ptyPairs);
+    u.print("after return from synth, inboundsMap", inboundsMap);
+    u.print("after return from synth, outboundsMap", outboundsMap);
 
     stationPairs.forEach((r) => {
       const row_f = flightIdMap[r.id_f];
@@ -443,13 +455,21 @@ function saveData() {
 }
 
 const getEndPointFilesComputed = computed(() => {
-  return { flightTable, ptyPairs, stationPairs, allPairs };
+  return {
+    flightTable,
+    ptyPairs,
+    stationPairs,
+    allPairs,
+    inboundsMap,
+    outboundsMap,
+  };
 });
 
 export { getEndPointFilesComputed };
 
 export function syntheticConnections(ptyPairs) {
-  u.print("syntheticConnections", ptyPairs);
+  console.time("Synthetic execution time");
+  // u.print("syntheticConnections", ptyPairs);
   const synthPairs = []; // id_f, id_nf pairs
   const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
   const arr_f = sortBy(ptyPairs, "sch_arr_f");
@@ -459,20 +479,14 @@ export function syntheticConnections(ptyPairs) {
   const earliest_arr_f = arr_f[0].sch_arr_f;
   const earliest = Math.min(earliest_dep_nf, earliest_arr_f);
 
-  const in_arrivals = [];
   arr_f.forEach((r) => {
     r.delta_arr_f = (r.sch_arr_f - earliest) / 60000;
     r.delta_dep_nf = (r.sch_dep_nf - earliest) / 60000;
-    in_arrivals.push(r);
-    console.log(`arr_f, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
   });
 
-  const out_departures = [];
   dep_nf.forEach((r) => {
     r.delta_arr_f = (r.sch_arr_f - earliest) / 60000;
     r.delta_dep_nf = (r.sch_dep_nf - earliest) / 60000;
-    out_departures.push(r);
-    console.log(`dep_nf, arr/dep: ${r.delta_arr_f}, ${r.delta_dep_nf}`);
   });
 
   const feederIds = [];
@@ -484,16 +498,15 @@ export function syntheticConnections(ptyPairs) {
   dep_nf.forEach((r) => {
     outgoingIds.push(r.id_nf);
   });
-  u.print("feederIds", feederIds);
-  u.print("outgoingIds", outgoingIds);
 
   const idfMap = u.createMapping(ptyPairs, "id_f");
   const idnfMap = u.createMapping(ptyPairs, "id_nf");
 
   // For each feeder ids, identify the 20 outgoing flights that depart closest to the time of arrival
   // For now: Brute force. Per day, about 150 flights, so 150*150 = 22,500 combinations. Still low.
+
   feederIds.forEach((id_f) => {
-    console.log(`feeder: ${id_f}`);
+    // console.log(`feeder: ${id_f}`);
     const deltas = [];
     const keep_outgoings = [];
     const keep_deltas = [];
@@ -514,36 +527,30 @@ export function syntheticConnections(ptyPairs) {
       keep_outgoings.length = 20;
       keep_deltas.length = 20;
     }
-    u.print(`   kept outgoing ids`, keep_outgoings);
-    u.print(`   kept deltas`, keep_deltas);
+    // u.print(`   kept outgoing ids`, keep_outgoings);
+    outboundsMap[id_f] = keep_outgoings;
+    // u.print(`   kept deltas`, keep_deltas);
     // Keep top 20 greater than 45 min (to give PAX time to connect)
   });
 
-  // How to use the above structures to do KNN. Construct nearest 30 points for each node
-
-  console.log(`earliest_arr_f: ${earliest_arr_f}`);
-  console.log(`earliest_dep_nf: ${earliest_dep_nf}`);
-  u.print("in_arrivals", in_arrivals);
-  u.print("out_departures", out_departures);
-
-  const arrMap_f = u.createMapping(arr_f, "sch_arr_f");
-  const depMap_nf = u.createMapping(dep_nf, "sch_dep_nf");
-  u.print("=>arrMap_f", arrMap_f);
-  u.print("=>depMap_nf", depMap_nf);
-
-  const arr = [];
-  arr_f.forEach((r) => {
-    arr.push(r.sch_arr_f);
+  ptyPairs.forEach((r) => {
+    inboundsMap[r.id_nf] = [];
   });
-  const dep = [];
-  dep_nf.forEach((r) => {
-    dep.push(r.sch_dep_nf);
-  });
-  u.print("=>dep", dep);
-  u.print("=>arr", arr);
 
-  return synthPairs;
+  for (const id_in in outboundsMap) {
+    const outbounds = outboundsMap[id_in];
+
+    outbounds.forEach((id_out) => {
+      inboundsMap[id_out].push(id_in);
+    });
+  }
+
+  console.timeEnd("Synthetic execution time");
+
+  return { inboundsMap, outboundsMap };
 }
+
+//-------------------------------------------------------------------------------------
 
 // 2021-11-15 : WORK ON THIS CODE
 export function computeTails(ptyPairs, flightTable, id2flights) {

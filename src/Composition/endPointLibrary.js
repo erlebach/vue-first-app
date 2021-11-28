@@ -1,18 +1,25 @@
+/* eslint-disable no-constant-condition */
 import * as r from "../Composition/Tableref.js";
-import * as u from "../Composition/utils.js";
+// might not be needed
 import { computeFeeders } from "../Composition/computeFeeders.js";
-import { propagation_new } from "../Composition/propagation_new.js";
-import { rigidModel } from "../Composition/rigidModel.js";
+import { propagation_new } from "../Composition/endpointPropagationNew.js";
+import { rigidModel } from "../Composition/endpointRigidModel.js";
 
 //---------------------------------------------------------------------
-export function computePropagationDelays(dFSU, dTails, dBookings, initialID) {
+export function computePropagationDelays(
+  flightTable,
+  inboundsMap,
+  outboundsMap,
+  ptyPairs,
+  stationPairs,
+  allPairs,
+  initialID
+) {
+  // Export function computePropagationDelays(dFSU, dTails, dBookings, initialID) {
   // include tails in bookings
 
-  u.print("Enter computePropagationDelays, dFSU", dFSU.value);
-  u.print("Enter computePropagationDelays, dTails", dTails.value);
-  u.print("Enter computePropagationDelays, dBookings", dBookings.value);
-
-  // Figure out what fields are required for rigidModel to work, and provide them exactly as needed
+  // The easiest way to proceed would be to construct dTails, dBookings, ... to make rigidModel work.
+  // Later on I can simplify.
 
   const id = initialID;
   dTails.value.forEach((tail) => {
@@ -25,10 +32,20 @@ export function computePropagationDelays(dFSU, dTails, dBookings, initialID) {
 
   // Propagation is recursive. An error might lead to infinite calls, so stack overflow
   const count = [0];
-  const { edges } = propagation_new(dFSU.value, dTails.value, dBookings.value);
+  const { edges } = propagation_new(
+    flightTable, // dFSU
+    inboundsMap,
+    outboundsMap,
+    ptyPairs,
+    allPairs, // dTails
+    stationPairs,
+    id
+  );
 
   // Value returned is not a ref (at this time)
   // These feeders should be checked against the Graph and table displays
+
+  // computeFeeders might not be required
   let { bookings_in, bookings_out, feeders } = computeFeeders(
     dFSU.value,
     dBookings.value
@@ -46,7 +63,6 @@ export function computePropagationDelays(dFSU, dTails, dBookings, initialID) {
     initialArrDelay, // applied to id
     id
   );
-
   r.setTable(delayObj); // nodes, edges
   const delayNodes = delayObj.nodes;
   // const level2ids = delayNodes.level2ids;
