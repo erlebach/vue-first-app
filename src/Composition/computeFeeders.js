@@ -34,5 +34,11 @@ export function computeFeeders(fsu, bookings) {
     }
   });
 
+  console.log("INSIDE computeFeeders");
+  u.print("bookings", bookings);
+  u.print("bookings_in", bookings_in);
+  u.print("bookings_out", bookings_out);
+  u.print("feeders", feeders);
+
   return { bookings_in, bookings_out, feeders };
 }

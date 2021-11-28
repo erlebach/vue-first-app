@@ -41,15 +41,17 @@ function initializeEdges(bookings, FSUm) {
   // PROBABLY  AN ERROR IN HERE. CHECK OUT FIELDS OF VARIOUS TABLES, 2021-11-27
 
   bookings.forEach((e) => {
+    // u.print("initializeEdges, bookings row", e);
     // u.print("bookings.forEach, e", e);
     e.fsu_f = FSUm[e.id_f];
     e.fsu_nf = FSUm[e.id_nf];
 
     // rotation only exists for fixed tails
-    if (e.tail) {
-      // Station
-      setupEdgeProps(e, FSUm);
-    } else if (e.TAIL_f === e.TAIL_nf) {
+    //if (e.tail) {
+    // Station
+    //setupEdgeProps(e, FSUm);
+    //} else if (e.TAIL_f === e.TAIL_nf) {
+    if (e.tail_f === e.tail_nf) {
       // PTY with tail turnaround and passengers
       setupEdgeProps(e, FSUm);
     } else {
@@ -73,7 +75,7 @@ function initializeEdges(bookings, FSUm) {
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 function initializeNodes(FSUm, bookings_in, bookings_out) {
-  // console.log("inside initializeNods");
+  console.log("inside initializeNods");
   Object.values(FSUm).forEach((n) => {
     n.inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
     n.outbounds = bookings_out[n.id]; // could be undefined (from PTY or Sta)
@@ -113,6 +115,7 @@ function initializeNodes(FSUm, bookings_in, bookings_out) {
       n.ACTSlackP = n.ACTSlack;
       n.rotSlack = 0;
       n.rotSlackP = n.rotSlack;
+      n.gordon = "NONAME"; // to test Developer environemnt in Chrome
 
       // const calcPlannedRot =
       const calcPlannedRot = n.ROTATION_PLANNED_TM;
@@ -128,8 +131,8 @@ function initializeNodes(FSUm, bookings_in, bookings_out) {
     }
     n.slack = Math.min(n.rotSlack, n.ACTSlack);
     n.slackP = n.slack;
-    n.depDelayP = 0; // If flight to study has no delay, it will have no impact.
-    n.arrDelayP = 0;
+    n.depDelayP = n.depDelay; // If flight to study has no delay, it will have no impact.
+    n.arrDelayP = n.arrDelay; // Best guess
   });
 }
 
@@ -286,8 +289,11 @@ export function rigidModel(
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
 
   u.print("=> rigidModel, startingId", startingId);
+  u.print("=> FSUm", FSUm);
 
   if (initialArrDelayP) {
+    console.log(`startingId: ${startingId}`);
+    u.print(`FSUm[${startingId}]`, FSUm[startingId]);
     FSUm[startingId].arrDelayP = initialArrDelayP;
     FSUm[startingId].rotSlackP -= initialArrDelayP;
   } else {
@@ -328,6 +334,19 @@ export function rigidModel(
   let count = 0;
 
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
+
+  console.log("TRAVERSE GRAPH, endpointRigidModel");
+  console.log(`id: ${id}`);
+  u.print("bookings_in", bookings_in);
+  u.print("bookings_out", bookings_out);
+  u.print("bookings", bookings);
+  u.print("FSUm", FSUm);
+  // DEBUG
+  // bookings.forEach((r) => {
+  //   if (r.id_f === id || r.id_nf === id) {
+  //     u.print("MIA row in bookings", r);
+  //   }
+  // });
 
   const idsTraversed = [];
 
@@ -395,11 +414,13 @@ function updateInboundEdges(outboundNode, bookings_in) {
   const node = outboundNode; // feeder node
 
   const inboundEdges = bookings_in[outboundNode.id];
+  // u.print("inboundEdge:", inboundEdges);
   if (inboundEdges === undefined) {
     return null;
   }
 
   inboundEdges.forEach((e) => {
+    // u.print("updateInboundEdges, inboundEdge", e);
     e.ACTAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
 
     // ACTAvailable is based on scheduled departure and arrival times
@@ -408,7 +429,7 @@ function updateInboundEdges(outboundNode, bookings_in) {
     e.ACTSlackP = e.ACTAvailableP - 30; // harcoded, but really, a function of city/airport
 
     // update rotation
-    if (e.TAIL_f === e.TAIL_nf) {
+    if (e.tail_f === e.tail_nf) {
       e.rotSlackP = e.rotSlack - e.arrDelayP;
     }
   });
@@ -473,6 +494,7 @@ function updateOutboundNode(node, bookings_in) {
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookings_in, FSUm) {
   // id is an incoming flight (either to PTY or to Sta)
+  // console.log("INSIDE propDelayNew");
   updateInboundEdges(FSUm[id], bookings_in);
   updateOutboundNode(FSUm[id], bookings_in);
 

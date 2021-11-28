@@ -1,10 +1,10 @@
 <template>
   <!-- <div class="p-d-flex flex-start"> -->
   <div>
-    <FlightsInAirTable filePath="./data/bookings_oneday.json" />
+    <!-- <FlightsInAirTable filePath="./data/bookings_oneday.json" /> -->
     <FlightsInAirEndpointTable width="1200" height="800" />
-    <DelayPropagationTable tiers="2" />
-    <DelayPropagationGraph width="1200" height="800" />
+    <!-- <DelayPropagationTable tiers="2" /> -->
+    <!-- <DelayPropagationGraph width="1200" height="800" /> -->
   </div>
   <!-- </div> -->
 </template>
@@ -17,9 +17,9 @@ import FlightsInAirEndpointTable from "./FlightsInAirEndpointTable.vue";
 
 export default {
   components: {
-    DelayPropagationTable,
-    DelayPropagationGraph,
-    FlightsInAirTable,
+    // DelayPropagationTable,
+    // DelayPropagationGraph,
+    // FlightsInAirTable,
     FlightsInAirEndpointTable,
   },
 };

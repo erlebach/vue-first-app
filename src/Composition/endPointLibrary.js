@@ -20,19 +20,95 @@ export function computePropagationDelays(
   // include tails in bookings
 
   console.log(`computePropagationDelays, initialID: ${initialID}`);
+  u.print("allPairs", allPairs);
 
   const dFSU = [];
   const dTails = [];
   const dBookings = [];
 
+  const allPairsMap_f = u.createMapping(allPairs, "id_f");
+  const allPairsMap_nf = u.createMapping(allPairs, "id_nf");
+
+  // const dFSU_copy = [...dFSU]; // empty array
+  //  flightTableRow: in/off/on/out are all 0?  (IS THAT TRUE?) WHY?
   flightTable.forEach((r) => {
+    u.print("flightTable row: ", r);
+    //
+    let arr_delay_minutes = -1;
+    if (r.in > 0) {
+      arr_delay_minutes = (r.in - r.sch_arr) / 60000; // ms to min
+    } else if (r.eta > 0) {
+      arr_delay_minutes = (r.eta - r.sch_arr) / 60000;
+    } else {
+      arr_delay_minutes = 0;
+    }
+    // console.log(`arr_delay_minutes: ${arr_delay_minutes}`);
+    //u.print("allPairsMap_f[r.id]", allPairsMap_f[r.id]);
+
+    // rotation based on the departing flight in the incoming-outgoing flight pair.
+    const pairRow = allPairsMap_nf[r.id];
+    let plannedRotation = 10000;
+    if (pairRow !== undefined) {
+      console.log(pairRow);
+      plannedRotation = pairRow.plannedRotation;
+      // console.log(`allPairsMap_f, rotation_planned: ${plannedRotation}`);
+    }
+
+    // Initial values for departure and arrival delays
+    // If plane has not departed, set delays to zero
+    // If plane is in the air, set depDelay based on (OUT-sch_dep), arrDelay to ETA - sch_dep (or 0 if no ETA)
+    // If plane has landed, set depDelay to (OUT-sch_dep), arrDelay to (IN-sch_arr)
+    let depDelay = 0;
+    let arrDelay = 0;
+    if (r.out !== 0) {
+      depDelay = (r.out - r.sch_dep) / 60000; // min
+    } else if (r.etd !== 0) {
+      depDelay = (r.etd - r.sch_dep) / 60000; // min
+    } else {
+      depDelay = 0;
+    }
+    if (r.in !== 0) {
+      arrDelay = (r.in - r.sch_arr) / 60000; // min
+    } else if (r.eta !== 0) {
+      arrDelay = (r.eta - r.sch_arr) / 60000; // min
+    } else {
+      arrDelay = 0;
+    }
+
     dFSU.push({
       id: r.id,
-      SCH_ARR_DTMZ: 0, // ns
-      SCH_DEP_DTMZ: 0, // ns
-      ROTATION_PLANNED: 0, // min
+      arrDelay: arrDelay,
+      depDelay: depDelay,
+      SCH_ARR_DTMZ: r.sch_arr * 1000, // ns
+      SCH_DEP_DTMZ: r.sch_dep * 1000, // ns
+      ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
+      ARR_DELAY_MINUTES: arr_delay_minutes,
+      TAIL: r.tail,
+      status: r.status, // not in original dFSU
     });
   });
+
+  const dFSU_copy = [...dFSU];
+  u.print("dFSU_copy", dFSU_copy); // contains values of FSU defined later. HOW IS THAT POSSIBLE (inside chrome dev)
+
+  // const dFSU_copy = [];
+  // dFSU.forEach((r) => {
+  //   u.print("dFSU row", r);
+  //   dFSU_copy.push({
+  //     id: r.id,
+  //     SCH_ARR_DTMZ: r.SCH_ARR_DTMZ,
+  //     SCH_DEP_DTMZ: r.SCH_DEP_DTMZ,
+  //     ROTATION_PLANNED: r.ROTATION_PLANNED,
+  //     ARR_DELAY_MINUTES: r.ARR_DELAY_MINUTES,
+  //     TAIL: r.TAIL,
+  //   });
+  // });
+  u.print(`dFSU_copy, gordon: ${dFSU_copy.gordon}`);
+  u.printAttributes("dFSU_copy.ARR_DELAY_MINUTES", dFSU_copy, [
+    "ARR_DELAY_MINUTES",
+  ]);
+  console.log("dfSU, dTail, dBookings");
+  u.print("dFSU", dFSU);
 
   allPairs.forEach((r) => {
     dTails.push({
@@ -47,24 +123,61 @@ export function computePropagationDelays(
 
   // flightTable.forEach((r) => console.log(`r.id: ${r.id}`);
 
+  // inboundsMap and outboundsMap are based on synthetic data
+
   for (let id_f in outboundsMap) {
     // console.log(`id_f: ${id_f}`);
+    const r_f = flightTableMap[id_f];
     outboundsMap[id_f].forEach((id_nf) => {
       // console.log(`id_nf: ${id_nf}`);
-      const r = flightTableMap[id_nf];
-      // u.print("outbounds row", r);
+      const r_nf = flightTableMap[id_nf];
       dBookings.push({
-        id_f: r.id,
-        id_nf: r.id,
-        tail_f: r.tail,
-        tail_nf: r.tail,
-        SCH_ARR_DTMZ: 0, // ns
-        SCH_DEP_DTMZ: 0, // ns
+        id_f: r_f.id,
+        id_nf: r_nf.id,
+        tail_f: r_f.tail,
+        tail_nf: r_nf.tail,
+        SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
+        SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
+        SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
+        SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
       });
     });
   }
 
-  u.print("dFSU", dFSU);
+  for (let id_f in inboundsMap) {
+    // console.log(`id_f: ${id_f}`);
+    const r_f = flightTableMap[id_f];
+    inboundsMap[id_f].forEach((id_nf) => {
+      // console.log(`id_nf: ${id_nf}`);
+      const r_nf = flightTableMap[id_nf];
+      dBookings.push({
+        id_f: r_f.id,
+        id_nf: r_nf.id,
+        tail_f: r_f.tail,
+        tail_nf: r_nf.tail,
+        SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
+        SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
+        SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
+        SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
+      });
+    });
+  }
+
+  allPairs.forEach((r) => {
+    //u.print("allPairs row", r);
+    dBookings.push({
+      id_f: r.id_f,
+      id_nf: r.id_nf,
+      tail_f: r.tail,
+      tail_nf: r.tail,
+      tail: r.tail,
+      SCH_DEP_DTMZ_f: r.sch_dep_f * 1000, // ns
+      SCH_ARR_DTMZ_f: r.sch_arr_f * 1000, // ns
+      SCH_DEP_DTMZ_nf: r.sch_dep_nf * 1000, // ns
+      SCH_ARR_DTMZ_nf: r.sch_arr_nf * 1000, // ns
+    });
+  });
+
   u.print("dTails", dTails);
   u.print("dBookings", dBookings);
 
@@ -118,6 +231,15 @@ export function computePropagationDelays(
       tail: d.TAIL,
     });
   });
+
+  // QUESTION: How can all elements of dFSU have arrDelayP and depDelayP set?
+  u.printAttributes("dFSU dep/arr delays", dFSU, [
+    "depDelay",
+    "depDelayP",
+    "arrDelay",
+    "arrDelayP",
+    "status",
+  ]);
 
   console.log("id2level");
   console.log(id2level);

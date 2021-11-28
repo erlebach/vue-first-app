@@ -177,7 +177,7 @@ export default {
       timeEntered: null,
     });
 
-    const initialId = ref("2021-11-15MIAPTY10:130173");
+    const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
 
     const configuration = dp.setupConfiguration({
       container: "mountEndPointGraph",
@@ -402,6 +402,10 @@ export default {
           allPairs,
           initialId.value
         );
+        u.print("computePropagationTable results, table", table);
+
+        // Why are delays all 60.7...
+        u.printAttributes("arrDelays", table, ["arrDelay", "depDelay"]);
       }
     });
 

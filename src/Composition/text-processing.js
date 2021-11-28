@@ -110,10 +110,14 @@ function getRow(e) {
     orig_nf: e.NEXT_ORIG_CD,
     dest_f: e.DEST_CD,
     dest_nf: e.NEXT_DEST_CD,
-    eta_f: e.ETA,
-    eta_nf: e.ETA_N_FLT,
-    etd_f: e.ETD,
-    etd_nf: e.ETD_N_FLT,
+    eta_f: datetimeZ2ms(e.ETA),
+    eta_nf: datetimeZ2ms(e.ETA_N_FLT),
+    eta_nf_z: e.ETA_N_FLT,
+    eta_f_z: e.ETA,
+    etd_f: datetimeZ2ms(e.ETD),
+    etd_nf: datetimeZ2ms(e.ETD_N_FLT),
+    etd_f_z: e.ETD,
+    etd_nf_z: e.ETD_N_FLT,
     sch_dep_f: datetimeZ2ms(e.SCH_DEP_DTMZ),
     sch_arr_f: datetimeZ2ms(e.SCH_ARR_DTMZ),
     sch_dep_nf: datetimeZ2ms(e.NEXT_STD),
@@ -289,7 +293,7 @@ const GetTableData = () => {
     "http://35.223.143.175/api/dmhit",
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
-      arr_DTL: "2021-11-15",
+      arr_DTL: "2021-11-28",
       days: 1,
     },
     {
@@ -316,11 +320,45 @@ function saveData() {
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
 
+    const inRows = []; // empty. BECAUSE ALL PLANES LANDED. STRANGE.
+    data.forEach((r) => {
+      if (
+        r.CANCELLED === "0" &&
+        (r.IN_P_FLT === null ||
+          r.IN_N_FLT === null ||
+          r.OUT_P_FLT === null ||
+          r.OUT_N_FLT === null) &&
+        r.ORIG_CD !== r.DEST_CD &&
+        r.NEXT_ORIG_CD !== r.NEXT_DEST_CD
+      ) {
+        console.log(r.IN_P_FLT);
+        const in_f = r.IN_P_FLT != null ? datetimeZ2ms(r.IN_P_FLT) : 0;
+        inRows.push({
+          in_f: datetimeZ2ms(r.IN_P_FLT),
+          in_nf: datetimeZ2ms(r.IN_N_FLT),
+          out_f: datetimeZ2ms(r.OUT_P_FLT),
+          out_nf: datetimeZ2ms(r.OUT_N_FLT),
+          //cancelled: r.CANCELLED,
+          orig_f: r.ORIG_CD,
+          dest_f: r.DEST_CD,
+          orig_nf: r.NEXT_ORIG_CD,
+          dest_nf: r.NEXT_DEST_CD,
+        });
+      }
+    });
+    u.print("inRows", inRows);
+    console.log(`data.length: ${data.length}`);
+
     const inboundNotDeparted = inboundFlightsNotDeparted(data);
     const inboundInFlight = inboundFlightsInAir(data);
     const inboundAtPTY = inboundFlightsAtPTY(data);
     const outboundInFlight = outboundFlightsInAir(data);
     const outboundLanded = outboundFlightsLanded(data);
+    console.log(`inboundNotDeparted.length: ${inboundNotDeparted.length}`);
+    console.log(`inboundInFlight.length: ${inboundInFlight.length}`);
+    console.log(`inboundAtPTY.length: ${inboundAtPTY.length}`);
+    console.log(`outboundInFlight.length: ${outboundInFlight.length}`);
+    console.log(`outboundLanded.length: ${outboundLanded.length}`);
     // Only non-cancelled flights
     const allFlights = [
       // 135 flights
@@ -340,7 +378,7 @@ function saveData() {
 
     // allFlights contains pairs of flights at PTY
     u.print("saveData, before return, allFlights", allFlights);
-    // console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
+    console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
 
     // remove pairs if dest != orig for either _f or _nf
     ptyPairs = [];
@@ -365,6 +403,7 @@ function saveData() {
     const { inboundsMap, outboundsMap } = syntheticConnections(ptyPairs);
     u.print("after return from synth, inboundsMap", inboundsMap);
     u.print("after return from synth, outboundsMap", outboundsMap);
+    u.print("after return from synth, flightTable", flightTable);
 
     stationPairs.forEach((r) => {
       const row_f = flightIdMap[r.id_f];
@@ -638,7 +677,7 @@ function computeFlightList(ptyPairs) {
   // ALL THESE FLIGHTSS APPEAR TO HAVE LANDED. Strange.
   // This must have to do with my removing certain rows
   flights.forEach((r) => {
-    // console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
+    console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
     r.depDelayP = (r.on - r.sch_dep) / 60000; // 60000 ms per minute
     r.arrDelayP = (r.in - r.sch_arr) / 60000;
     r.schDepTMZ = "undef";

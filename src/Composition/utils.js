@@ -8,6 +8,22 @@ export function print(strg, val) {
   console.log(val);
 }
 
+export function printAttributes(msg, table, attrList) {
+  const outArray = [];
+  table.forEach((r) => {
+    const obj = {};
+    // print("printAttributes, row: ", r);
+    attrList.forEach((attr) => {
+      // avoid use of eval (security risk)
+      obj[attr] = r[attr]; //r[Function("return " + r[attr])()];
+      // console.log(`obj[attr]: ${r[attr]},  ${obj[attr]}`);
+    });
+    // print("obj", obj);
+    outArray.push(obj);
+  });
+  print(msg, outArray);
+}
+
 export function swap(arra) {
   [arra[0], arra[arra.length - 1]] = [arra[arra.length - 1], arra[0]];
   return arra;
