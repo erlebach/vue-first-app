@@ -10,12 +10,15 @@ import * as tier from "./Tierref.js";
 //-------------------------------------------------------
 function setupEdgeProps(e, FSUm) {
   const nano2min = 1 / 1e9 / 60;
+  // u.print("=> setupEdgeProps, e", e); // e.id_f, e.id_f not defined. WHY?
+  // u.print("=> setupEdgeProps, FSUm", FSUm);
   e.fsu_f = FSUm[e.id_f];
   e.fsu_nf = FSUm[e.id_nf];
   // rotation only exists for fixed tails
 
   // CONSIDER using scheduled ACT available on all flights since we do not know the future.
   //const actAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // same as calcAvailRot
+  // u.print("=> setupEdgeProps, e", e);
   const actAvailable =
     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
 
@@ -29,10 +32,16 @@ function initializeEdges(bookings, FSUm) {
   const nano2min = 1 / 1e9 / 60;
 
   const fsu_undefined = Object.create(null);
+  // Create two counters
   fsu_undefined._f = 0;
   fsu_undefined._nf = 0;
 
+  // u.print("initializeEdges, bookings", bookings);
+
+  // PROBABLY  AN ERROR IN HERE. CHECK OUT FIELDS OF VARIOUS TABLES, 2021-11-27
+
   bookings.forEach((e) => {
+    // u.print("bookings.forEach, e", e);
     e.fsu_f = FSUm[e.id_f];
     e.fsu_nf = FSUm[e.id_nf];
 
@@ -275,6 +284,8 @@ export function rigidModel(
 
   // Initial Node. Add a delay of initialArrDelayPa
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
+
+  u.print("=> rigidModel, startingId", startingId);
 
   if (initialArrDelayP) {
     FSUm[startingId].arrDelayP = initialArrDelayP;

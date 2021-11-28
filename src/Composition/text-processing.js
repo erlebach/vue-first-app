@@ -340,7 +340,7 @@ function saveData() {
 
     // allFlights contains pairs of flights at PTY
     u.print("saveData, before return, allFlights", allFlights);
-    console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
+    // console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
 
     // remove pairs if dest != orig for either _f or _nf
     ptyPairs = [];
@@ -638,7 +638,7 @@ function computeFlightList(ptyPairs) {
   // ALL THESE FLIGHTSS APPEAR TO HAVE LANDED. Strange.
   // This must have to do with my removing certain rows
   flights.forEach((r) => {
-    console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
+    // console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
     r.depDelayP = (r.on - r.sch_dep) / 60000; // 60000 ms per minute
     r.arrDelayP = (r.in - r.sch_arr) / 60000;
     r.schDepTMZ = "undef";

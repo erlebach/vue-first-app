@@ -17,13 +17,7 @@ function findIndex(fsu, idStart) {
     if_nf: {id}
 
 */
-export function propagation_new(
-  fsu,
-  tails,
-  bookings,
-  count,
-  id // root we wish to study (impact on network delays)
-) {
+export function propagation_new(fsu, tails, bookings) {
   const edges = [];
 
   bookings.forEach((b) => {

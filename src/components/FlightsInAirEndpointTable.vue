@@ -177,7 +177,7 @@ export default {
       timeEntered: null,
     });
 
-    const initialId = ref(null);
+    const initialId = ref("2021-11-15MIAPTY10:130173");
 
     const configuration = dp.setupConfiguration({
       container: "mountEndPointGraph",
