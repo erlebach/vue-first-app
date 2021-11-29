@@ -291,6 +291,11 @@ export function rigidModel(
   u.print("=> rigidModel, startingId", startingId);
   u.print("=> FSUm", FSUm);
 
+  if (FSUm[startingId] === undefined) {
+    // Should be done higher up the chain
+    return null;
+  }
+
   if (initialArrDelayP) {
     console.log(`startingId: ${startingId}`);
     u.print(`FSUm[${startingId}]`, FSUm[startingId]);
@@ -413,7 +418,12 @@ function updateInboundEdges(outboundNode, bookings_in) {
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
   const node = outboundNode; // feeder node
 
+  u.print("updateInboundEdges, (feeder) outboundNode", outboundNode);
+  //u.print("updateInboundEdges, bookings_in", bookings_in);
+
   const inboundEdges = bookings_in[outboundNode.id];
+  u.print("updateInboundEdges, inboundEdges", inboundEdges);
+
   // u.print("inboundEdge:", inboundEdges);
   if (inboundEdges === undefined) {
     return null;

@@ -215,6 +215,11 @@ export function computePropagationDelays(
     initialArrDelay, // applied to id
     id
   );
+
+  if (delayObj === undefined || delayObj === null) {
+    return undefined;
+  }
+  u.print("delayObj", delayObj);
   r.setTable(delayObj); // nodes, edges
   const delayNodes = delayObj.nodes;
   // const level2ids = delayNodes.level2ids;
@@ -222,12 +227,16 @@ export function computePropagationDelays(
   console.log("delayNodes");
   console.log(delayNodes);
 
+  // QUESTION: How can any planes in the future graph starting from startingId have landed? IMPOSSIBLE
+
   const table = [];
   delayNodes.forEach((d) => {
     table.push({
       id: d.id,
-      depDelay: d.depDelayP,
-      arrDelay: d.arrDelayP,
+      depDelay: d.depDelay,
+      arrDelay: d.arrDelay,
+      depDelayP: d.depDelayP,
+      arrDelayP: d.arrDelayP,
       tail: d.TAIL,
     });
   });

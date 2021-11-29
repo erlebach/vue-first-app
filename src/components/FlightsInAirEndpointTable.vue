@@ -21,6 +21,7 @@ is returned from the endpoint. -->
       <!-- Consider a set of checkboxes to turn columns on and off -->
       <span>City (for graph): </span>
       <InputText type="text" v-model.trim="flightsRef.city" />
+      <h5>Advanced with Templating, Filtering and Multiple Selection</h5>
     </template>
     <Column field="id" header="id" :sortable="true" style="display: none;">
     </Column>
@@ -33,13 +34,16 @@ is returned from the endpoint. -->
     <Column field="sch_arr_z" header="sch_arr" :sortable="true"> </Column>
     <Column field="eta" header="ETA" :sortable="true"> </Column>
   </DataTable>
-
+  <!-- ---------------------------------------------------------- -->
   <DataTable
     :value="allPairsRef.table"
     :scrollable="true"
-    :resizableColumns="true"
+    resizableColumns="true"
     scrollHeight="300px"
+    expandedRows="expandedRows"
+    columnResizeMode="expand"
   >
+    <!-- stateStorage and stateKey not saving column size across invocations -->
     <template #header>
       <h2>
         All Flight Pairs through (endpoint), {{ allPairsRef.nbRows }} entries
@@ -53,7 +57,84 @@ is returned from the endpoint. -->
       <span>City (for graph): </span>
       <InputText type="text" v-model.trim="allPairsRef.city" />
       <span>Initial Id to propagate: </span>
-      <InputText type="text" v-model.trim="initialId" />
+      <InputText type="text" v-model.trim="initialId" style="width: 3in;" />
+      <!-- ListBox gives "No available options" -->
+      <span>Enter </span>
+      <!-- I want the left box to the right of last span -->
+      <ListBox
+        v-model="selectedFlightIds"
+        :options="flightIds"
+        :multiple="false"
+        :filter="true"
+        optionLabel="name"
+        listStyle="max-height:100px"
+        style="width:2.0in"
+        filterPlaceholder="Search"
+      >
+        <template #option="slotProps">
+          <div class="name-item">
+            <div>{{ slotProps.option.name }}</div>
+          </div>
+        </template>
+      </ListBox>
+      <h2>{{ selectedFlightIds }}</h2>
+      <!-- remove when done -->
+    </template>
+    <Column
+      field="id_f"
+      header="In id"
+      :sortable="true"
+      header-style="width:4in;"
+      style="width:4in;"
+    >
+    </Column>
+    <Column
+      field="id_nf"
+      header="Out id"
+      :sortable="true"
+      style="display: none;"
+    >
+    </Column>
+    <Column field="orig_f" header="Org" :sortable="true" :style="col"> </Column>
+    <Column field="dest_f" header="Stop" :sortable="true" :style="col">
+    </Column>
+    <Column field="dest_nf" header="Dst" :sortable="true"> </Column>
+    <Column field="fltnumPair" header="Flt#s" :sortable="true"> </Column>
+    <Column field="status_f" header="StatusIn" :sortable="true"> </Column>
+    <Column field="status_nf" header="Statusout" :sortable="true"> </Column>
+    <Column field="tail" header="Tail" :sortable="true"> </Column>
+
+    <Column field="sch_dep_z_f" header="sch_dep_f" :sortable="true"> </Column>
+    <Column field="sch_arr_z_f" header="sch_arr_f" :sortable="true"> </Column>
+    <Column field="est_rotation" header="estRot(min)" :sortable="true">
+    </Column>
+    <Column field="sch_dep_z_nf" header="sch_dep_nf" :sortable="true"> </Column>
+    <Column field="sch_arr_z_nf" header="sch_arr_nf" :sortable="true"> </Column>
+  </DataTable>
+
+  <!-- ------------------------------------------------------------------------ -->
+
+  <DataTable
+    :value="flightsInAirRef.table"
+    :scrollable="true"
+    resizableColumns="true"
+    scrollHeight="300px"
+  >
+    <template #header>
+      <h2>
+        Feeders Not Landed (endpoint),
+        {{ flightsInAirRef.nbRows }} entries
+      </h2>
+      <span>Time of day: </span>
+      <!-- Only show when table is visible -->
+      <!-- What is type=? -->
+      <InputText type="text" v-model.trim="flightsInAirRef.time" />
+      <!-- v-on:keyup.enter="confirmEntry" -->
+      <!-- Consider a set of checkboxes to turn columns on and off -->
+      <span>City (for graph): </span>
+      <InputText type="text" v-model.trim="flightsInAirRef.city" />
+      <span>Initial Id to propagate: </span>
+      <InputText type="text" v-model.trim="initialId" style="width: 3in;" />
     </template>
     <Column field="id_f" header="In id" :sortable="true" style="display: none;">
     </Column>
@@ -80,6 +161,7 @@ is returned from the endpoint. -->
     <Column field="sch_dep_z_nf" header="sch_dep_nf" :sortable="true"> </Column>
     <Column field="sch_arr_z_nf" header="sch_arr_nf" :sortable="true"> </Column>
   </DataTable>
+  <!-- ------------------------------------------------------------------------ -->
 
   <!-- start with hidden graph. Show when graph created -->
   <div>
@@ -102,6 +184,7 @@ import FlightsInAirHelp from "./FlightsInAirHelp.vue";
 import * as u from "../Composition/utils.js";
 import { ref, reactive, isReactive, computed, watch, watchEffect } from "vue";
 import DataTable from "primevue/datatable";
+import ListBox from "primevue/listbox";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
 import G6 from "@antv/g6";
@@ -120,7 +203,7 @@ import {
 import { computePropagationDelays } from "../Composition/endPointLibrary.js";
 
 export default {
-  components: { DataTable, Column, InputText, FlightsInAirHelp },
+  components: { ListBox, DataTable, Column, InputText, FlightsInAirHelp },
   props: {
     filePath: String,
     width: Number,
@@ -141,6 +224,18 @@ export default {
     let graphCreated = false;
     let graph = null;
     const showGraph = ref(null);
+    const selectedFlightIds = ref();
+
+    const names = [];
+    for (let i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+      names.push({ name: "MIA" + i });
+    }
+    const flightIds = ref(names);
+    //const flightIds = ref([
+    //{ name: "MIA23" },
+    //{ name: "LIM22" },
+    //{ name: "MIA42" },
+    //]);
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -148,6 +243,16 @@ export default {
       city: null,
       cityEntered: null,
       timeEntered: null,
+      initialId: null,
+    });
+
+    const flightsInAirRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      cityEntered: null,
+      timeEntered: null,
+      initialId: null,
     });
 
     // const ptyPairsRef = reactive({
@@ -175,6 +280,7 @@ export default {
       time: "10:00",
       cityEntered: "",
       timeEntered: null,
+      initialId: null,
     });
 
     const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
@@ -390,6 +496,10 @@ export default {
         const allPairs = data.value.allPairs;
         allPairsRef.table = allPairs;
         allPairsRef.nbRows = allPairs.length;
+        console.log(`Update allPairsRef, ${allPairs.length}`);
+
+        flightsInAirRef.table = allPairs; // Change later
+        flightsInAirRef.nbRows = allPairs.length; // Change later
 
         const { flightTable, inboundsMap, outboundsMap } = data.value;
 
@@ -404,8 +514,11 @@ export default {
         );
         u.print("computePropagationTable results, table", table);
 
-        // Why are delays all 60.7...
-        u.printAttributes("arrDelays", table, ["arrDelay", "depDelay"]);
+        if (table !== undefined) {
+          // Why are delays all 60.7...
+          u.printAttributes("arrDelays", table, ["arrDelay", "depDelay"]);
+          console.log("Process Table. TODO");
+        }
       }
     });
 
@@ -413,10 +526,19 @@ export default {
       ifhelp,
       flightsRef,
       allPairsRef,
+      flightsInAirRef,
       inputTime,
       listedTime,
       initialId,
+      selectedFlightIds,
+      flightIds,
     };
   },
 };
 </script>
+
+<style scoped>
+#initialId {
+  width: 200rem;
+}
+</style>

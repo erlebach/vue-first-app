@@ -294,7 +294,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: "2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -349,12 +349,17 @@ function saveData() {
     u.print("inRows", inRows);
     console.log(`data.length: ${data.length}`);
 
+    // TODO: SPECIFY A TIME OF ANALYSIS
+    // Remove all pairs with a feeder already landed.
+
     const inboundNotDeparted = inboundFlightsNotDeparted(data);
     const inboundInFlight = inboundFlightsInAir(data);
-    const inboundAtPTY = inboundFlightsAtPTY(data);
-    const outboundInFlight = outboundFlightsInAir(data);
-    const outboundLanded = outboundFlightsLanded(data);
+    const inboundAtPTY = inboundFlightsAtPTY(data); // remove
+    const outboundInFlight = outboundFlightsInAir(data); // remove
+    const outboundLanded = outboundFlightsLanded(data); // remove
+    u.print(`inboundNotDeparted`, inboundNotDeparted);
     console.log(`inboundNotDeparted.length: ${inboundNotDeparted.length}`);
+    u.print(`inboundInFlight`, inboundInFlight);
     console.log(`inboundInFlight.length: ${inboundInFlight.length}`);
     console.log(`inboundAtPTY.length: ${inboundAtPTY.length}`);
     console.log(`outboundInFlight.length: ${outboundInFlight.length}`);
@@ -364,9 +369,9 @@ function saveData() {
       // 135 flights
       ...inboundNotDeparted,
       ...inboundInFlight,
-      ...inboundAtPTY,
-      ...outboundInFlight,
-      ...outboundLanded,
+      //...inboundAtPTY,
+      //...outboundInFlight,
+      //...outboundLanded,
     ];
     allFlights.forEach((r) => {});
     console.log(`total nb flights: ${allFlights.length}`);
@@ -512,6 +517,7 @@ export function syntheticConnections(ptyPairs) {
   const synthPairs = []; // id_f, id_nf pairs
   const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
   const arr_f = sortBy(ptyPairs, "sch_arr_f");
+  u.print("ptyPairs", ptyPairs); // empty!!!
 
   // Establish a common frame of reference
   const earliest_dep_nf = dep_nf[0].sch_dep_nf;
