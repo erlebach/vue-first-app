@@ -51,6 +51,30 @@ export function createMapping(arr, attr) {
   return mapping;
 }
 
+export function getAttributeUnique(table, attr) {
+  // Return an array with the attribute with duplicates removed and sorted
+  const attrSet = new Set();
+  table.forEach((r) => {
+    attrSet.add(r[attr]);
+  });
+  return [...attrSet].sort();
+}
+
+export function getRowsWithAttribute(table, attr, value) {
+  // Extract from the table the rows with the specified attributes
+  // attr, value: attribute/value pair:
+  // Example: attr,value = 'orig', 'PTY'
+
+  const arr = [];
+
+  table.forEach((r) => {
+    if (r[attr] === value) {
+      arr.push(r);
+    }
+  });
+  return arr;
+}
+
 //----------------------------------------------
 export function dataForCityTable(nodeArray) {
   const table = [];

@@ -13,6 +13,10 @@ import { sortBy } from "lodash";
 
 const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
 
+// Boolean flag: true if there are either no inbounds in-flight or inbounds at the station
+// Note: I remove all pairs if one of the legs has an Orig or Dest set to ORIG
+let flightsInAir = true;
+
 // arrays that will be retrieved at some point by an external program
 // Not clear how to retrieve the data periodically
 let flightTable = [];
@@ -289,12 +293,14 @@ function outboundFlightsLanded(data) {
 
 // I removed asynch () . No progress. Still 400 Bad request
 const GetTableData = () => {
+  const curDate = dt.today();
+  console.log(`curData: ${curDate}`);
   let data = post(
     "http://35.223.143.175/api/dmhit",
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
-      arr_DTL: "2021-11-28",
-      days: 2,
+      arr_DTL: curDate, //"2021-11-28",
+      days: 1,
     },
     {
       headers: {
@@ -316,6 +322,7 @@ const GetTableData = () => {
 function saveData() {
   GetTableData().then((response) => {
     const data = response[0];
+    u.print("readin dataMap[fltnum]", u.createMapping(data, "FLT_NUM"));
     u.print("readin data", data);
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
@@ -331,7 +338,7 @@ function saveData() {
         r.ORIG_CD !== r.DEST_CD &&
         r.NEXT_ORIG_CD !== r.NEXT_DEST_CD
       ) {
-        console.log(r.IN_P_FLT);
+        // console.log(r.IN_P_FLT);
         const in_f = r.IN_P_FLT != null ? datetimeZ2ms(r.IN_P_FLT) : 0;
         inRows.push({
           in_f: datetimeZ2ms(r.IN_P_FLT),
@@ -368,13 +375,14 @@ function saveData() {
     const allFlights = [
       // 135 flights
       ...inboundNotDeparted,
-      ...inboundInFlight,
+      ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
       //...inboundAtPTY,
       //...outboundInFlight,
       //...outboundLanded,
     ];
     allFlights.forEach((r) => {});
     console.log(`total nb flights: ${allFlights.length}`);
+    u.print("allFlights", allFlights);
     //u.print("inboundNotDeparted", inboundNotDeparted);
     //u.print("inboundInFlight", inboundInFlight);
     //u.print("inboundAtPTY", inboundAtPTY);
@@ -384,6 +392,8 @@ function saveData() {
     // allFlights contains pairs of flights at PTY
     u.print("saveData, before return, allFlights", allFlights);
     console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
+
+    // allFlights is an array of pairs. Should call it allFlightPairs
 
     // remove pairs if dest != orig for either _f or _nf
     ptyPairs = [];
@@ -395,6 +405,28 @@ function saveData() {
       }
     });
 
+    ptyPairs.forEach((r) => {
+      // u.print("row: ", r);
+      console.log(`STATUS: ${r.status_f}, ${r.status_nf}`);
+      console.log(r);
+    });
+
+    // At the end of the day, the inbound-outbound pairs whose inbound has not departed the station (outside PTY)
+    // typically has one ORIG listed. Thus the pair is not admissible.
+
+    if (ptyPairs.length == 0) {
+      console.log(
+        "========================================================================"
+      );
+      console.log(
+        "There are no planes either at the station, or inbound flights in the air"
+      );
+      console.log(
+        "========================================================================"
+      );
+      flightsInAir = false;
+    }
+
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
     const ids2flights = u.createMapping(flightTable, "id");
@@ -405,7 +437,10 @@ function saveData() {
     const flightIdMap = u.createMapping(flightTable, "id");
 
     // Create a list of feeder-outgoing pairs modeling connections
-    const { inboundsMap, outboundsMap } = syntheticConnections(ptyPairs);
+    const { inboundsMap, outboundsMap } = syntheticConnections(
+      ptyPairs,
+      flightsInAir
+    );
     u.print("after return from synth, inboundsMap", inboundsMap);
     u.print("after return from synth, outboundsMap", outboundsMap);
     u.print("after return from synth, flightTable", flightTable);
@@ -511,8 +546,11 @@ const getEndPointFilesComputed = computed(() => {
 
 export { getEndPointFilesComputed };
 
-export function syntheticConnections(ptyPairs) {
+export function syntheticConnections(ptyPairs, flightsInAir) {
   console.time("Synthetic execution time");
+  if (flightsInAir === false) {
+    return { inboundsMap, outboundsMap }; // empty objects {}
+  }
   // u.print("syntheticConnections", ptyPairs);
   const synthPairs = []; // id_f, id_nf pairs
   const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
@@ -683,7 +721,7 @@ function computeFlightList(ptyPairs) {
   // ALL THESE FLIGHTSS APPEAR TO HAVE LANDED. Strange.
   // This must have to do with my removing certain rows
   flights.forEach((r) => {
-    console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
+    // console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
     r.depDelayP = (r.on - r.sch_dep) / 60000; // 60000 ms per minute
     r.arrDelayP = (r.in - r.sch_arr) / 60000;
     r.schDepTMZ = "undef";

@@ -32,7 +32,7 @@ export function computePropagationDelays(
   // const dFSU_copy = [...dFSU]; // empty array
   //  flightTableRow: in/off/on/out are all 0?  (IS THAT TRUE?) WHY?
   flightTable.forEach((r) => {
-    u.print("flightTable row: ", r);
+    //u.print("flightTable row: ", r);
     //
     let arr_delay_minutes = -1;
     if (r.in > 0) {
@@ -49,7 +49,7 @@ export function computePropagationDelays(
     const pairRow = allPairsMap_nf[r.id];
     let plannedRotation = 10000;
     if (pairRow !== undefined) {
-      console.log(pairRow);
+      // console.log(pairRow);
       plannedRotation = pairRow.plannedRotation;
       // console.log(`allPairsMap_f, rotation_planned: ${plannedRotation}`);
     }

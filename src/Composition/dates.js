@@ -1,6 +1,15 @@
 // Provisional data/time library to handle integer time stamps (ms),
 // in PTY and Zulu (UDC) time.
 
+export function today() {
+  const date = new Date();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+  console.log(`month: ${month}, year: ${year}, day: ${day}`);
+  return year + "-" + month + "-" + day;
+}
+
 export function timestampToDateTimeZ(stamp) {
   /// Input: an integer (number in Javascript) time stamp  (ms)
   /// return:  an array with date and time in Zulu (UTC)

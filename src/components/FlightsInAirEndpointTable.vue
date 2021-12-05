@@ -202,6 +202,20 @@ import {
 } from "../Composition/text-processing.js";
 import { computePropagationDelays } from "../Composition/endPointLibrary.js";
 
+function listCities(flightTable, flightIds) {
+  // List all cities among flights in air
+  const cities_orig = u.getAttributeUnique(flightTable, "orig");
+  // const cities_dest = u.getAttributeUnique(flightTable, "dest");
+  // console.log(
+  //   `cities, orig: ${cities_orig.length}, dest: ${cities_dest.length}`
+  // );
+  const names = [];
+  cities_orig.forEach((r) => {
+    names.push({ name: r });
+  });
+  flightIds.value = names;
+}
+
 export default {
   components: { ListBox, DataTable, Column, InputText, FlightsInAirHelp },
   props: {
@@ -225,17 +239,7 @@ export default {
     let graph = null;
     const showGraph = ref(null);
     const selectedFlightIds = ref();
-
-    const names = [];
-    for (let i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
-      names.push({ name: "MIA" + i });
-    }
-    const flightIds = ref(names);
-    //const flightIds = ref([
-    //{ name: "MIA23" },
-    //{ name: "LIM22" },
-    //{ name: "MIA42" },
-    //]);
+    const flightIds = ref(undefined);
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -396,8 +400,9 @@ export default {
       return edges;
     }
 
-    watchEffect(() => {
-      if (getStatus.value > 0) {
+    // watchEffect(() => {
+    watch(getStatus, (status) => {
+      if (status > 0) {
         u.print("allPairsref", allPairsRef);
         if (checkEntries(allPairsRef)) {
           if (flightsRef) {
@@ -405,6 +410,7 @@ export default {
             flightsRef.time = allPairsRef.time;
             console.log("===> after checkEntries allPairsRef");
             const data = getEndPointFilesComputed.value;
+            listCities(data.flightTable, flightIds);
             const city = allPairsRef.city.toUpperCase();
             // console.log(`before drawGraph(city, data, city: ${city}`);
             // u.print("data", data);
@@ -448,13 +454,29 @@ export default {
       return;
     }
 
+    watch(selectedFlightIds, (ids) => {
+      const data = getEndPointFilesComputed;
+      // u.print("before listCities");
+      // u.print("flightTable", data.value);
+      // u.print("selectedFlightIds.value", selectedFlightIds.value);
+      const flightTable = data.value.flightTable;
+      const allPairs = data.value.allPairs;
+      u.print("allPairs", allPairs);
+      u.print("ids.name", ids.name);
+      const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
+      u.print("table", table);
+      allPairsRef.city = ids.name;
+      allPairsRef.table = table;
+      // u.print("return table: ", table);
+    });
+
     watchEffect(() => {
       // u.print("watcheffect, getStatus", getStatus.value);
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
+        // u.print("==> data", data.value);
         // u.print("getStatus > 0, data: ", data.value);
 
-        u.print("==> data", data.value);
         flightsRef.table = data.value.flightTable;
         flightsRef.nbRows = data.value.flightTable.length;
 
