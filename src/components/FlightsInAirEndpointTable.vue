@@ -42,7 +42,12 @@ is returned from the endpoint. -->
     scrollHeight="300px"
     expandedRows="expandedRows"
     columnResizeMode="expand"
+    v-model:selection="selectedAllPairsRow"
+    selectionMode="single"
+    dataKey="id_f"
   >
+    <!-- row-click="rowClick" -->
+    :rowHover="true"
     <!-- stateStorage and stateKey not saving column size across invocations -->
     <template #header>
       <h2>
@@ -69,7 +74,7 @@ is returned from the endpoint. -->
         optionLabel="name"
         listStyle="max-height:100px"
         style="width:2.0in"
-        filterPlaceholder="Search"
+        filterPlaceholder="Origin City Search"
       >
         <template #option="slotProps">
           <div class="name-item">
@@ -82,7 +87,7 @@ is returned from the endpoint. -->
     </template>
     <Column
       field="id_f"
-      header="In id"
+      header="In id (clickable)"
       :sortable="true"
       header-style="width:4in;"
       style="width:4in;"
@@ -104,12 +109,17 @@ is returned from the endpoint. -->
     <Column field="status_nf" header="Statusout" :sortable="true"> </Column>
     <Column field="tail" header="Tail" :sortable="true"> </Column>
 
-    <Column field="sch_dep_z_f" header="sch_dep_f" :sortable="true"> </Column>
-    <Column field="sch_arr_z_f" header="sch_arr_f" :sortable="true"> </Column>
+    <Column field="sch_dep_z_f" header="sch_dep_f (Z)" :sortable="true">
+    </Column>
+    <Column field="sch_arr_z_f" header="sch_arr_f (Z)" :sortable="true">
+    </Column>
     <Column field="est_rotation" header="estRot(min)" :sortable="true">
     </Column>
-    <Column field="sch_dep_z_nf" header="sch_dep_nf" :sortable="true"> </Column>
-    <Column field="sch_arr_z_nf" header="sch_arr_nf" :sortable="true"> </Column>
+    <Column field="sch_dep_z_nf" header="sch_dep_nf (Z)" :sortable="true">
+    </Column>
+    <Column field="sch_arr_z_nf" header="sch_arr_nf (Z)" :sortable="true">
+    </Column>
+    <Column field="arr_delay" header="EADelay (min)" :sortable="true"> </Column>
   </DataTable>
 
   <!-- ------------------------------------------------------------------------ -->
@@ -150,8 +160,8 @@ is returned from the endpoint. -->
     </Column>
     <Column field="dest_nf" header="Dst" :sortable="true"> </Column>
     <Column field="fltnumPair" header="Flt#s" :sortable="true"> </Column>
-    <Column field="status_f" header="StatusIn" :sortable="true"> </Column>
-    <Column field="status_nf" header="Statusout" :sortable="true"> </Column>
+    <Column field="status_f" header="Status In" :sortable="true"> </Column>
+    <Column field="status_nf" header="Status Out" :sortable="true"> </Column>
     <Column field="tail" header="Tail" :sortable="true"> </Column>
 
     <Column field="sch_dep_z_f" header="sch_dep_f" :sortable="true"> </Column>
@@ -216,6 +226,51 @@ function listCities(flightTable, flightIds) {
   flightIds.value = names;
 }
 
+// function rowClick() {
+//   console.log("row-click");
+// }
+
+function propagateData(dataRef, initialId) {
+  // u.print("inside propagateData, data: ", dataRef.value);
+  const {
+    flightTable,
+    inboundsMap,
+    outboundsMap,
+    allPairs,
+    ptyPairs,
+    stationPairs,
+  } = dataRef.value;
+
+  console.log("==============================================================");
+  console.log("==============================================================");
+
+  [
+    flightTable,
+    inboundsMap,
+    outboundsMap,
+    ptyPairs,
+    stationPairs,
+    allPairs,
+  ].forEach((e) => {
+    console.log(`Length of flight arrays from data: ${e.length}`);
+  });
+
+  u.print("InitialId: ", initialId);
+  console.log(`InitialId: ${initialId}`);
+
+  const table = computePropagationDelays(
+    flightTable,
+    inboundsMap,
+    outboundsMap,
+    ptyPairs,
+    stationPairs,
+    allPairs,
+    initialId
+  );
+
+  return table;
+}
+
 export default {
   components: { ListBox, DataTable, Column, InputText, FlightsInAirHelp },
   props: {
@@ -240,6 +295,71 @@ export default {
     const showGraph = ref(null);
     const selectedFlightIds = ref();
     const flightIds = ref(undefined);
+    // rows of AllPairs table are selectable
+    const selectedAllPairsRow = ref(undefined);
+
+    watch(selectedAllPairsRow, (row) => {
+      //watchEffect(() => {
+      // console.log("selected row: ", selectedAllPairsRow.value);
+      const data = getEndPointFilesComputed;
+      const initialId = row.id_f;
+      // console.log(`before propagateData, initialId: ${initialId}`);
+      // u.print("before propagateData, data: ", data.valiue);
+      const table = propagateData(data, initialId); // args: ref, value
+      // u.print("==> table: ", table);
+      // From this row, construct the rigid model
+      //console.log("selected row: ", row);
+      drawGraphRigidModel(table);
+    });
+
+    function drawGraphRigidModel(data) {
+      console.log("inside drawGraphRigidModel");
+      const nb_tiers = 0; // not used
+      // const flights = data.flightTable;
+      // const allPairs = data.allPairs;
+
+      // Extract ids for levels 0 throught level_max
+      const max_levels = 6;
+      const dataPerLevel = {};
+
+      // Extract the ids for each level
+      for (let level = 0; level < max_levels; level++) {
+        dataPerLevel[level] = u.getRowsWithAttribute(data, "level", level);
+        u.print(`==> dataPerLevel[${level}`, dataPerLevel[level]);
+      }
+
+      // The levels seem ok. Now I must graph them.
+      // Once the graph is made, return to rigid model and check the delay propagation value. They do not look correct.
+
+      // --------------------------
+      // // This data is a list of flights, i.e. nodes of a graph
+
+      // const flightIdMap = u.createMapping(flights, "id");
+      // // I should combine ptyPairs with stationPairs to create allPairs array
+      // const edges = defineEdges(city, allPairs, nb_tiers);
+      // const nodes = defineNodes(city, edges, flights, nb_tiers);
+
+      // // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
+      // if (graphCreated) {
+      //   graph.destroy();
+      // }
+      // graph = new G6.Graph(configuration);
+      // graphCreated = true;
+
+      // // This element must be mounted before creating the graph
+      // graph.data({ nodes, edges });
+      // graph.render();
+
+      // // for nodes: need: departureDelayP, arrDelayP
+      // // for edges: need: ACTAvailableP
+
+      // dp.colorByCity(graph);
+      // graph.render(); // not sure required
+
+      // dp.assignNodeLabelsNew(graph);
+      // graph.render();
+      return;
+    }
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -258,24 +378,6 @@ export default {
       timeEntered: null,
       initialId: null,
     });
-
-    // const ptyPairsRef = reactive({
-    //   nbRows: 0,
-    //   table: null,
-    //   city: null,
-    //   time: null,
-    //   cityEntered: null,
-    //   timeEntered: null,
-    // });
-
-    // const stationPairsRef = reactive({
-    //   nbRows: 0,
-    //   table: null,
-    //   city: null,
-    //   time: null,
-    //   cityEntered: null,
-    //   timeEntered: null,
-    // });
 
     const allPairsRef = reactive({
       nbRows: 0,
@@ -308,44 +410,6 @@ export default {
       return checkCity(tableRef.city) && checkTime(tableRef.time);
     }
 
-    // useKeydown([
-    //   {
-    //     key: "Escape",
-    //     fn: (event) => {
-    //       console.log(`Pressed ESC key!`);
-    //     },
-    //   },
-    //   {
-    //     key: "h",
-    //     fn: (event) => (ifhelp.value = ifhelp.value === false ? true : false),
-    //   },
-    // ]);
-
-    // const toggle = (event) => {
-    //   // console.log("inside toggle()"); // reached
-    //   // u.print("event", event);
-    // };
-
-    // const load = new l.LoadTable("./data/bookings_oneday.json");
-
-    // const arrStatusStyle = (data) => {
-    //   return data.arrStatus === "LATE" ? "color: red" : "color: green";
-    // };
-    // const inFlightStyle = (data) => {
-    //   return data.inFlight === "AIR" ? "color: green" : "color: red";
-    // };
-    // const arrDelayStyle = (data) => {
-    //   return `color:${data.arrDelayColor}`;
-    // };
-    // const depDelayStyle = (data) => {
-    //   return `color:${data.depDelayColor}`;
-    // };
-
-    // const rotStyle = (rotData) => {
-    //   const col = rotData < 45 ? "green" : "red";
-    //   return `color:${col}`;
-    // };
-
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
     saveOnce(1);
@@ -355,7 +419,6 @@ export default {
       const nodes = [];
       const ids = [];
       edges.forEach((e) => {
-        // u.print("e", e);
         ids.push(e.source);
         ids.push(e.target);
       });
@@ -463,7 +526,11 @@ export default {
       const allPairs = data.value.allPairs;
       u.print("allPairs", allPairs);
       u.print("ids.name", ids.name);
+
       const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
+
+      // const table = propagateData(data, initialId); // ref, ref
+
       u.print("table", table);
       allPairsRef.city = ids.name;
       allPairsRef.table = table;
@@ -474,7 +541,7 @@ export default {
       // u.print("watcheffect, getStatus", getStatus.value);
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
-        // u.print("==> data", data.value);
+        u.print("==> data", data.value);
         // u.print("getStatus > 0, data: ", data.value);
 
         flightsRef.table = data.value.flightTable;
@@ -492,6 +559,7 @@ export default {
 
         const stationPairs = data.value.stationPairs;
         const stationIdPairs = [];
+
         stationPairs.forEach((r) => {
           const row_f = flightIdMap[r.id_f];
           const row_nf = flightIdMap[r.id_nf];
@@ -508,12 +576,10 @@ export default {
             tail: row_f.tail,
             fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
             est_rotation: -1, // MUST FIX
+            arr_delay: (row_f.eta - row_f.sch_arr) / 60000,
           };
           stationIdPairs.push(row);
         });
-
-        // stationPairsRef.table = stationIdPairs;
-        // stationPairsRef.nbRows = stationIdPairs.length;
 
         const allPairs = data.value.allPairs;
         allPairsRef.table = allPairs;
@@ -522,25 +588,6 @@ export default {
 
         flightsInAirRef.table = allPairs; // Change later
         flightsInAirRef.nbRows = allPairs.length; // Change later
-
-        const { flightTable, inboundsMap, outboundsMap } = data.value;
-
-        const table = computePropagationDelays(
-          flightTable,
-          inboundsMap,
-          outboundsMap,
-          ptyPairs,
-          stationPairs,
-          allPairs,
-          initialId.value
-        );
-        u.print("computePropagationTable results, table", table);
-
-        if (table !== undefined) {
-          // Why are delays all 60.7...
-          u.printAttributes("arrDelays", table, ["arrDelay", "depDelay"]);
-          console.log("Process Table. TODO");
-        }
       }
     });
 
@@ -554,6 +601,7 @@ export default {
       initialId,
       selectedFlightIds,
       flightIds,
+      selectedAllPairsRow,
     };
   },
 };

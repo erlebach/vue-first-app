@@ -249,6 +249,10 @@ function inboundFlightsNotDeparted(data) {
     if (e.CANCELLED === "0") {
       // flight not cancelled
       if (e.OUT_P_FLT === null) {
+        if (e.ORIG_CD === "MIA") {
+          // remove print when debugged
+          u.print("inbound not departed", e);
+        }
         const row = getRow(e);
         keptRows.push(row);
       }
@@ -405,11 +409,11 @@ function saveData() {
       }
     });
 
-    ptyPairs.forEach((r) => {
-      // u.print("row: ", r);
-      console.log(`STATUS: ${r.status_f}, ${r.status_nf}`);
-      console.log(r);
-    });
+    // ptyPairs.forEach((r) => {
+    //   // u.print("row: ", r);
+    //   console.log(`STATUS: ${r.status_f}, ${r.status_nf}`);
+    //   console.log(r)
+    // });
 
     // At the end of the day, the inbound-outbound pairs whose inbound has not departed the station (outside PTY)
     // typically has one ORIG listed. Thus the pair is not admissible.
@@ -506,6 +510,18 @@ function saveData() {
       r.rotSlack = r.ACTAvailable - 60;
       r.rotSlackP = r.ACT;
       r.pax = "undef"; // probably not required
+      //if (r.eta_f !== 0 && r.orig_f == "MIA") {
+      if (r.out_f !== 0) {
+        r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
+        if (r.status_f === "NOT DEP" && r.status_nf === "AIR") {
+          u.print("status NOT DEP, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+          u.print("INCONSISTENT status, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+        } else {
+          // Rarely, the arrival delay is NaN. Why?
+          u.print("r.eta_f !== 0", r);
+          console.log(`status_f_nf: ${r.status_f}, ${r.status_nf}`);
+        }
+      }
     });
     u.print("allPairs", allPairs);
 

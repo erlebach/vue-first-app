@@ -1,10 +1,11 @@
 // import { map } from "core-js/core/array";
 import * as u from "./utils.js";
 
-export function computeFeeders(fsu, bookings) {
+export function computeFeeders(bookings) {
   // Run through bookings, and for each ID, collect the feeders and the outbounds
   // u.print("enter computeFeeders");
-  const fsu_m = u.createMapping(fsu, "id");
+
+  // const fsu_m = u.createMapping(fsu, "id"); // orig code
 
   // attribute: incoming flight id
   // Given id_f, generate all the outgoing flights,
@@ -34,11 +35,23 @@ export function computeFeeders(fsu, bookings) {
     }
   });
 
+  // What is the difference between feeders and bookings_in?
+  // There is no difference.
+
+  u.print(
+    "feeders[2021-12-05CUNPTY21:260327]",
+    feeders["2021-12-05CUNPTY21:260327"]
+  );
+  u.print(
+    "bookings_in[2021-12-05CUNPTY21:260327]",
+    bookings_in["2021-12-05CUNPTY21:260327"]
+  );
+
   console.log("INSIDE computeFeeders");
   u.print("bookings", bookings);
   u.print("bookings_in", bookings_in);
   u.print("bookings_out", bookings_out);
-  u.print("feeders", feeders);
+  u.print("feeders", feeders); // what are feeders
 
   return { bookings_in, bookings_out, feeders };
 }

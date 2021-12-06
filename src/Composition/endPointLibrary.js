@@ -16,11 +16,18 @@ export function computePropagationDelays(
   allPairs,
   initialID
 ) {
-  // Export function computePropagationDelays(dFSU, dTails, dBookings, initialID) {
+  // Export function computePropagationDelays(dFSU, dTails, dBookings, initialID)
   // include tails in bookings
 
+  // sort according to departure time
+  flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
+
+  console.log("=============================================================");
   console.log(`computePropagationDelays, initialID: ${initialID}`);
   u.print("allPairs", allPairs);
+  u.print("inboundsMap", inboundsMap);
+  u.print("outboundsMap", outboundsMap);
+  u.print("flightTable", flightTable);
 
   const dFSU = [];
   const dTails = [];
@@ -194,16 +201,24 @@ export function computePropagationDelays(
   });
 
   // Propagation is recursive. An error might lead to infinite calls, so stack overflow
+  // dFSU and dTail not found
+  // Construct a list of incoming/outgoing pairs
+  // dBookings includes all the flights (rotations at PTY and stations)
   const count = [0];
   const { edges } = propagation_new(dFSU, dTails, dBookings);
+
+  u.print("==> edges", edges);
 
   // Value returned is not a ref (at this time)
   // These feeders should be checked against the Graph and table displays
 
   // computeFeeders might not be required
-  let { bookings_in, bookings_out, feeders } = computeFeeders(dFSU, dBookings);
+  // feeders is not required (same as bookings_in)
+  let { bookings_in, bookings_out, feeders } = computeFeeders(dBookings);
 
   const initialArrDelay = 60; // in min
+
+  console.log(`==> id: ${id}`);
 
   // Analyze the impact of an arrival delay (using historical data)
   const delayObj = rigidModel(
@@ -211,7 +226,7 @@ export function computePropagationDelays(
     dBookings,
     bookings_in,
     bookings_out,
-    edges,
+    edges, // constructed from dBookings
     initialArrDelay, // applied to id
     id
   );
@@ -260,5 +275,4 @@ export function computePropagationDelays(
   console.log(table);
   return table;
 }
-
 //-----------------------------------------------------------------------
