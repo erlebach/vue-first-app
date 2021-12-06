@@ -176,8 +176,13 @@ is returned from the endpoint. -->
   <!-- start with hidden graph. Show when graph created -->
   <div>
     <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
+    <div id="EndPointsTooltip"></div>
+    <div id="mountEndpointsGraph"></div>
+  </div>
+  <div>
+    <h2>Connections Graph (based on {{ allPairsRef.city }})</h2>
     <div id="GEConnectionsToolTip"></div>
-    <div id="mountEndPointGraph"></div>
+    <div id="mountConnectionsGraph"></div>
   </div>
 </template>
 
@@ -291,90 +296,14 @@ export default {
     const ptyPairTable = ref(null);
     const stationPairTable = ref(null);
     let graphCreated = false;
+    let endpointsGraphCreated = false;
     let graph = null;
+    let endpointsGraph = null;
     const showGraph = ref(null);
     const selectedFlightIds = ref();
     const flightIds = ref(undefined);
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
-
-    watch(selectedAllPairsRow, (row) => {
-      //watchEffect(() => {
-      // console.log("selected row: ", selectedAllPairsRow.value);
-      const data = getEndPointFilesComputed;
-      const initialId = row.id_f;
-      // console.log(`before propagateData, initialId: ${initialId}`);
-      // u.print("before propagateData, data: ", data.valiue);
-      const delayObj = propagateData(data, initialId); // args: ref, value
-      // u.print("==> table: ", table);
-      // From this row, construct the rigid model
-      //console.log("selected row: ", row);
-
-      // NEXT STEP: draw   graphRigidModel
-      drawGraphRigidModel(delayObj);
-    });
-
-    function drawGraphRigidModel(delayObj) {
-      const { nodes, edges, graphEdges, id2Level, level2ids, table } = delayObj;
-      u.print("==> drawGraphRigidModel, delayObj", delayObj);
-      u.print("==> level2ids", level2ids);
-      console.log("inside drawGraphRigidModel");
-      const nb_tiers = 0; // not used
-      // const flights = data.flightTable;
-      // const allPairs = data.allPairs;
-
-      // Extract ids for levels 0 throught level_max
-      const max_levels = 6;
-      const dataPerLevel = {};
-
-      // Extract the ids for each level
-      for (let level = 0; level < max_levels; level++) {
-        dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
-        u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
-      }
-
-      // Construct the edges of the full graph, starting with level zero node
-      // const nodes = [];
-      // const edges = [];
-
-      // edges always go from level to (level+1)
-
-      for (let level = 0; level < max_levels; level++) {
-        // comment
-      }
-
-      // The levels seem ok. Now I must graph them.
-      // Once the graph is made, return to rigid model and check the delay propagation value. They do not look correct.
-
-      // --------------------------
-      // // This data is a list of flights, i.e. nodes of a graph
-
-      // const flightIdMap = u.createMapping(flights, "id");
-      // // I should combine ptyPairs with stationPairs to create allPairs array
-      // const edges = defineEdges(city, allPairs, nb_tiers);
-      // const nodes = defineNodes(city, edges, flights, nb_tiers);
-
-      // // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
-      // if (graphCreated) {
-      //   graph.destroy();
-      // }
-      // graph = new G6.Graph(configuration);
-      // graphCreated = true;
-
-      // // This element must be mounted before creating the graph
-      // graph.data({ nodes, edges });
-      // graph.render();
-
-      // // for nodes: need: departureDelayP, arrDelayP
-      // // for edges: need: ACTAvailableP
-
-      // dp.colorByCity(graph);
-      // graph.render(); // not sure required
-
-      // dp.assignNodeLabelsNew(graph);
-      // graph.render();
-      return;
-    }
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -406,8 +335,15 @@ export default {
 
     const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
 
-    const configuration = dp.setupConfiguration({
-      container: "mountEndPointGraph",
+    const connectionConfiguration = dp.setupConfiguration({
+      container: "mountConnectionsGraph",
+      width: props.width,
+      height: props.height,
+      defaultNodeSize: 40,
+    });
+
+    const endpointConfiguration = dp.setupConfiguration({
+      container: "mountEndpointsGraph",
       width: props.width,
       height: props.height,
       defaultNodeSize: 40,
@@ -425,6 +361,21 @@ export default {
       return checkCity(tableRef.city) && checkTime(tableRef.time);
     }
 
+    watch(selectedAllPairsRow, (row) => {
+      //watchEffect(() => {
+      // console.log("selected row: ", selectedAllPairsRow.value);
+      const data = getEndPointFilesComputed;
+      const initialId = row.id_f;
+      // console.log(`before propagateData, initialId: ${initialId}`);
+      // u.print("before propagateData, data: ", data.valiue);
+      const delayObj = propagateData(data, initialId); // args: ref, value
+      // u.print("==> table: ", table);
+      // From this row, construct the rigid model
+      //console.log("selected row: ", row);
+
+      // NEXT STEP: draw   graphRigidModel
+      drawGraphRigidModel(delayObj);
+    });
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
     saveOnce(1);
@@ -499,8 +450,12 @@ export default {
       // Perhaps setStatus(false)? But that would start the watchEffect again, so bad idea.
     });
 
+    onMounted(() => {
+      console.log("Component is mounted");
+    });
+
     function drawGraph(city, data) {
-      console.log("inside EndPoint draawGraph");
+      console.log("inside drawGraph");
       const nb_tiers = 0; // not used
       const flights = data.flightTable;
       const allPairs = data.allPairs;
@@ -509,17 +464,20 @@ export default {
       // I should combine ptyPairs with stationPairs to create allPairs array
       const edges = defineEdges(city, allPairs, nb_tiers);
       const nodes = defineNodes(city, edges, flights, nb_tiers);
+      u.print("drawGraph, nodes", nodes);
+      u.print("drawGraph, edges", edges);
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
         graph.destroy();
       }
-      graph = new G6.Graph(configuration);
+      graph = new G6.Graph(connectionConfiguration);
       graphCreated = true;
 
       // This element must be mounted before creating the graph
       graph.data({ nodes, edges });
       graph.render();
+      u.print("drawGraph, graph", graph);
 
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
@@ -532,6 +490,87 @@ export default {
       return;
     }
 
+    function drawGraphRigidModel(delayObj) {
+      const { nodes, edges, graphEdges, id2Level, level2ids, table } = delayObj;
+      u.print("==> drawGraphRigidModel, delayObj", delayObj);
+      u.print("==> level2ids", level2ids);
+      console.log("inside drawGraphRigidModel");
+      const nb_tiers = 0; // not used
+      // const flights = data.flightTable;
+      // const allPairs = data.allPairs;
+
+      // Extract ids for levels 0 throught level_max
+      const max_levels = 6;
+      const dataPerLevel = {};
+
+      // Extract the ids for each level
+      for (let level = 0; level < max_levels; level++) {
+        dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
+        u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
+      }
+
+      // Construct the edges of the full graph, starting with level zero node
+      const gNodes = [];
+      const gEdges = [];
+
+      nodes.forEach((r) => {
+        r.x = 0;
+        r.y = 0;
+        gNodes.push(r);
+      });
+
+      edges.forEach((r) => {
+        gEdges.push(r);
+        r.source = r.id_f;
+        r.target = r.id_nf;
+        r.id = r.id_f + r.id_nf; // perhaps temporary?
+      });
+      u.print("gEdges", gEdges);
+      u.print("gNodes", gNodes);
+
+      // edges always go from level to (level+1)
+
+      for (let level = 0; level < max_levels; level++) {
+        // comment
+      }
+
+      // The levels seem ok. Now I must graph them.
+      // Once the graph is made, return to rigid model and check the delay propagation value. They do not look correct.
+
+      // --------------------------
+      // This data is a list of flights, i.e. nodes of a graph
+
+      // const flightIdMap = u.createMapping(flights, "id");
+      // // I should combine ptyPairs with stationPairs to create allPairs array
+      // const edges = defineEdges(city, allPairs, nb_tiers);
+      // const nodes = defineNodes(city, edges, flights, nb_tiers);
+
+      // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
+      if (endpointsGraphCreated) {
+        endpointsGraph.destroy();
+      }
+      endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
+      endpointsGraphCreated = true;
+
+      // This element must be mounted before creating the graph
+      const data = { nodes: gNodes, edges: gEdges.slice(0) };
+      // endpointsGraph.data(data);
+      endpointsGraph.read(data); // combines data and render
+      u.print("endpointsGraph", endpointsGraph);
+      u.print("endpointsGraph", endpointsGraph);
+      // endpointsGraph.render();
+
+      // for nodes: need: departureDelayP, arrDelayP
+      // for edges: need: ACTAvailableP
+
+      dp.colorByCity(endpointsGraph);
+      endpointsGraph.render(); // not sure required
+
+      dp.assignNodeLabelsNew(endpointsGraph);
+      endpointsGraph.render();
+      return;
+    }
+
     watch(selectedFlightIds, (ids) => {
       const data = getEndPointFilesComputed;
       // u.print("before listCities");
@@ -540,16 +579,20 @@ export default {
       const flightTable = data.value.flightTable;
       const allPairs = data.value.allPairs;
       u.print("allPairs", allPairs);
-      u.print("ids.name", ids.name);
+      if (ids === null) {
+        console.log("ids is null!!! SHOULD NOT HAPPEN");
+      } else {
+        u.print("ids.name", ids.name);
 
-      const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
+        const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
 
-      // const table = propagateData(data, initialId); // ref, ref
+        // const table = propagateData(data, initialId); // ref, ref
 
-      u.print("table", table);
-      allPairsRef.city = ids.name;
-      allPairsRef.table = table;
-      // u.print("return table: ", table);
+        u.print("table", table);
+        allPairsRef.city = ids.name;
+        allPairsRef.table = table;
+        // u.print("return table: ", table);
+      }
     });
 
     watchEffect(() => {

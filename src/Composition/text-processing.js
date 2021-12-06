@@ -623,9 +623,10 @@ export function syntheticConnections(ptyPairs, flightsInAir) {
     const nb_outgoings = keep_outgoings.length;
     // u.print(`id: ${id_f}, nb_outgoings: ${nb_outgoings}, deltas`, deltas);
     // Only keep top 20
-    if (keep_outgoings.length > 20) {
-      keep_outgoings.length = 20;
-      keep_deltas.length = 20;
+    const nbConn = 5;
+    if (keep_outgoings.length > nbConn) {
+      keep_outgoings.length = nbConn;
+      keep_deltas.length = nbConn;
     }
     // u.print(`   kept outgoing ids`, keep_outgoings);
     outboundsMap[id_f] = keep_outgoings;
