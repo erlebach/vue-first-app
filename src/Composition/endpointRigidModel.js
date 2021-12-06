@@ -202,9 +202,12 @@ function getDest(id) {
 }
 //---------------------------------------------------------------
 function createId2Level(ids) {
+  // ids are obtained by traversing the graph starting with initialId
   // const nb_tiers = tier.getTier.value;
   // console.log(`====> enter createId2Level, nb_tiers: ${nb_tiers}`);
   // u.print(`nb_tiers: ${nb_tiers.value}`);
+
+  u.print("createId2Level, ids", ids);
 
   const id2level = {};
   const level2ids = {};
@@ -346,25 +349,28 @@ export function rigidModel(
   u.print("bookings_out", bookings_out);
   u.print("bookings", bookings);
   u.print("FSUm", FSUm);
-  // DEBUG
-  // bookings.forEach((r) => {
-  //   if (r.id_f === id || r.id_nf === id) {
-  //     u.print("MIA row in bookings", r);
-  //   }
-  // });
+
+  // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
+  // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
+  // Check carefully starting with a flight that has not left. <<<<< TODO.
 
   const idsTraversed = [];
+  let graphEdges = new Set(); // (not clear required)
 
   graph.traverseBfs(id, (key, values) => {
     // outgoing flight from PTY
     idsTraversed.push(key);
     count += 1;
     // console.log("-------------------------------------");
-    const isUndefined = propDelayNew(key, bookings_in, FSUm);
+    const isUndefined = propDelayNew(key, bookings_in, FSUm, graphEdges);
     ids.push([key, isUndefined]);
     countUndef += isUndefined;
     countDef += 1 - isUndefined;
   });
+
+  u.print("idsTraversed", idsTraversed);
+  u.print("ids", ids);
+  // There appears to be no undefined nodes
 
   // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
   const nodesWithArrDelay = [];
@@ -402,17 +408,46 @@ export function rigidModel(
     }
   });
 
+  // Only keep unique edges
+  graphEdges = [...graphEdges];
+  // localCompare required to compare strings lexigraphically
+  graphEdges = graphEdges.sort((a, b) => a.id_f.localeCompare(b.id_f));
+
+  // Remove from graphEdges all edges that do not connect two nodes
+  // Note that some node were removed, so ss owill also be removed
+
+  // id2level contains all the nodes (whether there is delay or not)
+  const newEdges = [];
+  graphEdges.forEach((r) => {
+    const id_f = r.id_f;
+    const id_nf = r.id_f;
+    const lev_f = id2level[id_f];
+    const lev_nf = id2level[id_nf];
+    if (lev_f !== undefined && lev_nf !== undefined) {
+      newEdges.push(r);
+    }
+  });
+
+  console.log(`edges.length: ${edges.length}`);
+  console.log(`newEdges.length: ${newEdges.length}`);
+  u.print("newEdges", newEdges);
+
   // console.log("Edges with In Arrival Delay");
   // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
+  u.print("nodesWithArrDelay", nodesWithArrDelay);
+  u.print("edgesWithInArrDelay", edgesWithInArrDelay);
+
+  // I really should return all nodes, but only draw the nodes with propagation delay > 0
   return {
     nodes: nodesWithArrDelay,
-    edges: edgesWithInArrDelay,
+    edges: edgesWithInArrDelay, // not useful
+    graphEdges: newEdges,
     level2ids,
     id2level,
   };
 }
 //---------------------------------------------------------------------
-function updateInboundEdges(outboundNode, bookings_in) {
+function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
   const nano2min = 1 / 1e9 / 60;
 
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
@@ -430,6 +465,7 @@ function updateInboundEdges(outboundNode, bookings_in) {
   }
 
   inboundEdges.forEach((e) => {
+    graph_edges.add(e);
     // u.print("updateInboundEdges, inboundEdge", e);
     e.ACTAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
 
@@ -502,10 +538,11 @@ function updateOutboundNode(node, bookings_in) {
 }
 //-------------------------------------------------------------------------
 // Remove duplicated class to processOutboundFlightss
-function propDelayNew(id, bookings_in, FSUm) {
+function propDelayNew(id, bookings_in, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
   // console.log("INSIDE propDelayNew");
-  updateInboundEdges(FSUm[id], bookings_in);
+
+  updateInboundEdges(FSUm[id], bookings_in, graphEdges);
   updateOutboundNode(FSUm[id], bookings_in);
 
   return 0; // not sure what I am returning

@@ -231,6 +231,14 @@ export function computePropagationDelays(
     id
   );
 
+  //
+  // delayObj is in reality:
+  // {nodes: nodesWithArrDelay,
+  // edges: edgesWithInArrDelay, // not useful
+  // graphEdges: newEdges,
+  // level2ids,
+  // id2level,}
+
   if (delayObj === undefined || delayObj === null) {
     return undefined;
   }
@@ -239,8 +247,9 @@ export function computePropagationDelays(
   const delayNodes = delayObj.nodes;
   // const level2ids = delayNodes.level2ids;
   const id2level = delayObj.id2level;
-  console.log("delayNodes");
-  console.log(delayNodes);
+  u.print("delayNodes", delayNodes);
+  const graphEdges = delayObj.graphEdges;
+  u.print("graphEdges", graphEdges);
 
   // QUESTION: How can any planes in the future graph starting from startingId have landed? IMPOSSIBLE
 
@@ -253,6 +262,7 @@ export function computePropagationDelays(
       depDelayP: d.depDelayP,
       arrDelayP: d.arrDelayP,
       tail: d.TAIL,
+      level: id2level[d.id],
     });
   });
 
@@ -268,11 +278,12 @@ export function computePropagationDelays(
   console.log("id2level");
   console.log(id2level);
 
-  table.forEach((row) => {
-    row.level = id2level[row.id];
-  });
+  // table.forEach((row) => {
+  //   row.level = id2level[row.id];
+  // });
   console.log(`table length: ${table.length}`);
   console.log(table);
-  return table;
+  delayObj.table = table;
+  return delayObj;
 }
 //-----------------------------------------------------------------------

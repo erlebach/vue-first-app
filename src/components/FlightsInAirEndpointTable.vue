@@ -258,7 +258,7 @@ function propagateData(dataRef, initialId) {
   u.print("InitialId: ", initialId);
   console.log(`InitialId: ${initialId}`);
 
-  const table = computePropagationDelays(
+  const delayObj = computePropagationDelays(
     flightTable,
     inboundsMap,
     outboundsMap,
@@ -268,7 +268,7 @@ function propagateData(dataRef, initialId) {
     initialId
   );
 
-  return table;
+  return delayObj;
 }
 
 export default {
@@ -305,14 +305,19 @@ export default {
       const initialId = row.id_f;
       // console.log(`before propagateData, initialId: ${initialId}`);
       // u.print("before propagateData, data: ", data.valiue);
-      const table = propagateData(data, initialId); // args: ref, value
+      const delayObj = propagateData(data, initialId); // args: ref, value
       // u.print("==> table: ", table);
       // From this row, construct the rigid model
       //console.log("selected row: ", row);
-      drawGraphRigidModel(table);
+
+      // NEXT STEP: draw   graphRigidModel
+      drawGraphRigidModel(delayObj);
     });
 
-    function drawGraphRigidModel(data) {
+    function drawGraphRigidModel(delayObj) {
+      const { nodes, edges, graphEdges, id2Level, level2ids, table } = delayObj;
+      u.print("==> drawGraphRigidModel, delayObj", delayObj);
+      u.print("==> level2ids", level2ids);
       console.log("inside drawGraphRigidModel");
       const nb_tiers = 0; // not used
       // const flights = data.flightTable;
@@ -324,8 +329,18 @@ export default {
 
       // Extract the ids for each level
       for (let level = 0; level < max_levels; level++) {
-        dataPerLevel[level] = u.getRowsWithAttribute(data, "level", level);
-        u.print(`==> dataPerLevel[${level}`, dataPerLevel[level]);
+        dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
+        u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
+      }
+
+      // Construct the edges of the full graph, starting with level zero node
+      // const nodes = [];
+      // const edges = [];
+
+      // edges always go from level to (level+1)
+
+      for (let level = 0; level < max_levels; level++) {
+        // comment
       }
 
       // The levels seem ok. Now I must graph them.

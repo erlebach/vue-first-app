@@ -298,6 +298,7 @@ function outboundFlightsLanded(data) {
 // I removed asynch () . No progress. Still 400 Bad request
 const GetTableData = () => {
   const curDate = dt.today();
+  // const curDate = "2021-12-05";
   console.log(`curData: ${curDate}`);
   let data = post(
     "http://35.223.143.175/api/dmhit",
@@ -381,7 +382,7 @@ function saveData() {
       ...inboundNotDeparted,
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
       //...inboundAtPTY,
-      //...outboundInFlight,
+      ...outboundInFlight,
       //...outboundLanded,
     ];
     allFlights.forEach((r) => {});
