@@ -151,12 +151,12 @@ export function computePropagationDelays(
     });
   }
 
-  for (let id_f in inboundsMap) {
+  for (let id_nf in inboundsMap) {
     // console.log(`id_f: ${id_f}`);
-    const r_f = flightTableMap[id_f];
-    inboundsMap[id_f].forEach((id_nf) => {
+    const r_nf = flightTableMap[id_nf];
+    inboundsMap[id_nf].forEach((id_f) => {
       // console.log(`id_nf: ${id_nf}`);
-      const r_nf = flightTableMap[id_nf];
+      const r_f = flightTableMap[id_f];
       dBookings.push({
         id_f: r_f.id,
         id_nf: r_nf.id,
@@ -170,6 +170,7 @@ export function computePropagationDelays(
     });
   }
 
+  u.checkEdgesDirection(dBookings, "check order in dBookings");
   allPairs.forEach((r) => {
     //u.print("allPairs row", r);
     dBookings.push({

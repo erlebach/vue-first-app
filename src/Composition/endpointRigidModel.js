@@ -407,6 +407,10 @@ export function rigidModel(
       edgesWithInArrDelay.push(b);
     }
   });
+  u.checkEdgesDirection(
+    edgesWithInArrDelay,
+    "rigidModel, check order of edgesWithInArrDelay"
+  );
 
   // Only keep unique edges
   graphEdges = [...graphEdges];

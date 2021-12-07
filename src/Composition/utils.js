@@ -3,6 +3,25 @@ import store from "../store/index.js";
 import { colorByCity } from "../Composition/graphImpl.js"; // should not be called from here
 import { assignNodeLabels, transferNodesEdgesToGraph } from "./graphImpl.js"; // not good practice for utils
 
+export function checkEdgesDirection(edges, msg) {
+  const wrongOrder = [];
+  edges.forEach((r) => {
+    // 180
+    // const sch_dep_f = r.source.slice(16, 21);
+    // const sch_dep_nf = r.target.slice(16, 21);
+    const sch_dep_f = r.SCH_ARR_DTMZ_f;
+    const sch_dep_nf = r.SCH_ARR_DTMZ_nf;
+    const comp = sch_dep_f > sch_dep_nf;
+    if (comp) {
+      console.log(`${r.source}, ${r.target}`);
+      wrongOrder.push(r);
+    }
+  });
+  console.log(msg);
+  console.log(`==> wrongOrder.length: ${wrongOrder.length}`); // 84 (30% of edges). How can that be? Check rigidModel
+  console.log(`==> edges.length: ${edges.length}`); // 84 (30% of edges). How can that be? Check rigidModel
+}
+
 export function print(strg, val) {
   console.log(strg);
   console.log(val);

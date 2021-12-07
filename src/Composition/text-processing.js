@@ -442,9 +442,11 @@ function saveData() {
     const flightIdMap = u.createMapping(flightTable, "id");
 
     // Create a list of feeder-outgoing pairs modeling connections
+    const nbConn = 3; // max number of connections
     const { inboundsMap, outboundsMap } = syntheticConnections(
       ptyPairs,
-      flightsInAir
+      flightsInAir,
+      nbConn
     );
     u.print("after return from synth, inboundsMap", inboundsMap);
     u.print("after return from synth, outboundsMap", outboundsMap);
@@ -563,7 +565,7 @@ const getEndPointFilesComputed = computed(() => {
 
 export { getEndPointFilesComputed };
 
-export function syntheticConnections(ptyPairs, flightsInAir) {
+export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   console.time("Synthetic execution time");
   if (flightsInAir === false) {
     return { inboundsMap, outboundsMap }; // empty objects {}
@@ -623,7 +625,6 @@ export function syntheticConnections(ptyPairs, flightsInAir) {
     const nb_outgoings = keep_outgoings.length;
     // u.print(`id: ${id_f}, nb_outgoings: ${nb_outgoings}, deltas`, deltas);
     // Only keep top 20
-    const nbConn = 5;
     if (keep_outgoings.length > nbConn) {
       keep_outgoings.length = nbConn;
       keep_deltas.length = nbConn;

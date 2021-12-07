@@ -216,6 +216,17 @@ import {
   getEndPointFilesComputed,
 } from "../Composition/text-processing.js";
 import { computePropagationDelays } from "../Composition/endPointLibrary.js";
+import { boundingBox } from "../Composition/graphImpl.js";
+
+function centerGraph(graph) {
+  //const layout = graph.get("layout");
+  boundingBox(graph);
+  // Must render in order to x,y coordinates
+  // "group" not defined
+  const bbox = graph.get("group").getCanvasBBox();
+  graph.fitView(); // Not clear this is required
+  graph.render(); // Not clear this is required
+}
 
 function listCities(flightTable, flightIds) {
   // List all cities among flights in air
@@ -528,6 +539,8 @@ export default {
       u.print("gEdges", gEdges);
       u.print("gNodes", gNodes);
 
+      u.checkEdgesDirection(gEdges, "check wrong order");
+
       // edges always go from level to (level+1)
 
       for (let level = 0; level < max_levels; level++) {
@@ -562,6 +575,8 @@ export default {
 
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
+
+      centerGraph(endpointsGraph);
 
       dp.colorByCity(endpointsGraph);
       endpointsGraph.render(); // not sure required
