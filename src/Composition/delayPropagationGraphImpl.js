@@ -467,15 +467,18 @@ export function assignNodeLabelsNew(graph) {
   u.print("degrees", degrees);
 
   nodes.forEach((node) => {
-    console.log(`node id: ${node.getModel().id}`);
+    console.log(`node id: ${node.getModel().id}`); // written out
     // const Node = graph.findById(node.getModel().id);
     // u.print("findById, Node", Node);
     const degree = graph.getNodeDegree(node.getModel().id, "total");
     // u.print("node", node);
-    // u.print("degree", degree);
+    u.print("degree", degree);
+    u.print("node", node);
     graph.updateItem(node, {
+      //  causes maximum call stack size exceeded. WHY?
       label: degree,
     });
+    console.log("after updateItem");
   });
   return nodes;
 }

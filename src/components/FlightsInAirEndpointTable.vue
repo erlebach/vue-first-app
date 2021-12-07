@@ -581,8 +581,8 @@ export default {
       dp.colorByCity(endpointsGraph);
       endpointsGraph.render(); // not sure required
 
-      dp.assignNodeLabelsNew(endpointsGraph);
-      endpointsGraph.render();
+      dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
+      // endpointsGraph.render();
       return;
     }
 

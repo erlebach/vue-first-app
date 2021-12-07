@@ -390,6 +390,9 @@ export function rigidModel(
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
     if (arrDelayP > 0) {
+      // only show nodes with predicted delays greater than zero (i.e., late)
+      // if (arrDelayP > -1000) {
+      // only show nodes with delays or non-delays   (TEMPORARY)
       nodesWithArrDelay.push(f);
       // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
       // printNodeData(f, "Nodes with delayP>0");
