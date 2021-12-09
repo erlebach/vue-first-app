@@ -1,10 +1,11 @@
 import G6 from "@antv/g6";
 import store from "../store/index.js";
+import * as u from "util.js";
 
 export function setupConfiguration(parameters) {
   const configuration = {
-    fitView: true, // do not fit canvas to the viewport
-    fitViewPadding: [20, 20, 20, 20],
+    fitView: false, // do not fit canvas to the viewport
+    fitViewPadding: [10, 10, 10, 10],
     animate: false,
     defaultNode: {
       //trigger: 'mouseleave',
@@ -329,6 +330,17 @@ export function setupState(graph) {
     //console.log(nodeItem);
     //graph.hoverItemId = nodeItem._cfg.id; // new element to access from main module
     graph.setItemState(nodeItem, "hover", true); // Set the state 'hover' of the item to be true
+    // Added on 2021-12-07
+    // const model = nodeItem.getModel();
+    // const { x, y } = model;
+    // const point = graph.getCanvasByPoint(x, y);
+    // u.print("==> point", point);
+    // setTooltipStates({
+    //   display: "block",
+    //   x: `${point.x}px`,
+    //   y: `${point.y}px`,
+    // });
+
     // graph.setItemState(nodeItem, "active", true); // Set the state 'hover' of the item to be true
   });
 
@@ -338,7 +350,7 @@ export function setupState(graph) {
     const id = node.id;
     console.log("nodeselectchange");
     store.commit("setNodeIdForConnections", id);
-	// since the id is committed, I should not sent it again
+    // since the id is committed, I should not sent it again
     store.dispatch("computeNodeConnections", id);
     store.dispatch("computeEdgeConnections", id);
   });
@@ -453,7 +465,7 @@ export function boundingBox(graph) {
     nodes.map((o) => {
       return o.getModel().x;
     })
-);
+  );
   const maxX = Math.max.apply(
     Math,
     nodes.map((o) => {

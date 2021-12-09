@@ -77,8 +77,11 @@ function initializeEdges(bookings, FSUm) {
 function initializeNodes(FSUm, bookings_in, bookings_out) {
   console.log("inside initializeNods");
   Object.values(FSUm).forEach((n) => {
+    // Remove two lines. Probably causing an infinite loop somewhere.
     n.inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
     n.outbounds = bookings_out[n.id]; // could be undefined (from PTY or Sta)
+    // const inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
+    // const outbounds = bookings_out[n.id]; // could be undefined (from PTY or Sta)
 
     n.count = 0; // number of times the node has been handled
 
@@ -99,7 +102,8 @@ function initializeNodes(FSUm, bookings_in, bookings_out) {
     if (n.id.slice(10, 13) === "PTY") {
       // outbound flights from PTY
       if (n.inbounds !== undefined) {
-        const obj = computeMinACT(n.inbounds, true);
+        const obj = computeMinACT(n.inbounds, true); // original code
+        // const obj = computeMinACT(inbounds, true);
         n.minId = obj.minId;
         n.minACT = obj.minACT;
         n.minACTP = n.minACT;
@@ -115,7 +119,7 @@ function initializeNodes(FSUm, bookings_in, bookings_out) {
       n.ACTSlackP = n.ACTSlack;
       n.rotSlack = 0;
       n.rotSlackP = n.rotSlack;
-      n.gordon = "NONAME"; // to test Developer environemnt in Chrome
+      // n.gordon = "NONAME"; // to test Developer environemnt in Chrome
 
       // const calcPlannedRot =
       const calcPlannedRot = n.ROTATION_PLANNED_TM;
@@ -541,6 +545,9 @@ function updateOutboundNode(node, bookings_in) {
     n.depDelayP = 0; // If flight to study has no delay, it will have no impact.
     n.arrDelayP = 0;
   }
+  // Avoid infinite loops
+  // n.inbounds = undefined;
+  // n.outbounds = undefined;
   return undefined;
 }
 //-------------------------------------------------------------------------

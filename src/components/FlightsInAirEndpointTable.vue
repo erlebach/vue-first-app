@@ -375,9 +375,12 @@ export default {
     watch(selectedAllPairsRow, (row) => {
       //watchEffect(() => {
       // console.log("selected row: ", selectedAllPairsRow.value);
+      console.log("before getBEndPointFilesComputed");
       const data = getEndPointFilesComputed;
+      u.print("row", row);
       const initialId = row.id_f;
-      // console.log(`before propagateData, initialId: ${initialId}`);
+      u.print("data", data);
+      console.log(`before propagateData, initialId: ${initialId}`);
       // u.print("before propagateData, data: ", data.valiue);
       const delayObj = propagateData(data, initialId); // args: ref, value
       // u.print("==> table: ", table);
@@ -480,6 +483,7 @@ export default {
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
+        graph.clear(); // difference with destroy?
         graph.destroy();
       }
       graph = new G6.Graph(connectionConfiguration);
@@ -561,6 +565,7 @@ export default {
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
         endpointsGraph.destroy();
+        // endpointsGraph.clear(); // what does this do?  (error: undefined)
       }
       endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
       endpointsGraphCreated = true;
@@ -569,6 +574,7 @@ export default {
       const data = { nodes: gNodes, edges: gEdges.slice(0) };
       // endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
+      // endpointsGraph.refreshLayout(true); // does not seem to work
       u.print("endpointsGraph", endpointsGraph);
       u.print("endpointsGraph", endpointsGraph);
       // endpointsGraph.render();
@@ -576,12 +582,12 @@ export default {
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
 
-      centerGraph(endpointsGraph);
+      // centerGraph(endpointsGraph);
 
-      dp.colorByCity(endpointsGraph);
-      endpointsGraph.render(); // not sure required
+      // dp.colorByCity(endpointsGraph);
+      // endpointsGraph.render(); // not sure required
 
-      dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
+      // dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
       // endpointsGraph.render();
       return;
     }

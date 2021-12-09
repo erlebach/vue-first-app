@@ -92,6 +92,8 @@ export function setupConfiguration(parameters) {
     },
     plugins: [myTooltip],
   };
+
+  u.print("myToolTip", myTooltip);
   return configuration;
 }
 //-----------------------------------------
@@ -474,8 +476,17 @@ export function assignNodeLabelsNew(graph) {
     // u.print("node", node);
     u.print("degree", degree);
     u.print("node", node);
+    //node.outbounds = undefined; // to avoid infinite loops
+    //node.inbounds = undefined;
+
+    {
+      //  Avoid maximum call stack size exceeded error
+      const mm = node.getModel();
+      mm.inbounds = undefined;
+      mm.outbounds = undefined;
+    }
+    u.print("node", node);
     graph.updateItem(node, {
-      //  causes maximum call stack size exceeded. WHY?
       label: degree,
     });
     console.log("after updateItem");
