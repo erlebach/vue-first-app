@@ -574,3 +574,11 @@ export function transferNodesEdgesToGraph(graph) {
   });
 }
 //----------------------------------------------
+export function clearGraph(graph) {
+  // Remove all nodes/edges from the graph
+  const nodes = graph.get("data").nodes;
+  const edges = graph.get("data").edges;
+  nodes.forEach((node) => {
+    graph.remove("node", false);
+  });
+}

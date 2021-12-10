@@ -577,11 +577,12 @@ export default {
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
-        endpointsGraph.clear(); // what does this do?  (error: undefined)
-        endpointsGraph.destroy;
+        // removes all nodes and edges. Leaves configuration intact
+        endpointsGraph.clear();
+      } else {
+        endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
+        endpointsGraphCreated = true;
       }
-      endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
-      endpointsGraphCreated = true;
 
       // This element must be mounted before creating the graph
       const data = { nodes: gNodes, edges: gEdges.slice(0) };
