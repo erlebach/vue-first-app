@@ -566,10 +566,19 @@ export default {
       // const edges = defineEdges(city, allPairs, nb_tiers);
       // const nodes = defineNodes(city, edges, flights, nb_tiers);
 
+      // Create two functions: remove all nodes and edges
+      // Add new nodes and edges
+
+      // TODO (date2021-1)
+      // These two functions should redraw the graph in the same canvas
+      // function removeNodesEdges(graph)
+      // (nodes, edges are two arrays)
+      // function addNodesEdges(graph, nodes, edges)
+
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
-        // endpointsGraph.destroy;
         endpointsGraph.clear(); // what does this do?  (error: undefined)
+        endpointsGraph.destroy;
       }
       endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
       endpointsGraphCreated = true;
