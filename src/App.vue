@@ -8,7 +8,10 @@
 //import TopLevel from "./components/AntvDemo_top_levelDebug.vue";
 
 // Duplicate our interface in Streamlit
-import TopLevel from "./components/AntvDemo_streamlit.vue";
+import TopLevel from "./components/AntvDemo_streamlit.vue"; // Actual program for Miguel
+
+// Figure out why tooltips do not appear when graph is created then destroyed then created again
+//import TopLevel from "./components/DestroyCreateGraph.vue"
 
 // Experimental code to analyze bookings and Tails one-day datasets
 // Created on 2021-08-18

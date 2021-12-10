@@ -484,10 +484,14 @@ export default {
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
         graph.clear(); // difference with destroy?
-        graph.destroy();
+        // graph.destroy();
+      } else {
+        graph = new G6.Graph(connectionConfiguration);
+        graphCreated = true;
       }
-      graph = new G6.Graph(connectionConfiguration);
-      graphCreated = true;
+
+      // QUESTION: with clear(), the tooltips stay. However, the graph
+      // is translated downward. WHY?
 
       // This element must be mounted before creating the graph
       graph.data({ nodes, edges });
@@ -564,8 +568,8 @@ export default {
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
-        endpointsGraph.destroy();
-        // endpointsGraph.clear(); // what does this do?  (error: undefined)
+        // endpointsGraph.destroy;
+        endpointsGraph.clear(); // what does this do?  (error: undefined)
       }
       endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
       endpointsGraphCreated = true;
@@ -574,8 +578,13 @@ export default {
       const data = { nodes: gNodes, edges: gEdges.slice(0) };
       // endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
+      // endpointsGraph.refresh(); // not helping with tooltip problem
+      endpointsGraph.render();
+      endpointsGraph.fitView(); //   View and Center do not work
+      endpointsGraph.fitCenter();
+      centerGraph(endpointsGraph);
+      endpointsGraph.render();
       // endpointsGraph.refreshLayout(true); // does not seem to work
-      u.print("endpointsGraph", endpointsGraph);
       u.print("endpointsGraph", endpointsGraph);
       // endpointsGraph.render();
 
@@ -584,11 +593,11 @@ export default {
 
       // centerGraph(endpointsGraph);
 
-      // dp.colorByCity(endpointsGraph);
-      // endpointsGraph.render(); // not sure required
+      dp.colorByCity(endpointsGraph);
+      endpointsGraph.render(); // not sure required
 
-      // dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
-      // endpointsGraph.render();
+      dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
+      endpointsGraph.render();
       return;
     }
 
