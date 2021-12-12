@@ -23,7 +23,9 @@ export function computePropagationDelays(
   flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
 
   console.log("=============================================================");
-  console.log(`computePropagationDelays, initialID: ${initialID}`);
+  console.log(
+    `endPointLibrary::computePropagationDelays, initialID: ${initialID}`
+  );
   u.print("allPairs", allPairs);
   u.print("inboundsMap", inboundsMap);
   u.print("outboundsMap", outboundsMap);
@@ -110,7 +112,7 @@ export function computePropagationDelays(
   //     TAIL: r.TAIL,
   //   });
   // });
-  u.print(`dFSU_copy, gordon: ${dFSU_copy.gordon}`);
+  // u.print(`dFSU_copy, gordon: ${dFSU_copy.gordon}`);
   u.printAttributes("dFSU_copy.ARR_DELAY_MINUTES", dFSU_copy, [
     "ARR_DELAY_MINUTES",
   ]);

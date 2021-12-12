@@ -383,10 +383,11 @@ export function rigidModel(
   // return a dictionary that returns the level for any id
   // also return a dictionary that returns a list of ids for each level
   console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
-  const obj = createId2Level(idsTraversed);
+  //const obj = createId2Level(idsTraversed);
+  const { id2level, level2ids } = createId2Level(idsTraversed);
   console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
-  const id2level = obj.id2level; // there is better approach.
-  const level2ids = obj.level2ids;
+  u.print("rigidModel::id2Level", id2level);
+  u.print("rigidModel::level2ids", level2ids);
 
   // idsTraversed is not used later
   // Rather, arrDelayP, and other attributes are computed in dFSU
@@ -464,6 +465,7 @@ function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
   const node = outboundNode; // feeder node
 
+  console.log("===================================================");
   u.print("updateInboundEdges, (feeder) outboundNode", outboundNode);
   //u.print("updateInboundEdges, bookings_in", bookings_in);
 
@@ -495,15 +497,24 @@ function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
 //-------------------------------------------------------------
 function updateOutboundNode(node, bookings_in) {
   const n = node;
+  console.log("===================================================");
 
   // if an ETA changes, the flight arrival delay increases or decreases.
   // This immediately affects rotSlackP according to
   // rotSlackP = rotSlack - arrDelay, where rotSlack is the initial value
 
+  // u.print("updateOutboundNode, node", node);
+  console.log(`updateOutboundNode, node: ${node.id}`);
+
   const feeders = bookings_in[node.id];
   if (feeders === undefined) {
     return undefined;
   }
+  u.print("updateOutboundNode, feeders (not used)", feeders);
+  u.print(
+    "updateOutboundNode, node.inbounds (used for computeMinAct)",
+    n.inbounds
+  );
 
   if (n === undefined || n.inbounds === undefined) {
     return undefined;
@@ -554,10 +565,20 @@ function updateOutboundNode(node, bookings_in) {
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookings_in, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
-  // console.log("INSIDE propDelayNew");
+  console.log(" THERE ARE SURELY ERRORS n the graph topology ");
+  console.log(
+    " Or else the errors are in the bookigns_in, FSUm, or graphEdges"
+  );
+  console.log("<<<<< INSIDE propDelayNew >>>>");
 
   updateInboundEdges(FSUm[id], bookings_in, graphEdges);
   updateOutboundNode(FSUm[id], bookings_in);
+
+  console.log("--------------------------------------------------------------");
+  console.log("STOP AND DEBUG CODE");
+  console.log("STOP AND DEBUG CODE");
+  console.log("STOP AND DEBUG CODE");
+  console.log("--------------------------------------------------------------");
 
   return 0; // not sure what I am returning
 }

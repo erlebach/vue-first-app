@@ -64,7 +64,7 @@ import ModalView from "./ModalView.vue";
 import RadioButton from "primevue/radiobutton";
 import Panel from "primevue/panel";
 import * as u from "../Composition/utils";
-import * as tier from "../Composition/Tierref";
+import * as tier from "../Composition/RigidTierref";
 import G6 from "@antv/g6";
 import { useStore } from "vuex";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";

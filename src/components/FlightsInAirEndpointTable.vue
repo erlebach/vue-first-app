@@ -119,8 +119,45 @@ is returned from the endpoint. -->
     </Column>
     <Column field="sch_arr_z_nf" header="sch_arr_nf (Z)" :sortable="true">
     </Column>
+    <Column field="level" header="level" :sortable="true"> </Column>
     <Column field="arr_delay" header="EADelay (min)" :sortable="true"> </Column>
   </DataTable>
+
+  <!-- start with hidden graph. Show when graph created -->
+  <div>
+    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
+    <div id="GETooltipId" class="GETooltipId"></div>
+    <div id="mountEndpointsGraph"></div>
+  </div>
+  <!-- Add a panel surrounding the radio buttons -->
+  <!-- <span width="200"> -->
+  <div class="p-d-flex flex-start">
+    <Panel
+      class="dark-panel"
+      header="# Tiers"
+      :toggleable="true"
+      :collapsed="false"
+    >
+      <div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
+          <label for="tier2">2</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
+          <label for="tier3">3</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
+          <label for="tier3">4</label>
+        </div>
+        <div class="p-field-radiobutton">
+          <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
+          <label for="tier3">5</label>
+        </div>
+      </div>
+    </Panel>
+  </div>
 
   <!-- ------------------------------------------------------------------------ -->
 
@@ -173,12 +210,6 @@ is returned from the endpoint. -->
   </DataTable>
   <!-- ------------------------------------------------------------------------ -->
 
-  <!-- start with hidden graph. Show when graph created -->
-  <div>
-    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
-    <div id="EndPointsTooltip"></div>
-    <div id="mountEndpointsGraph"></div>
-  </div>
   <div>
     <h2>Connections Graph (based on {{ allPairsRef.city }})</h2>
     <div id="GEConnectionsToolTip"></div>
@@ -201,6 +232,8 @@ import { ref, reactive, isReactive, computed, watch, watchEffect } from "vue";
 import DataTable from "primevue/datatable";
 import ListBox from "primevue/listbox";
 import Column from "primevue/column";
+import Panel from "primevue/panel";
+import RadioButton from "primevue/radiobutton";
 import InputText from "primevue/inputtext";
 import G6 from "@antv/g6";
 // I should factor all the graph routines into a single function called commonGraphImpl.js
@@ -217,6 +250,7 @@ import {
 } from "../Composition/text-processing.js";
 import { computePropagationDelays } from "../Composition/endPointLibrary.js";
 import { boundingBox } from "../Composition/graphImpl.js";
+import * as tier from "../Composition/RigidTierref.js";
 
 function centerGraph(graph) {
   //const layout = graph.get("layout");
@@ -288,7 +322,15 @@ function propagateData(dataRef, initialId) {
 }
 
 export default {
-  components: { ListBox, DataTable, Column, InputText, FlightsInAirHelp },
+  components: {
+    ListBox,
+    DataTable,
+    Column,
+    InputText,
+    FlightsInAirHelp,
+    RadioButton,
+    Panel,
+  },
   props: {
     filePath: String,
     width: Number,
@@ -315,6 +357,7 @@ export default {
     const flightIds = ref(undefined);
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
+    const tiers = ref("3");
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -372,15 +415,14 @@ export default {
       return checkCity(tableRef.city) && checkTime(tableRef.time);
     }
 
-    watch(selectedAllPairsRow, (row) => {
-      //watchEffect(() => {
+    watch([selectedAllPairsRow, tier.getTier], ([row, nbTiers], o) => {
       // console.log("selected row: ", selectedAllPairsRow.value);
-      console.log("before getBEndPointFilesComputed");
+      // console.log("before getBEndPointFilesComputed");
       const data = getEndPointFilesComputed;
-      u.print("row", row);
+      // u.print("row", row);
       const initialId = row.id_f;
-      u.print("data", data);
-      console.log(`before propagateData, initialId: ${initialId}`);
+      // u.print("data", data);
+      // console.log(`before propagateData, initialId: ${initialId}`);
       // u.print("before propagateData, data: ", data.valiue);
       const delayObj = propagateData(data, initialId); // args: ref, value
       // u.print("==> table: ", table);
@@ -388,7 +430,7 @@ export default {
       //console.log("selected row: ", row);
 
       // NEXT STEP: draw   graphRigidModel
-      drawGraphRigidModel(delayObj);
+      drawGraphRigidModel(delayObj, nbTiers);
     });
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
@@ -398,6 +440,12 @@ export default {
     function defineNodes(city, edges, flights, nb_tiers) {
       const nodes = [];
       const ids = [];
+
+      //    obj.nodes.forEach((e) => {
+      // if (obj.id2level[e.id] < nb_tiers) {
+      //   nodes.push({
+      //     id: e.id,
+
       edges.forEach((e) => {
         ids.push(e.source);
         ids.push(e.target);
@@ -410,7 +458,8 @@ export default {
         // if (obj.id2level[e.id] < nb_tiers) {
         // if (city === e.orig || city === e.dest) {
         // u.print("id/e", id);
-        nodes.push(flightIds[id]);
+        const row = flightIds[id];
+        nodes.push(row);
         // }
       });
       return nodes;
@@ -509,10 +558,12 @@ export default {
       return;
     }
 
-    function drawGraphRigidModel(delayObj) {
+    function drawGraphRigidModel(delayObj, nbTiers) {
       const { nodes, edges, graphEdges, id2Level, level2ids, table } = delayObj;
       u.print("==> drawGraphRigidModel, delayObj", delayObj);
       u.print("==> level2ids", level2ids);
+      u.print("==> id2Level", id2Level);
+      console.log(`==> nbTiers: ${nbTiers}`);
       console.log("inside drawGraphRigidModel");
       const nb_tiers = 0; // not used
       // const flights = data.flightTable;
@@ -700,6 +751,7 @@ export default {
       selectedFlightIds,
       flightIds,
       selectedAllPairsRow,
+      tiers,
     };
   },
 };

@@ -506,7 +506,7 @@ export function transferNodesEdgesToGraph(graph) {
 }
 //----------------------------------------------
 export function clearGraph(graph) {
-// Remove all nodes/edges from the graph
+  // Remove all nodes/edges from the graph
   const nodes = graph.get("data").nodes;
   const edges = graph.get("data").edges;
   //console.log("transfer ..., graph, nodes, edges:");

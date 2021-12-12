@@ -12,7 +12,7 @@ export function setupConfiguration(parameters) {
     fitViewPadding: [20, 20, 20, 20],
     animate: false,
     defaultNode: {
-      //trigger: 'mouseleave',
+      trigger: ["mouseenter", "mouseleave"], // fixes tooltip trigger issue
       // size: parameters.defaultNodeSize,
       size: 80,
       // selection of rects works. Circles have a halo around them. WHY?
@@ -194,8 +194,8 @@ export function colorByCity(graph) {
 }
 //--------------------------------------
 const myTooltip = new G6.Tooltip({
-  offsetX: 10, // relative to background container
-  offsetY: 10, // I do not understand these parameters
+  offsetX: 0, // relative to background container (// not working)
+  offsetY: 0, // I do not understand these parameters
   //trigger: "mouseleave",
   fixToNode: [1, 0], // for rect element
   // Types of tooltips allowed
@@ -213,14 +213,14 @@ const myTooltip = new G6.Tooltip({
     const outDiv = document.createElement("div");
     outDiv.style.width = "40rem"; // font size in root element
     outDiv.style.height = "35rem";
-    outDiv.style.position = "absolute"; // position and z-index necessary
+    outDiv.style.position = "relative"; // position and z-index necessary
     outDiv.style.zIndex = "100"; // be draw above datatable header
     // Right edge of tootip is against viewport edge (fixed pos)
     // When I decrease size of viewport, this continue to be true.
-    outDiv.style.left = "1in"; // same distance, independent of scaling!
-    outDiv.style.top = "1in"; // rem units might work better.
+    outDiv.style.left = "0in"; // same distance, independent of scaling!
+    outDiv.style.top = "0in"; // rem units might work better.
     // Bottom edge of tooltip is at 50% of viewport height (fixed pos)
-    outDiv.style.textAlign = "left";
+    outDiv.style.textAlign = "left"; // works
     outDiv.style.fontSize = "1.0rem";
     outDiv.style.paddingLeft = "1.0em"; // negatives do not work
 
