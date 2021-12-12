@@ -121,6 +121,14 @@ is returned from the endpoint. -->
     <Column field="sch_arr_z_nf" header="sch_arr_nf (Z)" :sortable="true">
     </Column>
     <Column field="level" header="level" :sortable="true"> </Column>
+    <!--
+      Distinguish EADelay (Estimated arrival delays), based on ETA versus
+    actual arrival delay (based on IN for plans that landed).
+    Before performing any rigid model analysis, the arrival delays should
+    either be based on IN/OUT/ETA, or undefined (if the plane is on the
+        ground or there is no ETA (in the air) or IN (plane landed)
+    This calculation is performed in text-processing.js
+    -->
     <Column field="arr_delay_f" header="EADelay_f (min)" :sortable="true">
     </Column>
     <Column field="arr_delay_nf" header="EADelay_nf (min)" :sortable="true">

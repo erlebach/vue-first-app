@@ -445,7 +445,22 @@ function saveData() {
     );
     console.log(`==> text-processing, ptyPairs.length: ${ptyPairs.length}`);
 
+    // compute estimated departure and arrival delays
+    setupDelays(flightTable);
+
     let flightIdMap = u.createMapping(flightTable, "id");
+
+    // update ptyPairs with arrDelay and depDelay attributes
+    ptyPairs.forEach((r) => {
+      const id_f = r.id_f;
+      const id_nf = r.id_nf;
+      const row_f = flightIdMap[id_f];
+      const row_nf = flightIdMap[id_nf];
+      r.depDelay_f = row_f.depDelay;
+      r.depDelay_nf = row_nf.depDelay;
+      r.arrDelay_f = row_f.arrDelay;
+      r.arrDelay_nf = row_nf.arrDelay;
+    });
 
     // make a list of fltnum
     const flightNums = [];
@@ -467,8 +482,10 @@ function saveData() {
     u.print("after return from synth, flightTable", flightTable);
     u.print("after return from synth, stationPairs", stationPairs);
     u.print("after return from synth, ptyPairs", ptyPairs);
+    u.print("after return from synth, flightIdMap", flightIdMap);
 
     computeAllPairs(stationPairs, flightIdMap, ptyPairs);
+    u.print("after computeAllPairs, allPairs", allPairs);
 
     setStatus(true);
   });
@@ -639,8 +656,8 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   stationPairs.forEach((r) => {
     const row_f = flightIdMap[r.id_f];
     const row_nf = flightIdMap[r.id_nf];
-    // u.print("stationPairs, row_f", row_f);
-    // u.print("stationPairs, row_nf", row_nf);
+    u.print("stationPairs, row_f", row_f);
+    u.print("stationPairs, row_nf", row_nf);
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
@@ -666,6 +683,10 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       sch_arr_z_nf: row_nf.sch_arr_z,
       status_f: row_f.status,
       status_nf: row_nf.status,
+      arrDelay_f: row_f.arrDelay,
+      arrDelay_nf: row_nf.arrDelay,
+      depDelay_f: row_f.depDelay,
+      depDelay_nf: row_nf.depDelay,
       tail: row_f.tail,
       fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
       est_rotation: -1, // MUST FIX
@@ -674,6 +695,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   });
 
   ptyPairs.forEach((e) => {
+    u.print("ptyPairs row: ", e);
     const row = {
       id_f: e.id_f,
       id_nf: e.id_nf,
@@ -695,6 +717,10 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       sch_arr_z_nf: e.sch_arr_z_nf,
       status_f: e.status_f,
       status_nf: e.status_nf,
+      arrDelay_f: e.arrDelay_f,
+      depDelay_f: e.depDelay_f,
+      arrDelay_nf: e.arrDelay_nf,
+      depDelay_nf: e.depDelay_nf,
       tail: e.tail_f,
       fltnumPair: e.fltnum_f + " - " + e.fltnum_nf,
       est_rotation: -1, // MUST FIX
@@ -728,25 +754,26 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     r.rotSlackP = r.ACT;
     r.pax = "undef"; // probably not required
     //if (r.eta_f !== 0 && r.orig_f == "MIA") { // }
-    if (r.out_f !== 0) {
-      r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
-      r.arr_delay_f = (r.eta_f - r.sch_arr_f) / 60000;
-      console.log(
-        `==> allPairs, r.out_f != 0, arr_delay: ${r.arr_delay}, id: ${r.id}`
-      );
-      console.log(`r.eta_f: ${r.eta_f}, r.sch_arr_f: ${r.sch_arr_f}`);
-      if (r.status_f === "NOT DEP" && r.status_nf === "AIR") {
-        u.print("status NOT DEP, row = ", r); // should not happen. Is eta nonzero? "What about out? "
-        u.print("INCONSISTENT status, row = ", r); // should not happen. Is eta nonzero? "What about out? "
-      } else {
-        // Rarely, the arrival delay is NaN. Why?
-        u.print("r.eta_f !== 0", r);
-        console.log(`status_f_nf: ${r.status_f}, ${r.status_nf}`);
-      }
-      if (r.out_nf !== 0) {
-        r.arr_delay_nf = (r.eta_nf - r.sch_arr_nf) / 60000;
-      }
-    }
+
+    // if (r.out_f !== 0) {
+    //   r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
+    //   r.arr_delay_f = (r.eta_f - r.sch_arr_f) / 60000;
+    //   console.log(
+    //     `==> allPairs, r.out_f != 0, arr_delay: ${r.arr_delay}, id: ${r.id}`
+    //   );
+    //   console.log(`r.eta_f: ${r.eta_f}, r.sch_arr_f: ${r.sch_arr_f}`);
+    //   if (r.status_f === "NOT DEP" && r.status_nf === "AIR") {
+    //     u.print("status NOT DEP, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+    //     u.print("INCONSISTENT status, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+    //   } else {
+    //     // Rarely, the arrival delay is NaN. Why?
+    //     u.print("r.eta_f !== 0", r);
+    //     console.log(`status_f_nf: ${r.status_f}, ${r.status_nf}`);
+    //   }
+    //   if (r.out_nf !== 0) {
+    //     r.arr_delay_nf = (r.eta_nf - r.sch_arr_nf) / 60000;
+    //   }
+    // }
   });
   u.print("allPairs", allPairs);
 }
@@ -878,4 +905,62 @@ export function saveOnce(nbSec) {
     const filenm = "/data/flight_data_" + now + ".txt";
     saveAs(new File(allUpdates, filenm, { type: "text/plain; charset=utf-8" }));
   }, nbSec * 1000); // ms
+}
+
+// compute estimated departure and arrival delays
+export function setupDelays(flightTable) {
+  let countUndefinedArrDelay = 0;
+  let countUndefinedDepDelay = 0;
+  flightTable.forEach((r) => {
+    let arrDelay = 0;
+    let depDelay = 0;
+
+    // u.print("=> text-processing::setupDelays::flightTable row: ", r);
+    if (r.status === "NOT DEP") {
+      if (r.etd > 0) {
+        depDelay = (r.etd - r.sch_dep) / 60000; // min
+      } else {
+        depDelay = 0;
+      }
+      arrDelay = 0;
+    } else if (r.status === "AIR") {
+      if (r.out > 0) {
+        depDelay = (r.out - r.sch_dep) / 60000;
+      } else {
+        depDelay = undefined; // should not happen
+      }
+      if (r.eta > 0) {
+        arrDelay = (r.eta - r.sch_arr) / 60000;
+      } else {
+        arrDelay = undefined; // should not happen
+      }
+    } else if (r.status === "LANDED") {
+      if (r.out > 0) {
+        depDelay = (r.out - r.sch_dep) / 60000;
+      } else {
+        depDelay = undefined; // should not happen
+      }
+      if (r.in > 0) {
+        arrDelay = (r.in - r.sch_arr) / 60000;
+      } else {
+        arrDelay = undefined; // should not happen
+      }
+    }
+
+    r.arrDelay = arrDelay;
+    r.depDelay = depDelay;
+
+    if (arrDelay === undefined) {
+      countUndefinedArrDelay += 1;
+    }
+    if (depDelay === undefined) {
+      countUndefinedDepDelay += 1;
+    }
+  });
+  console.log(
+    `text-processing::setupDelays, countUndefinedArrDelay: ${countUndefinedArrDelay}`
+  );
+  console.log(
+    `text-processing::setupDelays, countUndefinedDepDelay: ${countUndefinedDepDelay}`
+  );
 }
