@@ -52,6 +52,7 @@ is returned from the endpoint. -->
     <template #header>
       <h2>
         All Flight Pairs through (endpoint), {{ allPairsRef.nbRows }} entries
+        (table obtained from text-processing.js)
       </h2>
       <span>Time of day: </span>
       <!-- Only show when table is visible -->
@@ -120,43 +121,69 @@ is returned from the endpoint. -->
     <Column field="sch_arr_z_nf" header="sch_arr_nf (Z)" :sortable="true">
     </Column>
     <Column field="level" header="level" :sortable="true"> </Column>
-    <Column field="arr_delay" header="EADelay (min)" :sortable="true"> </Column>
+    <Column field="arr_delay_f" header="EADelay_f (min)" :sortable="true">
+    </Column>
+    <Column field="arr_delay_nf" header="EADelay_nf (min)" :sortable="true">
+    </Column>
+    <Column field="eta_f" header="eta_f" :sortable="true"> </Column>
+    <Column field="eta_nf" header="eta_nf" :sortable="true"> </Column>
   </DataTable>
 
   <!-- start with hidden graph. Show when graph created -->
-  <div>
-    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
-    <div id="GETooltipId" class="GETooltipId"></div>
-    <div id="mountEndpointsGraph"></div>
-  </div>
   <!-- Add a panel surrounding the radio buttons -->
   <!-- <span width="200"> -->
-  <div class="p-d-flex flex-start">
-    <Panel
-      class="dark-panel"
-      header="# Tiers"
-      :toggleable="true"
-      :collapsed="false"
-    >
+  <div>
+    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
+    <!-- style propagated to text box, but not to panel -->
+    <!-- <div class="p-d-flex flex-start" style="font-size:8ex;color:red"> -->
+    <div class="p-d-flex start">
+      <!-- style below acts on header style. I do not fully understand how this works. -->
       <div>
-        <div class="p-field-radiobutton">
-          <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
-          <label for="tier2">2</label>
-        </div>
-        <div class="p-field-radiobutton">
-          <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
-          <label for="tier3">3</label>
-        </div>
-        <div class="p-field-radiobutton">
-          <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
-          <label for="tier3">4</label>
-        </div>
-        <div class="p-field-radiobutton">
-          <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
-          <label for="tier3">5</label>
-        </div>
+        <!-- <div> needed so that the border is not determined by the flex-style -->
+        <Panel
+          class="dark-panel p-panel-title"
+          :toggleable="true"
+          :collapsed="false"
+          style="font-size:1em;"
+        >
+          <!-- <template #header style="font-size: 0.2em"> # tiers</template> -->
+          <template #header><h2># tiers</h2></template>
+          <!-- <h3># Tiers</h3> -->
+          <div style="{height:5em}">
+            <div class="p-field-radiobutton">
+              <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
+              <label for="tier2">2</label>
+            </div>
+            <div class="p-field-radiobutton">
+              <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
+              <label for="tier3">3</label>
+            </div>
+            <div class="p-field-radiobutton">
+              <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
+              <label for="tier3">4</label>
+            </div>
+            <div class="p-field-radiobutton">
+              <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
+              <label for="tier3">5</label>
+            </div>
+          </div>
+        </Panel>
       </div>
-    </Panel>
+      <div class="p-field p-col-12 p-md-1" style="color:green">
+        <span style="font-size:1em">
+          <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
+        </span>
+        <InputNumber
+          id="integeronly"
+          v-model="inputArrDelay"
+          inputStyle="color:red; width:3em"
+        />
+      </div>
+      <div>
+        <div id="GETooltipId" class="GETooltipId"></div>
+        <div id="mountEndpointsGraph"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ------------------------------------------------------------------------ -->
@@ -233,6 +260,7 @@ import DataTable from "primevue/datatable";
 import ListBox from "primevue/listbox";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
+import InputNumber from "primevue/inputnumber";
 import RadioButton from "primevue/radiobutton";
 import InputText from "primevue/inputtext";
 import G6 from "@antv/g6";
@@ -280,7 +308,7 @@ function listCities(flightTable, flightIds) {
 //   console.log("row-click");
 // }
 
-function propagateData(dataRef, initialId) {
+function propagateData(dataRef, initialId, inputArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
   const {
     flightTable,
@@ -315,9 +343,9 @@ function propagateData(dataRef, initialId) {
     ptyPairs,
     stationPairs,
     allPairs,
-    initialId
+    initialId,
+    inputArrDelay
   );
-
   return delayObj;
 }
 
@@ -327,6 +355,7 @@ export default {
     DataTable,
     Column,
     InputText,
+    InputNumber,
     FlightsInAirHelp,
     RadioButton,
     Panel,
@@ -358,6 +387,7 @@ export default {
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
     const tiers = ref("3");
+    const inputArrDelay = ref(0);
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -415,23 +445,26 @@ export default {
       return checkCity(tableRef.city) && checkTime(tableRef.time);
     }
 
-    watch([selectedAllPairsRow, tier.getTier], ([row, nbTiers], o) => {
-      // console.log("selected row: ", selectedAllPairsRow.value);
-      // console.log("before getBEndPointFilesComputed");
-      const data = getEndPointFilesComputed;
-      // u.print("row", row);
-      const initialId = row.id_f;
-      // u.print("data", data);
-      // console.log(`before propagateData, initialId: ${initialId}`);
-      // u.print("before propagateData, data: ", data.valiue);
-      const delayObj = propagateData(data, initialId); // args: ref, value
-      // u.print("==> table: ", table);
-      // From this row, construct the rigid model
-      //console.log("selected row: ", row);
+    watch(
+      [selectedAllPairsRow, tier.getTier, inputArrDelay],
+      ([row, nbTiers, arrDelay], o) => {
+        // console.log("selected row: ", selectedAllPairsRow.value);
+        // console.log("before getBEndPointFilesComputed");
+        const data = getEndPointFilesComputed;
+        // u.print("row", row);
+        const initialId = row.id_f;
+        // u.print("data", data);
+        // console.log(`before propagateData, initialId: ${initialId}`);
+        // u.print("before propagateData, data: ", data.valiue);
+        const delayObj = propagateData(data, initialId, arrDelay); // args: ref, value
+        // u.print("==> table: ", table);
+        // From this row, construct the rigid model
+        //console.log("selected row: ", row);
 
-      // NEXT STEP: draw   graphRigidModel
-      drawGraphRigidModel(delayObj, nbTiers);
-    });
+        // NEXT STEP: draw   graphRigidModel
+        drawGraphRigidModel(delayObj, nbTiers);
+      }
+    );
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
     saveOnce(1);
@@ -731,6 +764,7 @@ export default {
         });
 
         const allPairs = data.value.allPairs;
+        u.print("before allPairsRef.table = allPairs", allPairs);
         allPairsRef.table = allPairs;
         allPairsRef.nbRows = allPairs.length;
         console.log(`Update allPairsRef, ${allPairs.length}`);
@@ -752,6 +786,7 @@ export default {
       flightIds,
       selectedAllPairsRow,
       tiers,
+      inputArrDelay,
     };
   },
 };
@@ -760,5 +795,15 @@ export default {
 <style scoped>
 #initialId {
   width: 200rem;
+}
+
+/* class */
+.p-panel-title {
+  font-size: 8em;
+  color: blue;
+}
+.p-panel-header {
+  font-size: 8em;
+  color: blue;
 }
 </style>

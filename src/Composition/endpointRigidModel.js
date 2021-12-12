@@ -1,9 +1,8 @@
 /* eslint-disable no-unreachable */
 import { DirectedGraph } from "@datastructures-js/graph";
-// import { max, tail, update } from "lodash";
-// import * as d from "./dates.js";
 import * as u from "./utils.js";
 import * as tier from "./Tierref.js";
+import * as epu from "../Composition/endpointUtils.js";
 // import { watchEffect } from "vue";
 
 //--------------------------------------------------------------------
@@ -267,18 +266,13 @@ export function rigidModel(
   bookings,
   bookings_in,
   bookings_out,
-  edges,
+  // edges, // what are these?
   initialArrDelayP, // delay applied to startingid
   startingId
 ) {
-  // watchEffect(() => {
-  //   console.log(`top of rigidModel, r= ${r.getPost.value}`);
-  // });
-  // checkEdgeSta(); // Debugging
-  // checkEdgePTY(); // Debugging
-
   // Store minAvail Connection time and connection time slack with the outgoing flight
-
+  // Arguments:
+  // initialArrDelayP: delay to impose on the startingId flight for experimentation
   // make all flights arrive and depart on time. Update IN and OUT accordingly.
   // IN -> INP, and OUT -> OUTP. Use INP and OUTP in calculations below.
   // For now, ignore OFF and ON
@@ -303,7 +297,8 @@ export function rigidModel(
     return null;
   }
 
-  if (initialArrDelayP) {
+  if (initialArrDelayP !== undefined) {
+    u.print("initialArrDelayP:", initialArrDelayP);
     console.log(`startingId: ${startingId}`);
     u.print(`FSUm[${startingId}]`, FSUm[startingId]);
     FSUm[startingId].arrDelayP = initialArrDelayP;
@@ -313,9 +308,13 @@ export function rigidModel(
     // Ideally should be set to ETA, which updates every 15 min or so.
     FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
   }
+  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
 
   const outs = bookings_out[startingId];
 
+  // This is the graph to traverse
+  // What are edges? Edges are based on bookings
+  const { edges } = epu.getEdges(bookings);
   const graph = createGraph(edges, bookings_in, bookings_out);
   const id = startingId;
 
@@ -332,12 +331,12 @@ export function rigidModel(
   // At a Station, there is only a single returning flight to PTY we are
   // considering in the analysis with the same tail.
 
-  dFSU.forEach((f) => {
-    if (f.arrDelayP > 0) {
-      const outbounds = bookings_out[f.id];
-      const inbounds = bookings_in[f.id];
-    }
-  });
+  // dFSU.forEach((f) => {
+  //   if (f.arrDelayP > 0) {
+  //     const outbounds = bookings_out[f.id];
+  //     const inbounds = bookings_in[f.id];
+  //   }
+  // });
 
   let countUndef = 0;
   let countDef = 0;
@@ -360,6 +359,10 @@ export function rigidModel(
 
   const idsTraversed = [];
   let graphEdges = new Set(); // (not clear required)
+
+  // Go through the graph and update arrival and departure delays,
+  // slack and rotatioan times
+  // There is no graph created
 
   graph.traverseBfs(id, (key, values) => {
     // outgoing flight from PTY
@@ -392,9 +395,15 @@ export function rigidModel(
   // idsTraversed is not used later
   // Rather, arrDelayP, and other attributes are computed in dFSU
 
+  //const maxArrDelay = -10000; // keep al flights
+  // const maxArrDelay = 15; // arrival delays > 15 min
+  const maxArrDelay = 0; // keep only delayed flights
+
+  // filter nodes from dFSU
+
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
-    if (arrDelayP > 0) {
+    if (arrDelayP > maxArrDelay) {
       // only show nodes with predicted delays greater than zero (i.e., late)
       // if (arrDelayP > -1000) {
       // only show nodes with delays or non-delays   (TEMPORARY)
@@ -407,18 +416,23 @@ export function rigidModel(
     }
   });
 
-  // All edges that have arrival delay_f > 0
+  // filter edges from bookings
+
+  // All edges that have arrival delay_f > maxArrDelay
   const edgesWithInArrDelay = [];
 
   bookings.forEach((b) => {
-    if (b.fsu_f.arrDelayP > 0) {
-      edgesWithInArrDelay.push(b);
+    if (b.fsu_f.arrDelayP > maxArrDelay) {
+      edgesWithInArrDelay.push(b); // no particular order
     }
   });
-  u.checkEdgesDirection(
-    edgesWithInArrDelay,
-    "rigidModel, check order of edgesWithInArrDelay"
-  );
+
+  // u.checkEdgesDirection(
+  //   edgesWithInArrDelay,
+  //   "rigidModel, check order of edgesWithInArrDelay"
+  // );
+
+  // I am not sure graphEdges are needed
 
   // Only keep unique edges
   graphEdges = [...graphEdges];
@@ -460,6 +474,7 @@ export function rigidModel(
 }
 //---------------------------------------------------------------------
 function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
+  // add inbounds to graphEdges
   const nano2min = 1 / 1e9 / 60;
 
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
@@ -495,7 +510,7 @@ function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
   return null;
 }
 //-------------------------------------------------------------
-function updateOutboundNode(node, bookings_in) {
+function updateOutboundNode(node) {
   const n = node;
   console.log("===================================================");
 
@@ -506,11 +521,6 @@ function updateOutboundNode(node, bookings_in) {
   // u.print("updateOutboundNode, node", node);
   console.log(`updateOutboundNode, node: ${node.id}`);
 
-  const feeders = bookings_in[node.id];
-  if (feeders === undefined) {
-    return undefined;
-  }
-  u.print("updateOutboundNode, feeders (not used)", feeders);
   u.print(
     "updateOutboundNode, node.inbounds (used for computeMinAct)",
     n.inbounds
@@ -571,8 +581,9 @@ function propDelayNew(id, bookings_in, FSUm, graphEdges) {
   );
   console.log("<<<<< INSIDE propDelayNew >>>>");
 
+  // I do not think that graphEdges are needed for anything
   updateInboundEdges(FSUm[id], bookings_in, graphEdges);
-  updateOutboundNode(FSUm[id], bookings_in);
+  updateOutboundNode(FSUm[id]);
 
   console.log("--------------------------------------------------------------");
   console.log("STOP AND DEBUG CODE");
@@ -598,6 +609,9 @@ function createGraph(edges, bookings_in, bookings_out) {
   edges.forEach((e) => {
     nodes.add(e.src);
     nodes.add(e.dst);
+    // if (e.src === e.dst) {
+    //   console.log("ATTN: e.src === e.dst"); // should never occur
+    // }
   });
 
   nodes.forEach((n) => {
@@ -608,14 +622,18 @@ function createGraph(edges, bookings_in, bookings_out) {
     graph.addEdge(e.src, e.dst);
   });
 
+  // What is the difference betwen sources and inbounds or outbounds?
+
   const sources = Object.create(null);
   const targets = Object.create(null);
   graph.sources = sources;
   graph.targets = targets;
 
+  // these nodes are just ids
   nodes.forEach((n) => {
-    sources[n] = [];
-    targets[n] = [];
+    console.log("node n: ", n);
+    sources[n] = new Set(); //[];
+    targets[n] = new Set(); //[];
   });
 
   let edges_undefined = 0;
@@ -627,14 +645,30 @@ function createGraph(edges, bookings_in, bookings_out) {
       // never entered
       edges_undefined++;
     } else {
-      targets[src].push(dst);
+      //targets[src].push(dst);
+      targets[src].add(dst);
     }
     if (sources[dst] === undefined) {
       edges_undefined++;
     } else {
-      sources[dst].push(src);
+      //sources[dst].push(src);
+      sources[dst].add(src);
     }
   });
+
+  for (let e in sources) {
+    e = [...e];
+  }
+  for (let e in targets) {
+    e = [...e];
+  }
+
+  // duplicates in sources and targets were removed by using Sets
+  u.print("createGraph, sources", sources);
+  u.print("createGraph, targets", targets);
+  u.print("createGraph, edges_undefined: ", edges_undefined); // none
+  u.print("bookings_in", bookings_in);
+  u.print("bookings_out", bookings_out);
 
   graph.help =
     "targets[srcid] returns all the outbounds of the srcid inbound\n" +

@@ -17,7 +17,7 @@ function findIndex(fsu, idStart) {
     if_nf: {id}
 
 */
-export function propagation_new(fsu, tails, bookings) {
+export function getEdges(bookings) {
   const edges = [];
 
   bookings.forEach((b) => {

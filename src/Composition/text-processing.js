@@ -24,12 +24,12 @@ let ptyPairs = [];
 let stationPairs = [];
 let allPairs = []; // combine ptyPairs and stationPairs
 
-// incomingsMap[outgoing] is the list of associated feeder flights
+// inboundsMap[id_nf] is the list of associated feeder flights
 // Note that there is no guarantee that there will be a feeder flight with the same tail as the outgoing tail number.
 // Most of the time, there will be.
 const inboundsMap = {};
 
-// outboundsMap[feeder] is the list of associated outbound flights
+// outboundsMap[id_f] is the list of associated outbound flights
 // Note that there is no guarantee that there will be an outgoing flight with the same tail as the incoming flight.
 // Most of the time, there will be.
 const outboundsMap = {};
@@ -324,6 +324,7 @@ const GetTableData = () => {
   return data;
 };
 
+//-------------------------------------------------------------
 function saveData() {
   GetTableData().then((response) => {
     const data = response[0];
@@ -381,9 +382,9 @@ function saveData() {
       // 135 flights
       ...inboundNotDeparted,
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
-      //...inboundAtPTY,
+      ...inboundAtPTY,
       ...outboundInFlight,
-      //...outboundLanded,
+      ...outboundLanded,
     ];
     allFlights.forEach((r) => {});
     console.log(`total nb flights: ${allFlights.length}`);
@@ -401,6 +402,7 @@ function saveData() {
     // allFlights is an array of pairs. Should call it allFlightPairs
 
     // remove pairs if dest != orig for either _f or _nf
+    // Each pair corresponds to two planes with the same tail
     ptyPairs = [];
     allFlights.forEach((r) => {
       // console.log(`${r.orig_f}, ${r.dest_f}, ${r.orig_nf}, ${r.dest_nf}`);
@@ -438,11 +440,23 @@ function saveData() {
 
     stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
+    console.log(
+      `==> text-processing, stationPairs.length: ${stationPairs.length}`
+    );
+    console.log(`==> text-processing, ptyPairs.length: ${ptyPairs.length}`);
 
-    const flightIdMap = u.createMapping(flightTable, "id");
+    let flightIdMap = u.createMapping(flightTable, "id");
+
+    // make a list of fltnum
+    const flightNums = [];
+    flightTable.forEach((r) => {
+      flightNums.push(r.fltnum);
+    });
+    console.log(`flightNums: ${flightNums}`);
+    // THERE are no undefines
 
     // Create a list of feeder-outgoing pairs modeling connections
-    const nbConn = 3; // max number of connections
+    const nbConn = 10; // max number of connections
     const { inboundsMap, outboundsMap } = syntheticConnections(
       ptyPairs,
       flightsInAir,
@@ -451,107 +465,16 @@ function saveData() {
     u.print("after return from synth, inboundsMap", inboundsMap);
     u.print("after return from synth, outboundsMap", outboundsMap);
     u.print("after return from synth, flightTable", flightTable);
+    u.print("after return from synth, stationPairs", stationPairs);
+    u.print("after return from synth, ptyPairs", ptyPairs);
 
-    stationPairs.forEach((r) => {
-      const row_f = flightIdMap[r.id_f];
-      const row_nf = flightIdMap[r.id_nf];
-      // u.print("stationPairs, row_f", row_f);
-      // u.print("stationPairs, row_nf", row_nf);
-      const row = {
-        id_f: row_f.id,
-        id_nf: row_nf.id,
-        in_f: row_f.in,
-        in_nf: row_nf.in,
-        out_f: row_f.out,
-        out_nf: row_nf.out,
-        orig_f: row_f.orig,
-        dest_f: row_f.dest,
-        dest_nf: row_nf.dest,
-        sch_dep_f: row_f.sch_dep,
-        sch_dep_nf: row_nf.sch_dep,
-        sch_arr_f: row_f.sch_arr,
-        sch_arr_nf: row_nf.sch_arr,
-        sch_dep_z_f: row_f.sch_dep_z,
-        sch_dep_z_nf: row_nf.sch_dep_z,
-        sch_arr_z_f: row_f.sch_arr_z,
-        sch_arr_z_nf: row_nf.sch_arr_z,
-        status_f: row_f.status,
-        status_nf: row_nf.status,
-        tail: row_f.tail,
-        fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
-        est_rotation: -1, // MUST FIX
-      };
-      allPairs.push(row);
-    });
-
-    ptyPairs.forEach((e) => {
-      allPairs.push(e);
-    });
-
-    // I am waiting on Miguel's endpoint (once a day) to provide me with the connection pattern between flights
-    // - For a feeder, what are the outgoing flights
-    // - For an outgoing flight, what are the feeders
-    allPairs.forEach((r) => {
-      // In general, the tails will be different. Here they are the same.
-      r.ACTAvailable = (r.sch_dep_nf - r.sch_arr_f) / 60000;
-      r.ACTAvailableP = (r.out_nf - r.in_f) / 60000; // 60000 ms per min
-      r.ACTSlack = r.ACTAvailable - 30;
-      r.ACTSlackP = r.ACTSlack; // initial conditions
-      // only applies if tails are the same
-      r.plannedRotation = (r.sch_dep_nf - r.sch_arr_f) / 60000;
-      if (r.plannedRotation < 60) {
-        r.availRotMinReq = r.plannedRotation;
-      } else {
-        r.availRotMinReq = 60; // hardcoded
-      }
-      // const actAvailable =
-      //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
-      r.inDegree = "undef";
-      r.outDegree = "undef";
-
-      // At this stage, all pairs have the same tail
-      r.rotSlack = r.ACTAvailable - 60;
-      r.rotSlackP = r.ACT;
-      r.pax = "undef"; // probably not required
-      //if (r.eta_f !== 0 && r.orig_f == "MIA") {
-      if (r.out_f !== 0) {
-        r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
-        if (r.status_f === "NOT DEP" && r.status_nf === "AIR") {
-          u.print("status NOT DEP, row = ", r); // should not happen. Is eta nonzero? "What about out? "
-          u.print("INCONSISTENT status, row = ", r); // should not happen. Is eta nonzero? "What about out? "
-        } else {
-          // Rarely, the arrival delay is NaN. Why?
-          u.print("r.eta_f !== 0", r);
-          console.log(`status_f_nf: ${r.status_f}, ${r.status_nf}`);
-        }
-      }
-    });
-    u.print("allPairs", allPairs);
-
-    // <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
-    // <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
-    // <li>ACTSlack: ${edge.ACTSlack} min</li>
-    // <li>ACTSlackP: ${edge.ACTSlackP} min</li>
-    // <li>ACTAvailable: ${edge.ACTAvailable} min</li>
-    // <li>ACTAvailableP: ${edge.ACTAvailableP} min</li>
-
-    // <li>Nb incoming flights connecting <br> with outbound flight: ${
-    //   edge.inDegree
-    // }</li>
-    // <li>Nb outgoing flights connecting <br> with inbound flight: ${
-    //   edge.outDegree
-    // }</li>
-    // <li>rotSlackP: ${edge.rotSlackP} min</li>
-    // <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
-    // <!-- If the slack < 45 min, draw in red -->
+    computeAllPairs(stationPairs, flightIdMap, ptyPairs);
 
     setStatus(true);
-
-    //return { flightTable, ptyPairs, stationPairs };
-    // return flightTable, ids2flights, stationPairss, stationPairsMap
   });
 }
 
+//-----------------------------------------------------------------------
 const getEndPointFilesComputed = computed(() => {
   return {
     flightTable,
@@ -565,7 +488,18 @@ const getEndPointFilesComputed = computed(() => {
 
 export { getEndPointFilesComputed };
 
+//------------------------------------------------------------------------
 export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
+  // Arguments
+  // ptyPairs (array): list of flight pairs rotating at PTY
+  // flightsInAir (array):  list of flights (ORIGIN-DEST pair)
+  // nbConn (int): desired number of connections per inbound or outbound flight at PTY
+  //
+  // Returns
+  // inboundsMap: inboundsMap[id_nf]: list of incoming flight ids with different tails
+  // outboundsMap: outboundsMap[id_f]: list of outgoing flight ids with different tails
+  // These maps corresponds to feeders and outbounds at PTY
+
   console.time("Synthetic execution time");
   if (flightsInAir === false) {
     return { inboundsMap, outboundsMap }; // empty objects {}
@@ -601,8 +535,14 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
     outgoingIds.push(r.id_nf);
   });
 
+  // The two flights in a ptyPairs[i] have the same tails. Therefore, the two maps below are
+  // well defined.
+  // idMap[id_f] is the node data of the pair with the specified feeder (id_f)
+  // idMap[id_nf] is the node data of the pair with the specified outbound (id_nf)
   const idfMap = u.createMapping(ptyPairs, "id_f");
   const idnfMap = u.createMapping(ptyPairs, "id_nf");
+  u.print("synthetic, idfMap", idfMap);
+  u.print("synthetic, idnfMap", idnfMap);
 
   // For each feeder ids, identify the 20 outgoing flights that depart closest to the time of arrival
   // For now: Brute force. Per day, about 150 flights, so 150*150 = 22,500 combinations. Still low.
@@ -642,12 +582,23 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   for (const id_in in outboundsMap) {
     const outbounds = outboundsMap[id_in];
 
+    // outbound map is consistent with inbound map
     outbounds.forEach((id_out) => {
       inboundsMap[id_out].push(id_in);
     });
   }
 
+  // remove empty elements from inboundsMap
+  for (let id in inboundsMap) {
+    if (inboundsMap[id].length === 0) {
+      delete inboundsMap[id];
+    }
+  }
+
   console.timeEnd("Synthetic execution time");
+  console.log("==> end of SyntheticConnections");
+  u.print("syntheticConnections, outboundsMap: ", outboundsMap);
+  u.print("syntheticConnections, inboundsMap: ", inboundsMap);
 
   return { inboundsMap, outboundsMap };
 }
@@ -684,6 +635,123 @@ export function computeTails(ptyPairs, flightTable, id2flights) {
   return connections; // id pairs
 }
 
+function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
+  stationPairs.forEach((r) => {
+    const row_f = flightIdMap[r.id_f];
+    const row_nf = flightIdMap[r.id_nf];
+    // u.print("stationPairs, row_f", row_f);
+    // u.print("stationPairs, row_nf", row_nf);
+    const row = {
+      id_f: row_f.id,
+      id_nf: row_nf.id,
+      in_f: row_f.in,
+      in_nf: row_nf.in,
+      eta_f: row_f.eta,
+      eta_nf: row_nf.eta,
+      out_f: row_f.out,
+      out_nf: row_nf.out,
+      orig_f: row_f.orig,
+      orig_nf: row_nf.orig,
+      dest_f: row_f.dest,
+      dest_nf: row_nf.dest,
+      flt_num_f: row_nf.flt_num_f,
+      flt_num_nf: row_nf.flt_num_nf,
+      sch_dep_f: row_f.sch_dep,
+      sch_dep_nf: row_nf.sch_dep,
+      sch_arr_f: row_f.sch_arr,
+      sch_arr_nf: row_nf.sch_arr,
+      sch_dep_z_f: row_f.sch_dep_z,
+      sch_dep_z_nf: row_nf.sch_dep_z,
+      sch_arr_z_f: row_f.sch_arr_z,
+      sch_arr_z_nf: row_nf.sch_arr_z,
+      status_f: row_f.status,
+      status_nf: row_nf.status,
+      tail: row_f.tail,
+      fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
+      est_rotation: -1, // MUST FIX
+    };
+    allPairs.push(row);
+  });
+
+  ptyPairs.forEach((e) => {
+    const row = {
+      id_f: e.id_f,
+      id_nf: e.id_nf,
+      in_f: e.in_f,
+      in_nf: e.in_nf,
+      out_f: e.out_f,
+      out_nf: e.out_nf,
+      orig_f: e.orig_f,
+      orig_nf: e.orig_nf,
+      dest_f: e.dest_f,
+      dest_nf: e.dest_nf,
+      sch_dep_f: e.sch_dep_f,
+      sch_dep_nf: e.sch_dep_nf,
+      sch_arr_f: e.sch_arr_f,
+      sch_arr_nf: e.sch_arr_nf,
+      sch_dep_z_f: e.sch_dep_z_f,
+      sch_dep_z_nf: e.sch_dep_z_nf,
+      sch_arr_z_f: e.sch_arr_z_f,
+      sch_arr_z_nf: e.sch_arr_z_nf,
+      status_f: e.status_f,
+      status_nf: e.status_nf,
+      tail: e.tail_f,
+      fltnumPair: e.fltnum_f + " - " + e.fltnum_nf,
+      est_rotation: -1, // MUST FIX
+    };
+    allPairs.push(row);
+  });
+
+  // I am waiting on Miguel's endpoint (once a day) to provide me with the connection pattern between flights
+  // - For a feeder, what are the outgoing flights
+  // - For an outgoing flight, what are the feeders
+  allPairs.forEach((r) => {
+    // In general, the tails will be different. Here they are the same.
+    r.ACTAvailable = (r.sch_dep_nf - r.sch_arr_f) / 60000;
+    r.ACTAvailableP = (r.out_nf - r.in_f) / 60000; // 60000 ms per min
+    r.ACTSlack = r.ACTAvailable - 30;
+    r.ACTSlackP = r.ACTSlack; // initial conditions
+    // only applies if tails are the same
+    r.plannedRotation = (r.sch_dep_nf - r.sch_arr_f) / 60000;
+    if (r.plannedRotation < 60) {
+      r.availRotMinReq = r.plannedRotation;
+    } else {
+      r.availRotMinReq = 60; // hardcoded
+    }
+    // const actAvailable =
+    //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
+    r.inDegree = "undef";
+    r.outDegree = "undef";
+
+    // At this stage, all pairs have the same tail
+    r.rotSlack = r.ACTAvailable - 60;
+    r.rotSlackP = r.ACT;
+    r.pax = "undef"; // probably not required
+    //if (r.eta_f !== 0 && r.orig_f == "MIA") { // }
+    if (r.out_f !== 0) {
+      r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
+      r.arr_delay_f = (r.eta_f - r.sch_arr_f) / 60000;
+      console.log(
+        `==> allPairs, r.out_f != 0, arr_delay: ${r.arr_delay}, id: ${r.id}`
+      );
+      console.log(`r.eta_f: ${r.eta_f}, r.sch_arr_f: ${r.sch_arr_f}`);
+      if (r.status_f === "NOT DEP" && r.status_nf === "AIR") {
+        u.print("status NOT DEP, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+        u.print("INCONSISTENT status, row = ", r); // should not happen. Is eta nonzero? "What about out? "
+      } else {
+        // Rarely, the arrival delay is NaN. Why?
+        u.print("r.eta_f !== 0", r);
+        console.log(`status_f_nf: ${r.status_f}, ${r.status_nf}`);
+      }
+      if (r.out_nf !== 0) {
+        r.arr_delay_nf = (r.eta_nf - r.sch_arr_nf) / 60000;
+      }
+    }
+  });
+  u.print("allPairs", allPairs);
+}
+
+//----------------------------------------------------------------------
 function computeFlightList(ptyPairs) {
   // Starting from flight pairs, create a table of single flights
   // From this, create dictionaries using id_f and id_nf as keys (provisional)
