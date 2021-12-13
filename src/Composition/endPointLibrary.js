@@ -16,11 +16,15 @@ export function computePropagationDelays(
   stationPairs,
   allPairs,
   initialID,
-  initialArrDelay
+  initialArrDelay, // imposed delay on incoming flight
+  maxArrDelay // control what is taken into account
 ) {
   // Arguments
   // inboundsMap[id_nf]: inbounds associated with id_f (the pair have different tails)
   // outboundsMap[id_nf]: outbounds associated with id_nf (the pair have different tails)
+  // flightTable: list of all flights during the specified period (on the ground and in the air)
+  //       One flight per row. Calculated in text-processing. arrDelay and depDelay attributes have
+  //       been computed and represent best guess arrivals and delays.
 
   // Export function computePropagationDelays(dFSU, dTails, dBookings, initialID)
   // include tails in bookings
@@ -28,14 +32,14 @@ export function computePropagationDelays(
   // sort according to departure time
   flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
 
-  console.log("=============================================================");
-  console.log(
-    `endPointLibrary::computePropagationDelays, initialID: ${initialID}`
-  );
-  u.print("propagationDelays::allPairs", allPairs);
-  u.print("propagationDelays::inboundsMap", inboundsMap);
-  u.print("propagationDelays::outboundsMap", outboundsMap);
-  u.print("propagationDelays::flightTable", flightTable);
+  // console.log("=============================================================");
+  // console.log(
+  //   `endPointLibrary::computePropagationDelays, initialID: ${initialID}`
+  // );
+  // u.print("propagationDelays::allPairs", allPairs);
+  // u.print("propagationDelays::inboundsMap", inboundsMap);
+  // u.print("propagationDelays::outboundsMap", outboundsMap);
+  // u.print("propagationDelays::flightTable", flightTable);
 
   const dFSU = [];
   const dTails = [];
@@ -46,64 +50,28 @@ export function computePropagationDelays(
   // const dFSU_copy = [...dFSU]; // empty array
   //  flightTableRow: in/off/on/out are all 0?  (IS THAT TRUE?) WHY?
   flightTable.forEach((r) => {
-    //u.print("flightTable row: ", r);
-    //
-    let arr_delay_minutes = -1;
-    if (r.in > 0) {
-      arr_delay_minutes = (r.in - r.sch_arr) / 60000; // ms to min
-    } else if (r.eta > 0) {
-      arr_delay_minutes = (r.eta - r.sch_arr) / 60000;
-    } else {
-      arr_delay_minutes = 0;
-    }
-    // console.log(`arr_delay_minutes: ${arr_delay_minutes}`);
-    //u.print("allPairsMap_f[r.id]", allPairsMap_f[r.id]);
-
-    // rotation based on the departing flight in the incoming-outgoing flight pair.
+    // rotation based on the departing flight (_nf) in the incoming-outgoing flight pair.
     const pairRow = allPairsMap_nf[r.id];
     let plannedRotation = 10000;
     if (pairRow !== undefined) {
-      // console.log(pairRow);
       plannedRotation = pairRow.plannedRotation;
-      // console.log(`allPairsMap_f, rotation_planned: ${plannedRotation}`);
-    }
-
-    // Initial values for departure and arrival delays
-    // If plane has not departed, set delays to zero
-    // If plane is in the air, set depDelay based on (OUT-sch_dep), arrDelay to ETA - sch_dep (or 0 if no ETA)
-    // If plane has landed, set depDelay to (OUT-sch_dep), arrDelay to (IN-sch_arr)
-    let depDelay = 0;
-    let arrDelay = 0;
-    if (r.out !== 0) {
-      depDelay = (r.out - r.sch_dep) / 60000; // min
-    } else if (r.etd !== 0) {
-      depDelay = (r.etd - r.sch_dep) / 60000; // min
-    } else {
-      depDelay = 0;
-    }
-    if (r.in !== 0) {
-      arrDelay = (r.in - r.sch_arr) / 60000; // min
-    } else if (r.eta !== 0) {
-      arrDelay = (r.eta - r.sch_arr) / 60000; // min
-    } else {
-      arrDelay = 0;
     }
 
     dFSU.push({
       id: r.id,
-      arrDelay: arrDelay,
-      depDelay: depDelay,
+      arrDelay: r.arrDelay,
+      depDelay: r.depDelay,
       SCH_ARR_DTMZ: r.sch_arr * 1000, // ns
       SCH_DEP_DTMZ: r.sch_dep * 1000, // ns
       ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
-      ARR_DELAY_MINUTES: arr_delay_minutes,
+      ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
       TAIL: r.tail,
       status: r.status, // not in original dFSU
     });
   });
 
   const dFSU_copy = [...dFSU];
-  u.print("dFSU_copy", dFSU_copy); // contains values of FSU defined later. HOW IS THAT POSSIBLE (inside chrome dev)
+  // u.print("dFSU_copy", dFSU_copy); // contains values of FSU defined later. HOW IS THAT POSSIBLE (inside chrome dev)
 
   // const dFSU_copy = [];
   // dFSU.forEach((r) => {
@@ -118,11 +86,11 @@ export function computePropagationDelays(
   //   });
   // });
   // u.print(`dFSU_copy, gordon: ${dFSU_copy.gordon}`);
-  u.printAttributes("dFSU_copy.ARR_DELAY_MINUTES", dFSU_copy, [
-    "ARR_DELAY_MINUTES",
-  ]);
+  // u.printAttributes("dFSU_copy.ARR_DELAY_MINUTES", dFSU_copy, [
+  // "ARR_DELAY_MINUTES",
+  // ]);
   console.log("dfSU, dTail, dBookings");
-  u.print("dFSU", dFSU);
+  // u.print("dFSU", dFSU);
 
   allPairs.forEach((r) => {
     dTails.push({
@@ -131,9 +99,9 @@ export function computePropagationDelays(
     });
   });
 
-  u.print("flightTable", flightTable);
+  // u.print("flightTable", flightTable);
   const flightTableMap = u.createMapping(flightTable, "id");
-  u.print("flightTableMap", flightTableMap);
+  // u.print("flightTableMap", flightTableMap);
 
   // flightTable.forEach((r) => console.log(`r.id: ${r.id}`);
 
@@ -146,66 +114,12 @@ export function computePropagationDelays(
     flightTableMap
   );
 
-  u.print("dTails", dTails);
-  u.print("before add tails: dBookings", dBookings);
+  // checkBookingsForConsistency(dBookings, dTails);
 
-  // Bookings should already have pairs of flights with same tails
-  console.log("Check whether bookings have same pairs with same tails");
-  // Rotations are at PTY and at stations
-  let idPairs = [];
-  dBookings.forEach((r) => {
-    if (r.tail_f === r.tail_nf) {
-      console.log(`bookings with same tails: ${r.id_f}, ${r.id_nf}`);
-      idPairs.push({ id_f: r.id_f, id_nf: r.id_nf });
-    }
-  });
-
-  idPairs = sortBy(idPairs, "id_f");
-  u.print("idPairs: ", idPairs);
-
-  // Count the number of idPairs at station to make sure the number is the same as tails
-  let countPairsPTY = 0;
-  let countPairsSTA = 0;
-  idPairs.forEach((r) => {
-    if (r.id_f.slice(10, 13) !== "PTY") {
-      countPairsPTY += 1;
-    } else {
-      countPairsSTA += 1;
-    }
-  });
-
-  let tailPairs = [];
-  let countTailsPTY = 0;
-  let countTailsSTA = 0;
-  dTails.forEach((r) => {
-    tailPairs.push({ id_f: r.id_f, id_nf: r.id_nf });
-    if (r.id_f.slice(10, 13) !== "PTY") {
-      countTailsPTY += 1;
-    } else {
-      countTailsSTA += 1;
-    }
-  });
-  tailPairs = sortBy(tailPairs, "id_f");
-  u.print("tailPairs: ", tailPairs);
-  u.print("tailPairs.length: ", tailPairs.length); // 83
-  console.log(`(tailPairs) countTailsPTY: ${countTailsPTY}`);
-  console.log(`(tailPairs) countTailsSTA: ${countTailsSTA}`);
-  console.log(
-    `(dBookings) nb of rotations at stations (idPairsPTY): ", ${countPairsPTY}`
-  ); // 13 (124 at PTY)
-  console.log(
-    `(dBookings) nb of rotations at stations (idPairsSTA): ${countPairsSTA}`
-  ); // 13 (124 at PTY)
-
-  // QUESTION: Why the discrepency between tailpairs and countPairs? STRANGE.
-
-  // Verify that each pair of (id_f, id_nf) in dTails can be found in dBookings
-
-  // The easiest way to proceed would be to construct dTails, dBookings, ... to make rigidModel work.
-  // Later on I can simplify.
+  // u.print("dTails", dTails);
+  // u.print("before add tails: dBookings", dBookings);
 
   // dTail are the rotations outside PTY
-
   // No need to add dTail in dBookings. The tails are already included
 
   const id = initialID;
@@ -241,8 +155,11 @@ export function computePropagationDelays(
     bookings_out,
     // edges, // constructed from dBookings. Create edtes in rigidModel?
     initialArrDelay, // applied to id
+    maxArrDelay, // control what nodes are taken into account
     id
   );
+
+  console.log(`initialArrDelay: ${initialArrDelay}`);
 
   //
   // delayObj is in reality:
@@ -255,7 +172,6 @@ export function computePropagationDelays(
   if (delayObj === undefined || delayObj === null) {
     return undefined;
   }
-  u.print("delayObj", delayObj);
   r.setTable(delayObj); // nodes, edges
   const delayNodes = delayObj.nodes;
   // const level2ids = delayNodes.level2ids;
@@ -275,7 +191,7 @@ export function computePropagationDelays(
       depDelayP: d.depDelayP,
       arrDelayP: d.arrDelayP,
       tail: d.TAIL,
-      level: id2level[d.id],
+      level: id2level[d.id], // level only set for nodes traversed
     });
   });
 
@@ -299,6 +215,7 @@ export function computePropagationDelays(
   console.log(`table length: ${table.length}`);
   console.log(table);
   delayObj.table = table;
+  u.print("computePropagationDelays::delayObj", delayObj);
   return delayObj;
 }
 //-----------------------------------------------------------------------
@@ -360,7 +277,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       SCH_ARR_DTMZ_nf: r.sch_arr_nf * 1000, // ns
     });
   });
-  u.print("exit createBookings, dBookings: ", dBookings);
+  // u.print("exit createBookings, dBookings: ", dBookings);
 
   // Remove duplicates (id_f, id_nf) pairs in dBookings
   const bookingsS = new Set();
@@ -374,9 +291,10 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   const dbidf = sortBy(dBookings, "id_f");
   const dbidnf = sortBy(dBookings, "id_nf");
   // There are multiple repeats
-  u.print("dBookings sorted by id_f", dbidf);
-  u.print("dBookings sorted by id_nf", dbidnf);
-  u.print("exit createBookings, unique dBookings: ", dBookings);
+
+  // u.print("dBookings sorted by id_f", dbidf);
+  // u.print("dBookings sorted by id_nf", dbidnf);
+  // u.print("exit createBookings, unique dBookings: ", dBookings);
 
   // Check whether either ORIG or DEST is PTY
   let countOD_f = 0;
@@ -398,3 +316,63 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   return dBookings;
 }
 //---------------------------------------------------------------------------
+function checkBookingsForConsistency(dBookings, dTails) {
+  // Bookings should already have pairs of flights with same tails
+  console.log("Check whether bookings have same pairs with same tails");
+  // Rotations are at PTY and at stations
+  let idPairs = [];
+  dBookings.forEach((r) => {
+    if (r.tail_f === r.tail_nf) {
+      console.log(`bookings with same tails: ${r.id_f}, ${r.id_nf}`);
+      idPairs.push({ id_f: r.id_f, id_nf: r.id_nf });
+    }
+  });
+
+  idPairs = sortBy(idPairs, "id_f");
+  u.print("idPairs: ", idPairs);
+
+  // Count the number of idPairs at station to make sure the number is the same as tails
+  let countPairsPTY = 0;
+  let countPairsSTA = 0;
+  idPairs.forEach((r) => {
+    if (r.id_f.slice(10, 13) !== "PTY") {
+      countPairsPTY += 1;
+    } else {
+      countPairsSTA += 1;
+    }
+  });
+
+  let tailPairs = [];
+  let countTailsPTY = 0;
+  let countTailsSTA = 0;
+  dTails.forEach((r) => {
+    tailPairs.push({ id_f: r.id_f, id_nf: r.id_nf });
+    if (r.id_f.slice(10, 13) !== "PTY") {
+      countTailsPTY += 1;
+    } else {
+      countTailsSTA += 1;
+    }
+  });
+  tailPairs = sortBy(tailPairs, "id_f");
+  u.print("tailPairs: ", tailPairs);
+  u.print("tailPairs.length: ", tailPairs.length); // 83
+  console.log(`(tailPairs) countTailsPTY: ${countTailsPTY}`);
+  console.log(`(tailPairs) countTailsSTA: ${countTailsSTA}`);
+  console.log(
+    `(dBookings) nb of rotations at stations (idPairsPTY): ", ${countPairsPTY}`
+  ); // 13 (124 at PTY)
+  console.log(
+    `(dBookings) nb of rotations at stations (idPairsSTA): ${countPairsSTA}`
+  ); // 13 (124 at PTY)
+
+  // QUESTION: Why the discrepency between tailpairs and countPairs? STRANGE.
+
+  // Verify that each pair of (id_f, id_nf) in dTails can be found in dBookings
+
+  // The easiest way to proceed would be to construct dTails, dBookings, ... to make rigidModel work.
+  // Later on I can simplify.
+
+  // dTail are the rotations outside PTY
+
+  // No need to add dTail in dBookings. The tails are already included
+}

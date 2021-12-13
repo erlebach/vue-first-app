@@ -268,6 +268,7 @@ export function rigidModel(
   bookings_out,
   // edges, // what are these?
   initialArrDelayP, // delay applied to startingid
+  maxArrDelay,
   startingId
 ) {
   // Store minAvail Connection time and connection time slack with the outgoing flight
@@ -298,9 +299,9 @@ export function rigidModel(
   }
 
   if (initialArrDelayP !== undefined) {
-    u.print("initialArrDelayP:", initialArrDelayP);
-    console.log(`startingId: ${startingId}`);
-    u.print(`FSUm[${startingId}]`, FSUm[startingId]);
+    // u.print("initialArrDelayP:", initialArrDelayP);
+    // console.log(`startingId: ${startingId}`);
+    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
     FSUm[startingId].arrDelayP = initialArrDelayP;
     FSUm[startingId].rotSlackP -= initialArrDelayP;
   } else {
@@ -346,12 +347,12 @@ export function rigidModel(
 
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
 
-  console.log("TRAVERSE GRAPH, endpointRigidModel");
-  console.log(`id: ${id}`);
-  u.print("bookings_in", bookings_in);
-  u.print("bookings_out", bookings_out);
-  u.print("bookings", bookings);
-  u.print("FSUm", FSUm);
+  // console.log("TRAVERSE GRAPH, endpointRigidModel");
+  // console.log(`id: ${id}`);
+  // u.print("bookings_in", bookings_in);
+  // u.print("bookings_out", bookings_out);
+  // u.print("bookings", bookings);
+  // u.print("FSUm", FSUm);
 
   // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
   // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
@@ -385,35 +386,42 @@ export function rigidModel(
 
   // return a dictionary that returns the level for any id
   // also return a dictionary that returns a list of ids for each level
-  console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
+  // console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
   //const obj = createId2Level(idsTraversed);
   const { id2level, level2ids } = createId2Level(idsTraversed);
-  console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
-  u.print("rigidModel::id2Level", id2level);
-  u.print("rigidModel::level2ids", level2ids);
+  // console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
+  // u.print("rigidModel::createId2Level, id2Level", id2level);
+  // u.print("rigidModel::createId2Level, level2ids", level2ids);
 
   // idsTraversed is not used later
   // Rather, arrDelayP, and other attributes are computed in dFSU
 
   //const maxArrDelay = -10000; // keep al flights
   // const maxArrDelay = 15; // arrival delays > 15 min
-  const maxArrDelay = 0; // keep only delayed flights
+
+  // The issue is that the first flight should not be removed.
+  // Alternatively, if the first flight is removed, there is no need to analyze
+  // maxArrDelay should be a parameter
+  // const maxArrDelay = 0; // keep only delayed flights
 
   // filter nodes from dFSU
 
+  console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
+
   dFSU.forEach((f) => {
     const arrDelayP = f.arrDelayP;
-    if (arrDelayP > maxArrDelay) {
-      // only show nodes with predicted delays greater than zero (i.e., late)
-      // if (arrDelayP > -1000) {
-      // only show nodes with delays or non-delays   (TEMPORARY)
-      nodesWithArrDelay.push(f);
-      // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
-      // printNodeData(f, "Nodes with delayP>0");
-    }
-    if (f.count > 1) {
-      console.log(`(${f.id}: count: ${f.count} cannot be greater than 1!`);
-    }
+    // if (arrDelayP > maxArrDelay) {
+
+    //   // only show nodes with predicted delays greater than zero (i.e., late)
+    //   // if (arrDelayP > -1000) {
+    //   // only show nodes with delays or non-delays   (TEMPORARY)
+    nodesWithArrDelay.push(f);
+    //   // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
+    //   // printNodeData(f, "Nodes with delayP>0");
+    // }
+    // if (f.count > 1) {
+    //   console.log(`(${f.id}: count: ${f.count} cannot be greater than 1!`);
+    // }
   });
 
   // filter edges from bookings
@@ -467,7 +475,7 @@ export function rigidModel(
   return {
     nodes: nodesWithArrDelay,
     edges: edgesWithInArrDelay, // not useful
-    graphEdges: newEdges,
+    graphEdges: newEdges, // this is the graph we wish to plot (without inbounds)
     level2ids,
     id2level,
   };
@@ -575,21 +583,22 @@ function updateOutboundNode(node) {
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookings_in, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
-  console.log(" THERE ARE SURELY ERRORS n the graph topology ");
-  console.log(
-    " Or else the errors are in the bookigns_in, FSUm, or graphEdges"
-  );
-  console.log("<<<<< INSIDE propDelayNew >>>>");
+  // console.log(" THERE ARE SURELY ERRORS n the graph topology ");
+  // console.log(
+  // " Or else the errors are in the bookigns_in, FSUm, or graphEdges"
+  // );
+  // console.log("<<<<< INSIDE propDelayNew >>>>");
 
   // I do not think that graphEdges are needed for anything
   updateInboundEdges(FSUm[id], bookings_in, graphEdges);
+  // the outbound node is id
   updateOutboundNode(FSUm[id]);
 
-  console.log("--------------------------------------------------------------");
-  console.log("STOP AND DEBUG CODE");
-  console.log("STOP AND DEBUG CODE");
-  console.log("STOP AND DEBUG CODE");
-  console.log("--------------------------------------------------------------");
+  // console.log("--------------------------------------------------------------");
+  // console.log("STOP AND DEBUG CODE");
+  // console.log("STOP AND DEBUG CODE");
+  // console.log("STOP AND DEBUG CODE");
+  // console.log("--------------------------------------------------------------");
 
   return 0; // not sure what I am returning
 }
@@ -631,7 +640,7 @@ function createGraph(edges, bookings_in, bookings_out) {
 
   // these nodes are just ids
   nodes.forEach((n) => {
-    console.log("node n: ", n);
+    // console.log("node n: ", n);
     sources[n] = new Set(); //[];
     targets[n] = new Set(); //[];
   });

@@ -370,13 +370,13 @@ function saveData() {
     const inboundAtPTY = inboundFlightsAtPTY(data); // remove
     const outboundInFlight = outboundFlightsInAir(data); // remove
     const outboundLanded = outboundFlightsLanded(data); // remove
-    u.print(`inboundNotDeparted`, inboundNotDeparted);
-    console.log(`inboundNotDeparted.length: ${inboundNotDeparted.length}`);
-    u.print(`inboundInFlight`, inboundInFlight);
-    console.log(`inboundInFlight.length: ${inboundInFlight.length}`);
-    console.log(`inboundAtPTY.length: ${inboundAtPTY.length}`);
-    console.log(`outboundInFlight.length: ${outboundInFlight.length}`);
-    console.log(`outboundLanded.length: ${outboundLanded.length}`);
+    // u.print(`inboundNotDeparted`, inboundNotDeparted);
+    // console.log(`inboundNotDeparted.length: ${inboundNotDeparted.length}`);
+    // u.print(`inboundInFlight`, inboundInFlight);
+    // console.log(`inboundInFlight.length: ${inboundInFlight.length}`);
+    // console.log(`inboundAtPTY.length: ${inboundAtPTY.length}`);
+    // console.log(`outboundInFlight.length: ${outboundInFlight.length}`);
+    // console.log(`outboundLanded.length: ${outboundLanded.length}`);
     // Only non-cancelled flights
     const allFlights = [
       // 135 flights
@@ -384,7 +384,7 @@ function saveData() {
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
       ...inboundAtPTY,
       ...outboundInFlight,
-      ...outboundLanded,
+      //      ...outboundLanded,
     ];
     allFlights.forEach((r) => {});
     console.log(`total nb flights: ${allFlights.length}`);
@@ -396,8 +396,8 @@ function saveData() {
     //u.print("outboundLanded", outboundLanded);
 
     // allFlights contains pairs of flights at PTY
-    u.print("saveData, before return, allFlights", allFlights);
-    console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
+    // u.print("saveData, before return, allFlights", allFlights);
+    // console.log(`nb flight pairs (some orig==dest): ${allFlights.length}`); // 144
 
     // allFlights is an array of pairs. Should call it allFlightPairs
 
@@ -422,15 +422,15 @@ function saveData() {
     // typically has one ORIG listed. Thus the pair is not admissible.
 
     if (ptyPairs.length == 0) {
-      console.log(
-        "========================================================================"
-      );
-      console.log(
-        "There are no planes either at the station, or inbound flights in the air"
-      );
-      console.log(
-        "========================================================================"
-      );
+      // console.log(
+      //   "========================================================================"
+      // );
+      // console.log(
+      //   "There are no planes either at the station, or inbound flights in the air"
+      // );
+      // console.log(
+      //   "========================================================================"
+      // );
       flightsInAir = false;
     }
 
@@ -440,10 +440,10 @@ function saveData() {
 
     stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
-    console.log(
-      `==> text-processing, stationPairs.length: ${stationPairs.length}`
-    );
-    console.log(`==> text-processing, ptyPairs.length: ${ptyPairs.length}`);
+    // console.log(
+    //   `==> text-processing, stationPairs.length: ${stationPairs.length}`
+    // );
+    // console.log(`==> text-processing, ptyPairs.length: ${ptyPairs.length}`);
 
     // compute estimated departure and arrival delays
     setupDelays(flightTable);
@@ -467,11 +467,11 @@ function saveData() {
     flightTable.forEach((r) => {
       flightNums.push(r.fltnum);
     });
-    console.log(`flightNums: ${flightNums}`);
+    // console.log(`flightNums: ${flightNums}`);
     // THERE are no undefines
 
     // Create a list of feeder-outgoing pairs modeling connections
-    const nbConn = 10; // max number of connections
+    const nbConn = 15; // max number of connections
     const { inboundsMap, outboundsMap } = syntheticConnections(
       ptyPairs,
       flightsInAir,
@@ -517,7 +517,7 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   // outboundsMap: outboundsMap[id_f]: list of outgoing flight ids with different tails
   // These maps corresponds to feeders and outbounds at PTY
 
-  console.time("Synthetic execution time");
+  // console.time("Synthetic execution time");
   if (flightsInAir === false) {
     return { inboundsMap, outboundsMap }; // empty objects {}
   }
@@ -525,7 +525,7 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   const synthPairs = []; // id_f, id_nf pairs
   const dep_nf = sortBy(ptyPairs, "sch_dep_nf");
   const arr_f = sortBy(ptyPairs, "sch_arr_f");
-  u.print("ptyPairs", ptyPairs); // empty!!!
+  // u.print("ptyPairs", ptyPairs); // empty!!!
 
   // Establish a common frame of reference
   const earliest_dep_nf = dep_nf[0].sch_dep_nf;
@@ -558,8 +558,8 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   // idMap[id_nf] is the node data of the pair with the specified outbound (id_nf)
   const idfMap = u.createMapping(ptyPairs, "id_f");
   const idnfMap = u.createMapping(ptyPairs, "id_nf");
-  u.print("synthetic, idfMap", idfMap);
-  u.print("synthetic, idnfMap", idnfMap);
+  // u.print("synthetic, idfMap", idfMap);
+  // u.print("synthetic, idnfMap", idnfMap);
 
   // For each feeder ids, identify the 20 outgoing flights that depart closest to the time of arrival
   // For now: Brute force. Per day, about 150 flights, so 150*150 = 22,500 combinations. Still low.
@@ -612,10 +612,10 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
     }
   }
 
-  console.timeEnd("Synthetic execution time");
-  console.log("==> end of SyntheticConnections");
-  u.print("syntheticConnections, outboundsMap: ", outboundsMap);
-  u.print("syntheticConnections, inboundsMap: ", inboundsMap);
+  // console.timeEnd("Synthetic execution time");
+  // console.log("==> end of SyntheticConnections");
+  // u.print("syntheticConnections, outboundsMap: ", outboundsMap);
+  // u.print("syntheticConnections, inboundsMap: ", inboundsMap);
 
   return { inboundsMap, outboundsMap };
 }
@@ -630,9 +630,9 @@ export function computeTails(ptyPairs, flightTable, id2flights) {
   // order by id_nf
   const fl = lodash.orderBy(flightTable, ["tail", "sch_dep"]);
   const tails = u.createMappingOneToMany(fl, "tail");
-  u.print("fl: ", fl);
-  u.print("computeTails, tails: ", tails);
-  console.log(`computeTails1, tails.length: ${tails.length}`);
+  // u.print("fl: ", fl);
+  // u.print("computeTails, tails: ", tails);
+  // console.log(`computeTails1, tails.length: ${tails.length}`);
   const connections = [];
   let count = 0;
   for (const tail in tails) {
@@ -646,18 +646,22 @@ export function computeTails(ptyPairs, flightTable, id2flights) {
       }
     }
   }
-  u.print("computeTails, tails: ", tails);
-  u.print("computeTails, connections: ", connections);
-  u.print("computeTails, connections.length: ", connections.length);
+  // u.print("computeTails, tails: ", tails);
+  // u.print("computeTails, connections: ", connections);
+  // u.print("computeTails, connections.length: ", connections.length);
   return connections; // id pairs
 }
 
 function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
+  // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
+  // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
+  // u.print("computeAllPairs, stationPairs: ", stationPairs);
+  // u.print("computeAllPairs, ptyPairs: ", ptyPairs);
   stationPairs.forEach((r) => {
     const row_f = flightIdMap[r.id_f];
     const row_nf = flightIdMap[r.id_nf];
-    u.print("stationPairs, row_f", row_f);
-    u.print("stationPairs, row_nf", row_nf);
+    // u.print("stationPairs, row_f", row_f);
+    // u.print("stationPairs, row_nf", row_nf);
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
@@ -671,8 +675,8 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       orig_nf: row_nf.orig,
       dest_f: row_f.dest,
       dest_nf: row_nf.dest,
-      flt_num_f: row_nf.flt_num_f,
-      flt_num_nf: row_nf.flt_num_nf,
+      flt_num_f: row_f.flt_num,
+      flt_num_nf: row_nf.flt_num,
       sch_dep_f: row_f.sch_dep,
       sch_dep_nf: row_nf.sch_dep,
       sch_arr_f: row_f.sch_arr,
@@ -695,7 +699,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   });
 
   ptyPairs.forEach((e) => {
-    u.print("ptyPairs row: ", e);
+    //u.print("ptyPairs row: ", e);
     const row = {
       id_f: e.id_f,
       id_nf: e.id_nf,
@@ -718,11 +722,11 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       status_f: e.status_f,
       status_nf: e.status_nf,
       arrDelay_f: e.arrDelay_f,
-      depDelay_f: e.depDelay_f,
       arrDelay_nf: e.arrDelay_nf,
+      depDelay_f: e.depDelay_f,
       depDelay_nf: e.depDelay_nf,
       tail: e.tail_f,
-      fltnumPair: e.fltnum_f + " - " + e.fltnum_nf,
+      fltnumPair: e.flt_num_f + " - " + e.flt_num_nf,
       est_rotation: -1, // MUST FIX
     };
     allPairs.push(row);
@@ -775,7 +779,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     //   }
     // }
   });
-  u.print("allPairs", allPairs);
+  // u.print("computeAllPairs::allPairs", allPairs);
 }
 
 //----------------------------------------------------------------------
@@ -875,8 +879,8 @@ function computeFlightList(ptyPairs) {
   // <li>Connection Time Slack: ${actAvail} - ${minConnectTime}
   //   = ${actAvail - minConnectTime} min</li>
 
-  console.log(`number of flights: ${flights.length}`);
-  u.print("flights", flights);
+  // console.log(`number of flights: ${flights.length}`);
+  // u.print("flights", flights);
   return flights;
 }
 
@@ -885,7 +889,7 @@ export function saveAtIntervals(nbSec) {
   setInterval(() => {
     // save with repetition
     const keptRows = saveData(); // returns undefined. WHY? Asynchronous?
-    u.print("after return from saveData, keptRows", keptRows);
+    // u.print("after return from saveData, keptRows", keptRows);
     // compute new entries to keptRows: rotation at stations
     allUpdates.push(keptRows);
     const now = moment().calendar();
@@ -898,7 +902,7 @@ export function saveOnce(nbSec) {
   const allUpdates = [];
   setTimeout(() => {
     const keptRows = saveData(); // returns undefined. WHY? Asynchronous?
-    u.print("after return from saveData, keptRows", keptRows);
+    // u.print("after return from saveData, keptRows", keptRows);
     // compute new entries to keptRows: rotation at stations
     allUpdates.push(keptRows);
     const now = moment().calendar();
@@ -957,10 +961,10 @@ export function setupDelays(flightTable) {
       countUndefinedDepDelay += 1;
     }
   });
-  console.log(
-    `text-processing::setupDelays, countUndefinedArrDelay: ${countUndefinedArrDelay}`
-  );
-  console.log(
-    `text-processing::setupDelays, countUndefinedDepDelay: ${countUndefinedDepDelay}`
-  );
+  // console.log(
+  //   `text-processing::setupDelays, countUndefinedArrDelay: ${countUndefinedArrDelay}`
+  // );
+  // console.log(
+  //   `text-processing::setupDelays, countUndefinedDepDelay: ${countUndefinedDepDelay}`
+  // );
 }

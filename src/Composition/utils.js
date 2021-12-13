@@ -48,16 +48,30 @@ export function swap(arra) {
   return arra;
 }
 
-export function createMappingOneToMany(arr, attr) {
+export function createMappingOneToMany(arr, attr, unique = false) {
+  // unique (false): if true: force the "many" to have no repeats
   const mapping = Object.create(null);
 
-  arr.forEach((el) => {
-    mapping[el[attr]] = [];
-  });
+  if (unique === false) {
+    arr.forEach((el) => {
+      mapping[el[attr]] = [];
+    });
 
-  arr.forEach((el) => {
-    mapping[el[attr]].push(el);
-  });
+    arr.forEach((el) => {
+      mapping[el[attr]].push(el);
+    });
+  } else {
+    console.log("unique === true in computeFeeders");
+    arr.forEach((el) => {
+      mapping[el[attr]] = new Set();
+    });
+    arr.forEach((el) => {
+      mapping[el[attr]].add(el);
+    });
+    for (let el in mapping) {
+      mapping[el] = [...mapping[el]];
+    }
+  }
   return mapping;
 }
 

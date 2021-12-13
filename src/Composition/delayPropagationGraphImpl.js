@@ -463,19 +463,19 @@ export function assignNodeLabels(graph) {
 //-------------------------------------------------------------
 export function assignNodeLabelsNew(graph) {
   const nodes = graph.getNodes();
-  u.print("assignNodeLabelsNew, nodes", nodes);
+  // u.print("assignNodeLabelsNew, nodes", nodes);
 
   const degrees = graph.get("degrees");
-  u.print("degrees", degrees);
+  // u.print("degrees", degrees);
 
   nodes.forEach((node) => {
-    console.log(`node id: ${node.getModel().id}`); // written out
+    // console.log(`node id: ${node.getModel().id}`); // written out
     // const Node = graph.findById(node.getModel().id);
     // u.print("findById, Node", Node);
     const degree = graph.getNodeDegree(node.getModel().id, "total");
     // u.print("node", node);
-    u.print("degree", degree);
-    u.print("node", node);
+    // u.print("degree", degree);
+    // u.print("node", node);
     //node.outbounds = undefined; // to avoid infinite loops
     //node.inbounds = undefined;
 
@@ -485,11 +485,11 @@ export function assignNodeLabelsNew(graph) {
       mm.inbounds = undefined;
       mm.outbounds = undefined;
     }
-    u.print("node", node);
+    // u.print("node", node);
     graph.updateItem(node, {
       label: degree,
     });
-    console.log("after updateItem");
+    // console.log("after updateItem");
   });
   return nodes;
 }

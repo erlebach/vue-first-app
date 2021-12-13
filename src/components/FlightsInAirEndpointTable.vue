@@ -5,7 +5,9 @@ is returned from the endpoint. -->
 <template>
   <FlightsInAirHelp show-help="false" />
 
+  <!-- change display to visible to show the datatable -->
   <DataTable
+    style="display:none;"
     :value="flightsRef.table"
     :scrollable="true"
     resizableColumns="true"
@@ -129,9 +131,9 @@ is returned from the endpoint. -->
         ground or there is no ETA (in the air) or IN (plane landed)
     This calculation is performed in text-processing.js
     -->
-    <Column field="arr_delay_f" header="EADelay_f (min)" :sortable="true">
+    <Column field="arrDelay_f" header="EADelay_f (min)" :sortable="true">
     </Column>
-    <Column field="arr_delay_nf" header="EADelay_nf (min)" :sortable="true">
+    <Column field="arrDelay_nf" header="EADelay_nf (min)" :sortable="true">
     </Column>
     <Column field="eta_f" header="eta_f" :sortable="true"> </Column>
     <Column field="eta_nf" header="eta_nf" :sortable="true"> </Column>
@@ -184,6 +186,16 @@ is returned from the endpoint. -->
         <InputNumber
           id="integeronly"
           v-model="inputArrDelay"
+          inputStyle="color:red; width:3em"
+        />
+        <span style="font-size:1em">
+          <label for="integeronly"
+            ><h2>Max Arrival Delay to keep(min)</h2></label
+          >
+        </span>
+        <InputNumber
+          id="integeronly"
+          v-model="maxArrDelayRef"
           inputStyle="color:red; width:3em"
         />
       </div>
@@ -316,7 +328,7 @@ function listCities(flightTable, flightIds) {
 //   console.log("row-click");
 // }
 
-function propagateData(dataRef, initialId, inputArrDelay) {
+function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
   const {
     flightTable,
@@ -352,7 +364,8 @@ function propagateData(dataRef, initialId, inputArrDelay) {
     stationPairs,
     allPairs,
     initialId,
-    inputArrDelay
+    inputArrDelay,
+    maxArrDelay
   );
   return delayObj;
 }
@@ -395,7 +408,8 @@ export default {
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
     const tiers = ref("3");
-    const inputArrDelay = ref(0);
+    const inputArrDelay = ref(100); // imposed on original flight
+    const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -454,17 +468,17 @@ export default {
     }
 
     watch(
-      [selectedAllPairsRow, tier.getTier, inputArrDelay],
-      ([row, nbTiers, arrDelay], o) => {
+      [selectedAllPairsRow, tier.getTier, inputArrDelay, maxArrDelayRef],
+      ([row, nbTiers, arrDelay, maxArrDelay], o) => {
         // console.log("selected row: ", selectedAllPairsRow.value);
         // console.log("before getBEndPointFilesComputed");
         const data = getEndPointFilesComputed;
-        // u.print("row", row);
+        u.print("selected row", row);
         const initialId = row.id_f;
         // u.print("data", data);
         // console.log(`before propagateData, initialId: ${initialId}`);
         // u.print("before propagateData, data: ", data.valiue);
-        const delayObj = propagateData(data, initialId, arrDelay); // args: ref, value
+        const delayObj = propagateData(data, initialId, arrDelay, maxArrDelay); // args: ref, value
         // u.print("==> table: ", table);
         // From this row, construct the rigid model
         //console.log("selected row: ", row);
@@ -533,19 +547,17 @@ export default {
       return edges;
     }
 
-    // watchEffect(() => {
     watch(getStatus, (status) => {
       if (status > 0) {
-        u.print("allPairsref", allPairsRef);
+        // u.print("allPairsref", allPairsRef);
         if (checkEntries(allPairsRef)) {
           if (flightsRef) {
             flightsRef.city = allPairsRef.city;
             flightsRef.time = allPairsRef.time;
-            console.log("===> after checkEntries allPairsRef");
+            // console.log("===> after checkEntries allPairsRef");
             const data = getEndPointFilesComputed.value;
             listCities(data.flightTable, flightIds);
             const city = allPairsRef.city.toUpperCase();
-            // console.log(`before drawGraph(city, data, city: ${city}`);
             // u.print("data", data);
             drawGraph(city, data);
           }
@@ -559,7 +571,7 @@ export default {
     });
 
     function drawGraph(city, data) {
-      console.log("inside drawGraph");
+      // console.log("inside drawGraph");
       const nb_tiers = 0; // not used
       const flights = data.flightTable;
       const allPairs = data.allPairs;
@@ -568,8 +580,8 @@ export default {
       // I should combine ptyPairs with stationPairs to create allPairs array
       const edges = defineEdges(city, allPairs, nb_tiers);
       const nodes = defineNodes(city, edges, flights, nb_tiers);
-      u.print("drawGraph, nodes", nodes);
-      u.print("drawGraph, edges", edges);
+      // u.print("drawGraph, nodes", nodes);
+      // u.print("drawGraph, edges", edges);
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
@@ -586,7 +598,7 @@ export default {
       // This element must be mounted before creating the graph
       graph.data({ nodes, edges });
       graph.render();
-      u.print("drawGraph, graph", graph);
+      // u.print("drawGraph, graph", graph);
 
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
@@ -600,15 +612,21 @@ export default {
     }
 
     function drawGraphRigidModel(delayObj, nbTiers) {
-      const { nodes, edges, graphEdges, id2Level, level2ids, table } = delayObj;
-      u.print("==> drawGraphRigidModel, delayObj", delayObj);
-      u.print("==> level2ids", level2ids);
-      u.print("==> id2Level", id2Level);
-      console.log(`==> nbTiers: ${nbTiers}`);
-      console.log("inside drawGraphRigidModel");
+      u.print("delayObj: ", delayObj);
+      const { nodes, edges, graphEdges, id2level, level2ids, table } = delayObj;
+      // u.print("==> drawGraphRigidModel, delayObj", delayObj);
+      // u.print("==> drawGraphRigidModel::level2ids", level2ids);
+      // u.print("==> drawGraphRigidModel::id2level", id2level);
+      // u.print("==> drawGraphRigidModel::nodes", nodes);
+      // u.print("==> drawGraphRigidModel::edges", edges);
+      // u.print("==> drawGraphRigidModel::table", table);
+      // console.log(`==> nbTiers: ${nbTiers}`);
+      // console.log("inside drawGraphRigidModel");
       const nb_tiers = 0; // not used
       // const flights = data.flightTable;
       // const allPairs = data.allPairs;
+
+      // table: all nodes (why only 96)
 
       // Extract ids for levels 0 throught level_max
       const max_levels = 6;
@@ -617,29 +635,51 @@ export default {
       // Extract the ids for each level
       for (let level = 0; level < max_levels; level++) {
         dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
-        u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
+        // u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
       }
 
       // Construct the edges of the full graph, starting with level zero node
       const gNodes = [];
-      const gEdges = [];
+      let gEdges = [];
+      const tableIds = u.createMapping(table, "id");
+      u.print("tableIds", tableIds);
 
-      nodes.forEach((r) => {
-        r.x = 0;
-        r.y = 0;
-        gNodes.push(r);
-      });
+      // gNodes: all ids from all levels
 
-      edges.forEach((r) => {
+      for (let id in id2level) {
+        console.log(`id: ${id}`);
+        gNodes.push(tableIds[id]);
+      }
+
+      // gNodes are the nodes traversed in rigidBody
+
+      u.print("drawGraphRigidModel::gNodes", gNodes);
+      u.print("drawGraphRigidModel::gNodes[0]", gNodes[0]);
+
+      // nodes.forEach((r) => {
+      //   r.x = 0;
+      //   r.y = 0;
+      //   gNodes.push(r);
+      // });
+
+      graphEdges.forEach((r) => {
         gEdges.push(r);
         r.source = r.id_f;
         r.target = r.id_nf;
         r.id = r.id_f + r.id_nf; // perhaps temporary?
       });
-      u.print("gEdges", gEdges);
-      u.print("gNodes", gNodes);
+      const gEdgesId = u.createMapping(gEdges, "id");
+      gEdges.length = 0;
+      for (let id in gEdgesId) {
+        gEdges.push(gEdgesId[id]);
+      }
+      // create gEdges
+      // u.print("gEdges", gEdges);
+      // u.print("gNodes", gNodes);
 
-      u.checkEdgesDirection(gEdges, "check wrong order");
+      // gEdges has duplicate (id_f, id_nf) pairs. How to remove these duplicates.
+
+      // u.checkEdgesDirection(gEdges, "check wrong order");
 
       // edges always go from level to (level+1)
 
@@ -677,7 +717,7 @@ export default {
       }
 
       // This element must be mounted before creating the graph
-      const data = { nodes: gNodes, edges: gEdges.slice(0) };
+      const data = { nodes: gNodes, edges: gEdges };
       // endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
       // endpointsGraph.refresh(); // not helping with tooltip problem
@@ -741,7 +781,9 @@ export default {
 
         const ptyPairs = data.value.ptyPairs;
         ptyPairs.forEach((r) => {
-          r.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
+          if (r.flt_num_f === undefined) {
+            r.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
+          }
         });
 
         // ptyPairsRef.table = ptyPairs;
@@ -795,6 +837,7 @@ export default {
       selectedAllPairsRow,
       tiers,
       inputArrDelay,
+      maxArrDelayRef,
     };
   },
 };
