@@ -6,6 +6,266 @@ import * as epu from "../Composition/endpointUtils.js";
 // import { watchEffect } from "vue";
 
 //--------------------------------------------------------------------
+export function rigidModel(
+  dFSU, // values
+  bookings,
+  bookings_in,
+  bookings_out,
+  // edges, // what are these?
+  initialArrDelayP, // delay applied to startingid
+  maxArrDelay,
+  startingId
+) {
+  // Store minAvail Connection time and connection time slack with the outgoing flight
+  // Arguments:
+  // initialArrDelayP: delay to impose on the startingId flight for experimentation
+  // make all flights arrive and depart on time. Update IN and OUT accordingly.
+  // IN -> INP, and OUT -> OUTP. Use INP and OUTP in calculations below.
+  // For now, ignore OFF and ON
+
+  resetDelays(dFSU, bookings);
+  const FSUm = u.createMapping(dFSU, "id");
+
+  // End letter P refers to "Propagated" or "Predicted"
+
+  // Edges must be initialized before nodes in order to compute minACT
+  initializeEdges(bookings, FSUm);
+  initializeNodes(FSUm, bookings_in, bookings_out);
+
+  // Initial Node. Add a delay of initialArrDelayPa
+  // Rotation at STA is irrelevant. There is no PAX on this return flight.
+
+  u.print("=> rigidModel, startingId", startingId);
+  u.print("=> FSUm", FSUm);
+
+  if (FSUm[startingId] === undefined) {
+    // Should be done higher up the chain
+    return null;
+  }
+
+  if (initialArrDelayP !== undefined) {
+    // u.print("initialArrDelayP:", initialArrDelayP);
+    // console.log(`startingId: ${startingId}`);
+    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
+    FSUm[startingId].arrDelayP = initialArrDelayP;
+    FSUm[startingId].rotSlackP -= initialArrDelayP;
+  } else {
+    // Arrival delay as given in FSU table
+    // Ideally should be set to ETA, which updates every 15 min or so.
+    FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
+  }
+  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
+
+  const outs = bookings_out[startingId];
+
+  // This is the graph to traverse
+  // What are edges? Edges are based on bookings
+  const { edges } = epu.getEdges(bookings);
+  const graph = createGraph(edges, bookings_in, bookings_out);
+  const id = startingId;
+
+  let countUndefined = 0;
+  let countDefined = 0;
+
+  // Start the analysis, run through the graph, breadth-first
+  // Starting with root_id leaving a Sta and flying to PTY.
+  // Consider the impact of a late arrival on all outgoing flights.
+  // For each outgoing flight, evaluate the minACT. Update the
+  // departureP and arrivalP delays of the outgoing flights if necessary.
+  // also update slackP (ACTslack, or min(ACTslack, ROTslack)
+  // At PTY, there are many outgoing flights connected to single feeder.
+  // At a Station, there is only a single returning flight to PTY we are
+  // considering in the analysis with the same tail.
+
+  // dFSU.forEach((f) => {
+  //   if (f.arrDelayP > 0) {
+  //     const outbounds = bookings_out[f.id];
+  //     const inbounds = bookings_in[f.id];
+  //   }
+  // });
+
+  let countUndef = 0;
+  let countDef = 0;
+
+  const ids = [];
+  let count = 0;
+
+  // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
+
+  // console.log("TRAVERSE GRAPH, endpointRigidModel");
+  // console.log(`id: ${id}`);
+  // u.print("bookings_in", bookings_in);
+  // u.print("bookings_out", bookings_out);
+  // u.print("bookings", bookings);
+  // u.print("FSUm", FSUm);
+
+  // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
+  // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
+  // Check carefully starting with a flight that has not left. <<<<< TODO.
+
+  const idsTraversed = [];
+  let graphEdges = new Set(); // (not clear required)
+
+  // Go through the graph and update arrival and departure delays,
+  // slack and rotatioan times
+  // There is no graph created
+
+  const dFSUids = u.createMapping(dFSU, "id");
+  const idCount = {};
+  for (let id in dFSUids) {
+    let count = 0;
+    graph.traverseBfs(id, (key, values) => {
+      count += 1;
+    });
+    idCount[id] = count;
+  }
+  u.print("rigidModel, traversing graph, idCount", idCount);
+
+  graph.traverseBfs(startingId, (key, values) => {
+    // outgoing flight from PTY
+    idsTraversed.push(key);
+    count += 1;
+    // console.log("-------------------------------------");
+    const isUndefined = propDelayNew(key, bookings_in, FSUm, graphEdges);
+    ids.push([key, isUndefined]);
+    countUndef += isUndefined;
+    countDef += 1 - isUndefined;
+  });
+
+  u.print("idsTraversed", idsTraversed);
+  u.print("ids", ids);
+  console.log(`nb idsTraversed: ${idsTraversed.length}`);
+  // There appears to be no undefined nodes
+
+  // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
+  // u.print("idsTraversed: ", idsTraversed);
+
+  // return a dictionary that returns the level for any id
+  // also return a dictionary that returns a list of ids for each level
+  // console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
+  //const obj = createId2Level(idsTraversed);
+  const { id2level, level2ids } = createId2Level(idsTraversed);
+  // console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
+  // u.print("rigidModel::createId2Level, id2Level", id2level);
+  // u.print("rigidModel::createId2Level, level2ids", level2ids);
+
+  // idsTraversed is not used later
+  // Rather, arrDelayP, and other attributes are computed in dFSU
+
+  //const maxArrDelay = -10000; // keep al flights
+  // const maxArrDelay = 15; // arrival delays > 15 min
+
+  // The issue is that the first flight should not be removed.
+  // Alternatively, if the first flight is removed, there is no need to analyze
+  // maxArrDelay should be a parameter
+  // const maxArrDelay = 0; // keep only delayed flights
+
+  // filter nodes from dFSU
+
+  console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
+
+  const nodesWithArrDelay = [];
+
+  dFSU.forEach((f) => {
+    const arrDelayP = f.arrDelayP;
+    if (arrDelayP > maxArrDelay) {
+      // console.log(`arrDelayP: ${arrDelayP} > ${maxArrDelay}`);
+      //   // only show nodes with predicted delays greater than zero (i.e., late)
+      //   // if (arrDelayP > -1000) {
+      //   // only show nodes with delays or non-delays   (TEMPORARY)
+      nodesWithArrDelay.push(f);
+      //   // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
+      //   // printNodeData(f, "Nodes with delayP>0");
+    }
+    // if (f.count > 1) {
+    //   console.log(`(${f.id}: count: ${f.count} cannot be greater than 1!`);
+    // }
+  });
+
+  // The length of dFSU is always the same.
+  // But traversing the graph, the arrDelayP times are estimated and thus the length
+  // of nodesWithArrDelay can change.
+  console.log(`dFSU.length: ${dFSU.length}`);
+  console.log(
+    `rigidModel::nodesWithArrDelay.length: ${nodesWithArrDelay.length}`
+  );
+
+  // filter edges from bookings
+
+  // All edges that have arrival delay_f > maxArrDelay
+  // Only keep edges with a feeder flight that has a delay > maxArrDelay
+  const edgesWithInArrDelay = [];
+
+  bookings.forEach((b) => {
+    if (b.fsu_f.arrDelayP > maxArrDelay) {
+      edgesWithInArrDelay.push(b); // no particular order
+    }
+  });
+
+  // u.checkEdgesDirection(
+  //   edgesWithInArrDelay,
+  //   "rigidModel, check order of edgesWithInArrDelay"
+  // );
+
+  // graphEdges: all edges traversed. Traverse tree starting with selected ID.
+  // The edges are formed from the inbounds to each node connected to the node.
+
+  // I am not sure graphEdges are needed
+  u.print("rigidModel::graphEdges (Set)", graphEdges);
+  // Only keep unique edges
+
+  // To get unique edges, first define a unique edges id:
+  graphEdges.forEach((r) => {
+    r.id = r.id_f + "_" + r.id_nf;
+  });
+
+  graphEdges = [...graphEdges];
+  const graphEdgeIds = u.createMapping(graphEdges, "id");
+  // convert from Object to array
+  u.print("graphEdgeIds", graphEdgeIds);
+  graphEdges = [];
+  for (let id in graphEdgeIds) {
+    graphEdges.push(graphEdgeIds[id]);
+  }
+
+  // localCompare required to compare strings lexigraphically
+  graphEdges = graphEdges.sort((a, b) => a.id_f.localeCompare(b.id_f));
+  u.print("rigidModel::graphEdges (sorted Array)", graphEdges);
+
+  // Remove from graphEdges all edges that do not connect two nodes
+  // Note that some node were removed, so ss owill also be removed
+
+  // id2level contains all the nodes that were traversed (whether there is delay or not)
+  // newEdges only contains edges between nodes that were traversed
+  const newEdges = [];
+  graphEdges.forEach((r) => {
+    const id_f = r.id_f;
+    const id_nf = r.id_f;
+    const lev_f = id2level[id_f];
+    const lev_nf = id2level[id_nf];
+    if (lev_f !== undefined && lev_nf !== undefined) {
+      newEdges.push(r);
+    }
+  });
+
+  console.log(`edges.length: ${edges.length}`);
+  console.log(`newEdges.length: ${newEdges.length}`);
+
+  // console.log("Edges with In Arrival Delay");
+  // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
+  u.print("nodesWithArrDelay", nodesWithArrDelay);
+  u.print("edgesWithInArrDelay", edgesWithInArrDelay);
+
+  // I really should return all nodes, but only draw the nodes with propagation delay > 0
+  return {
+    nodes: nodesWithArrDelay,
+    edges: edgesWithInArrDelay, // not useful
+    // these are the edges between the nodes that were traversed.
+    graphEdges: newEdges, // this is the graph we wish to plot (without inbounds)
+    level2ids,
+    id2level,
+  };
+}
 //-------------------------------------------------------
 function setupEdgeProps(e, FSUm) {
   const nano2min = 1 / 1e9 / 60;
@@ -188,13 +448,14 @@ function resetDelays(dFSU, bookings) {
     n.INP_DTMZ = n.SCH_ARR_DTMZ;
     n.OUTP_DTMZ = n.SCH_DEP_DTMZ;
   });
-  // u.print("bookings", bookings);
   bookings.forEach((b) => {
     b.INP_DTMZ_f = b.SCH_ARR_DTMZ_f;
     b.INP_DTMZ_nf = b.SCH_ARR_DTMZ_nf;
     b.OUTP_DTMZ_f = b.SCH_DEP_DTMZ_f;
     b.OUTP_DTMZ_nf = b.SCH_DEP_DTMZ_nf;
   });
+  u.print("resetDelays::dFSU", dFSU);
+  u.print("resetDelays::bookings", bookings);
 }
 //---------------------------------------------------------------
 function getOrig(id) {
@@ -261,226 +522,6 @@ function createId2Level(ids) {
   return { id2level, level2ids };
 }
 //---------------------------------------------------------------
-export function rigidModel(
-  dFSU, // values
-  bookings,
-  bookings_in,
-  bookings_out,
-  // edges, // what are these?
-  initialArrDelayP, // delay applied to startingid
-  maxArrDelay,
-  startingId
-) {
-  // Store minAvail Connection time and connection time slack with the outgoing flight
-  // Arguments:
-  // initialArrDelayP: delay to impose on the startingId flight for experimentation
-  // make all flights arrive and depart on time. Update IN and OUT accordingly.
-  // IN -> INP, and OUT -> OUTP. Use INP and OUTP in calculations below.
-  // For now, ignore OFF and ON
-
-  resetDelays(dFSU, bookings);
-  const FSUm = u.createMapping(dFSU, "id");
-
-  // End letter P refers to "Propagated" or "Predicted"
-
-  // Edges must be initialized before nodes in order to compute minACT
-  initializeEdges(bookings, FSUm);
-  initializeNodes(FSUm, bookings_in, bookings_out);
-
-  // Initial Node. Add a delay of initialArrDelayPa
-  // Rotation at STA is irrelevant. There is no PAX on this return flight.
-
-  u.print("=> rigidModel, startingId", startingId);
-  u.print("=> FSUm", FSUm);
-
-  if (FSUm[startingId] === undefined) {
-    // Should be done higher up the chain
-    return null;
-  }
-
-  if (initialArrDelayP !== undefined) {
-    // u.print("initialArrDelayP:", initialArrDelayP);
-    // console.log(`startingId: ${startingId}`);
-    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
-    FSUm[startingId].arrDelayP = initialArrDelayP;
-    FSUm[startingId].rotSlackP -= initialArrDelayP;
-  } else {
-    // Arrival delay as given in FSU table
-    // Ideally should be set to ETA, which updates every 15 min or so.
-    FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
-  }
-  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
-
-  const outs = bookings_out[startingId];
-
-  // This is the graph to traverse
-  // What are edges? Edges are based on bookings
-  const { edges } = epu.getEdges(bookings);
-  const graph = createGraph(edges, bookings_in, bookings_out);
-  const id = startingId;
-
-  let countUndefined = 0;
-  let countDefined = 0;
-
-  // Start the analysis, run through the graph, breadth-first
-  // Starting with root_id leaving a Sta and flying to PTY.
-  // Consider the impact of a late arrival on all outgoing flights.
-  // For each outgoing flight, evaluate the minACT. Update the
-  // departureP and arrivalP delays of the outgoing flights if necessary.
-  // also update slackP (ACTslack, or min(ACTslack, ROTslack)
-  // At PTY, there are many outgoing flights connected to single feeder.
-  // At a Station, there is only a single returning flight to PTY we are
-  // considering in the analysis with the same tail.
-
-  // dFSU.forEach((f) => {
-  //   if (f.arrDelayP > 0) {
-  //     const outbounds = bookings_out[f.id];
-  //     const inbounds = bookings_in[f.id];
-  //   }
-  // });
-
-  let countUndef = 0;
-  let countDef = 0;
-
-  const ids = [];
-  let count = 0;
-
-  // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
-
-  // console.log("TRAVERSE GRAPH, endpointRigidModel");
-  // console.log(`id: ${id}`);
-  // u.print("bookings_in", bookings_in);
-  // u.print("bookings_out", bookings_out);
-  // u.print("bookings", bookings);
-  // u.print("FSUm", FSUm);
-
-  // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
-  // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
-  // Check carefully starting with a flight that has not left. <<<<< TODO.
-
-  const idsTraversed = [];
-  let graphEdges = new Set(); // (not clear required)
-
-  // Go through the graph and update arrival and departure delays,
-  // slack and rotatioan times
-  // There is no graph created
-
-  graph.traverseBfs(id, (key, values) => {
-    // outgoing flight from PTY
-    idsTraversed.push(key);
-    count += 1;
-    // console.log("-------------------------------------");
-    const isUndefined = propDelayNew(key, bookings_in, FSUm, graphEdges);
-    ids.push([key, isUndefined]);
-    countUndef += isUndefined;
-    countDef += 1 - isUndefined;
-  });
-
-  u.print("idsTraversed", idsTraversed);
-  u.print("ids", ids);
-  // There appears to be no undefined nodes
-
-  // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
-  const nodesWithArrDelay = [];
-  // u.print("idsTraversed: ", idsTraversed);
-
-  // return a dictionary that returns the level for any id
-  // also return a dictionary that returns a list of ids for each level
-  // console.log(`before createId2Level, idsTraversed: ${idsTraversed.length}`);
-  //const obj = createId2Level(idsTraversed);
-  const { id2level, level2ids } = createId2Level(idsTraversed);
-  // console.log(`after createId2Level, idsTraversed: ${idsTraversed.length}`);
-  // u.print("rigidModel::createId2Level, id2Level", id2level);
-  // u.print("rigidModel::createId2Level, level2ids", level2ids);
-
-  // idsTraversed is not used later
-  // Rather, arrDelayP, and other attributes are computed in dFSU
-
-  //const maxArrDelay = -10000; // keep al flights
-  // const maxArrDelay = 15; // arrival delays > 15 min
-
-  // The issue is that the first flight should not be removed.
-  // Alternatively, if the first flight is removed, there is no need to analyze
-  // maxArrDelay should be a parameter
-  // const maxArrDelay = 0; // keep only delayed flights
-
-  // filter nodes from dFSU
-
-  console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
-
-  dFSU.forEach((f) => {
-    const arrDelayP = f.arrDelayP;
-    // if (arrDelayP > maxArrDelay) {
-
-    //   // only show nodes with predicted delays greater than zero (i.e., late)
-    //   // if (arrDelayP > -1000) {
-    //   // only show nodes with delays or non-delays   (TEMPORARY)
-    nodesWithArrDelay.push(f);
-    //   // console.log(`id: ${f.id}, arrDelayP: ${arrDelayP}`);
-    //   // printNodeData(f, "Nodes with delayP>0");
-    // }
-    // if (f.count > 1) {
-    //   console.log(`(${f.id}: count: ${f.count} cannot be greater than 1!`);
-    // }
-  });
-
-  // filter edges from bookings
-
-  // All edges that have arrival delay_f > maxArrDelay
-  const edgesWithInArrDelay = [];
-
-  bookings.forEach((b) => {
-    if (b.fsu_f.arrDelayP > maxArrDelay) {
-      edgesWithInArrDelay.push(b); // no particular order
-    }
-  });
-
-  // u.checkEdgesDirection(
-  //   edgesWithInArrDelay,
-  //   "rigidModel, check order of edgesWithInArrDelay"
-  // );
-
-  // I am not sure graphEdges are needed
-
-  // Only keep unique edges
-  graphEdges = [...graphEdges];
-  // localCompare required to compare strings lexigraphically
-  graphEdges = graphEdges.sort((a, b) => a.id_f.localeCompare(b.id_f));
-
-  // Remove from graphEdges all edges that do not connect two nodes
-  // Note that some node were removed, so ss owill also be removed
-
-  // id2level contains all the nodes (whether there is delay or not)
-  const newEdges = [];
-  graphEdges.forEach((r) => {
-    const id_f = r.id_f;
-    const id_nf = r.id_f;
-    const lev_f = id2level[id_f];
-    const lev_nf = id2level[id_nf];
-    if (lev_f !== undefined && lev_nf !== undefined) {
-      newEdges.push(r);
-    }
-  });
-
-  console.log(`edges.length: ${edges.length}`);
-  console.log(`newEdges.length: ${newEdges.length}`);
-  u.print("newEdges", newEdges);
-
-  // console.log("Edges with In Arrival Delay");
-  // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
-  u.print("nodesWithArrDelay", nodesWithArrDelay);
-  u.print("edgesWithInArrDelay", edgesWithInArrDelay);
-
-  // I really should return all nodes, but only draw the nodes with propagation delay > 0
-  return {
-    nodes: nodesWithArrDelay,
-    edges: edgesWithInArrDelay, // not useful
-    graphEdges: newEdges, // this is the graph we wish to plot (without inbounds)
-    level2ids,
-    id2level,
-  };
-}
-//---------------------------------------------------------------------
 function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
   // add inbounds to graphEdges
   const nano2min = 1 / 1e9 / 60;

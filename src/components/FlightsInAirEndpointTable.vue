@@ -186,7 +186,7 @@ is returned from the endpoint. -->
         <InputNumber
           id="integeronly"
           v-model="inputArrDelay"
-          inputStyle="color:red; width:3em"
+          inputStyle="color:red; width:4em"
         />
         <span style="font-size:1em">
           <label for="integeronly"
@@ -196,8 +196,13 @@ is returned from the endpoint. -->
         <InputNumber
           id="integeronly"
           v-model="maxArrDelayRef"
-          inputStyle="color:red; width:3em"
+          inputStyle="color:red; width:4em"
         />
+        <div>Nb nodes: {{ infoRef.nbNodes }}</div>
+        <div>Nb edges: {{ infoRef.nbEdges }}</div>
+        <div>Nb graph edges: {{ infoRef.nbGraphEdges }}</div>
+        <div>level2ids: {{ infoRef.level2ids }}</div>
+        <div>nbId2level: {{ infoRef.nbId2level }}</div>
       </div>
       <div>
         <div id="GETooltipId" class="GETooltipId"></div>
@@ -408,8 +413,16 @@ export default {
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
     const tiers = ref("3");
-    const inputArrDelay = ref(100); // imposed on original flight
+    const inputArrDelay = ref(100); // imposed on original flight = arrDelayP (predicted)
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
+
+    const infoRef = reactive({
+      nbEdges: 0,
+      nbNodes: 0,
+      nbGraphEdges: 0,
+      level2ids: 0,
+      nbId2level: 0,
+    });
 
     const flightsRef = reactive({
       nbRows: 0,
@@ -614,6 +627,22 @@ export default {
     function drawGraphRigidModel(delayObj, nbTiers) {
       u.print("delayObj: ", delayObj);
       const { nodes, edges, graphEdges, id2level, level2ids, table } = delayObj;
+
+      infoRef.nbNodes = nodes.length;
+      infoRef.nbEdges = nodes.length;
+      infoRef.nbGraphEdges = graphEdges.length;
+      infoRef.level2ids = [
+        level2ids[0].length,
+        level2ids[1].length,
+        level2ids[2].length,
+        level2ids[3].length,
+        level2ids[4].length,
+      ];
+      infoRef.nbId2level = 0;
+      for (let id in id2level) {
+        infoRef.nbId2level++;
+      }
+
       // u.print("==> drawGraphRigidModel, delayObj", delayObj);
       // u.print("==> drawGraphRigidModel::level2ids", level2ids);
       // u.print("==> drawGraphRigidModel::id2level", id2level);
@@ -838,6 +867,7 @@ export default {
       tiers,
       inputArrDelay,
       maxArrDelayRef,
+      infoRef,
     };
   },
 };

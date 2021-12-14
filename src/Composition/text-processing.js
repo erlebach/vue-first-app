@@ -305,7 +305,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -471,18 +471,18 @@ function saveData() {
     // THERE are no undefines
 
     // Create a list of feeder-outgoing pairs modeling connections
-    const nbConn = 15; // max number of connections
+    const nbConn = 10; // max number of connections
     const { inboundsMap, outboundsMap } = syntheticConnections(
       ptyPairs,
       flightsInAir,
       nbConn
     );
-    u.print("after return from synth, inboundsMap", inboundsMap);
-    u.print("after return from synth, outboundsMap", outboundsMap);
+    // u.print("after return from synth, inboundsMap", inboundsMap);
+    // u.print("after return from synth, outboundsMap", outboundsMap);
     u.print("after return from synth, flightTable", flightTable);
-    u.print("after return from synth, stationPairs", stationPairs);
+    // u.print("after return from synth, stationPairs", stationPairs);
     u.print("after return from synth, ptyPairs", ptyPairs);
-    u.print("after return from synth, flightIdMap", flightIdMap);
+    // u.print("after return from synth, flightIdMap", flightIdMap);
 
     computeAllPairs(stationPairs, flightIdMap, ptyPairs);
     u.print("after computeAllPairs, allPairs", allPairs);
