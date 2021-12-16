@@ -212,6 +212,35 @@ is returned from the endpoint. -->
   </div>
 
   <!-- ------------------------------------------------------------------------ -->
+  <!-- DataTable of results returned from rigidBody -->
+  <DataTable
+    :value="rigidBodyRef.table"
+    :scrollable="true"
+    resizableColumns="true"
+    scrollHeight="300px"
+    expandedRows="expandedRows"
+    columnResizeMode="expand"
+    v-model:selection="selectedAllPairsRow"
+    selectionMode="single"
+    dataKey="id_f"
+  >
+    <template #header>
+      <h2>Data from rigid body model</h2>
+    </template>
+    <Column field="id" header="id" :sortable="true" :style="col"> </Column>
+    <Column field="depDelay" header="dep delay" :sortable="true" :style="col">
+    </Column>
+    <Column field="depDelayP" header="dep delayP" :sortable="true" :style="col">
+    </Column>
+    <Column field="arrDelay" header="arrDelay" :sortable="true"> </Column>
+    <Column field="arrDelayP" header="arrDelayP" :sortable="true"> </Column>
+    <Column field="tail" header="Tail" :sortable="true"> </Column>
+    <Column field="level" header="Level" :sortable="true"> </Column>
+
+    id: d.id, depDelay: d.depDelay, arrDelay: d.arrDelay, depDelayP:
+    d.depDelayP, arrDelayP: d.arrDelayP, tail: d.TAIL, level: id2level[d.id],
+  </DataTable>
+  <!-- ------------------------------------------------------------------------ -->
 
   <DataTable
     :value="flightsInAirRef.table"
@@ -301,7 +330,8 @@ import {
   getEndpointFiles,
   getEndPointFilesComputed,
 } from "../Composition/text-processing.js";
-import { computePropagationDelays } from "../Composition/endPointLibrary.js";
+// refactored to no recompute unnecessary data
+import { computePropagationDelays } from "../Composition/endPointLibraryOnce.js";
 import { boundingBox } from "../Composition/graphImpl.js";
 import * as tier from "../Composition/RigidTierref.js";
 
@@ -433,6 +463,15 @@ export default {
       initialId: null,
     });
 
+    const rigidBodyRef = reactive({
+      nbRows: 0,
+      table: null,
+      city: null,
+      cityEntered: null,
+      timeEntered: null,
+      initialId: null,
+    });
+
     const flightsInAirRef = reactive({
       nbRows: 0,
       table: null,
@@ -492,6 +531,7 @@ export default {
         // console.log(`before propagateData, initialId: ${initialId}`);
         // u.print("before propagateData, data: ", data.valiue);
         const delayObj = propagateData(data, initialId, arrDelay, maxArrDelay); // args: ref, value
+        rigidBodyRef.table = delayObj.table;
         // u.print("==> table: ", table);
         // From this row, construct the rigid model
         //console.log("selected row: ", row);
@@ -857,6 +897,7 @@ export default {
       ifhelp,
       flightsRef,
       allPairsRef,
+      rigidBodyRef,
       flightsInAirRef,
       inputTime,
       listedTime,

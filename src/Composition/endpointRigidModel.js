@@ -35,32 +35,18 @@ export function rigidModel(
   // Initial Node. Add a delay of initialArrDelayPa
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
 
-  u.print("=> rigidModel, startingId", startingId);
+  // u.print("=> rigidModelOnce, startingId", startingId);
   u.print("=> FSUm", FSUm);
 
-  if (FSUm[startingId] === undefined) {
-    // Should be done higher up the chain
-    return null;
+  // I should probably turn this off
+  if (setupInitialDelay(FSUm, startingId, initialArrDelayP) === undefined) {
+    return undefined;
   }
-
-  if (initialArrDelayP !== undefined) {
-    // u.print("initialArrDelayP:", initialArrDelayP);
-    // console.log(`startingId: ${startingId}`);
-    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
-    FSUm[startingId].arrDelayP = initialArrDelayP;
-    FSUm[startingId].rotSlackP -= initialArrDelayP;
-  } else {
-    // Arrival delay as given in FSU table
-    // Ideally should be set to ETA, which updates every 15 min or so.
-    FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
-  }
-  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
-
-  const outs = bookings_out[startingId];
 
   // This is the graph to traverse
   // What are edges? Edges are based on bookings
   const { edges } = epu.getEdges(bookings);
+  // Only computed each time data retrieved
   const graph = createGraph(edges, bookings_in, bookings_out);
   const id = startingId;
 
@@ -84,12 +70,6 @@ export function rigidModel(
   //   }
   // });
 
-  let countUndef = 0;
-  let countDef = 0;
-
-  const ids = [];
-  let count = 0;
-
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
 
   // console.log("TRAVERSE GRAPH, endpointRigidModel");
@@ -102,6 +82,18 @@ export function rigidModel(
   // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
   // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
   // Check carefully starting with a flight that has not left. <<<<< TODO.
+
+  // **** Calculation done each time delays are changed via the user interface.
+  // Call once automatically after reading data from the web.
+
+  function updatePredictedArrivals(dFSU, graph) {}
+
+  //-------------------------------------------------------- BEGIN
+  let countUndef = 0;
+  let countDef = 0;
+
+  const ids = [];
+  let count = 0;
 
   const idsTraversed = [];
   let graphEdges = new Set(); // (not clear required)
@@ -257,14 +249,18 @@ export function rigidModel(
   u.print("edgesWithInArrDelay", edgesWithInArrDelay);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
+
+  // What is computed once, and what is computed each time GUI changes?
   return {
-    nodes: nodesWithArrDelay,
-    edges: edgesWithInArrDelay, // not useful
+    nodes: nodesWithArrDelay, // EACH TIME
+    edges: edgesWithInArrDelay, // not useful EACH TIME
     // these are the edges between the nodes that were traversed.
-    graphEdges: newEdges, // this is the graph we wish to plot (without inbounds)
-    level2ids,
-    id2level,
+    graphEdges: newEdges, // this is the graph we wish to plot (without inbounds) (COMPUTED EACH TIME)
+    level2ids, // ONCE
+    id2level, // ONCE
   };
+  // What is important is know the graph I am traversing without updating nodes. Update nodes on subsequent passes.
+  // Graph should work with a clean copy of the data (bookings and dFSU). HOW TO DO THIS?
 }
 //-------------------------------------------------------
 function setupEdgeProps(e, FSUm) {
@@ -749,4 +745,28 @@ function computeMinACT(inbounds, FSUm = undefined, verbose = false) {
   });
 
   return obj;
+}
+
+//------------------------------------------------------------------------------------
+function setupInitialDelay(FSUm, startingId, initialArrDelayP) {
+  // Not needed at this level
+  if (FSUm[startingId] === undefined) {
+    // Should be done higher up the chain
+    return undefined;
+  }
+
+  // Should be done in a method that recalculates the predicted arrival times <<<<<<
+  if (initialArrDelayP !== undefined) {
+    // u.print("initialArrDelayP:", initialArrDelayP);
+    // console.log(`startingId: ${startingId}`);
+    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
+    FSUm[startingId].arrDelayP = initialArrDelayP;
+    FSUm[startingId].rotSlackP -= initialArrDelayP;
+  } else {
+    // Arrival delay as given in FSU table
+    // Ideally should be set to ETA, which updates every 15 min or so.
+    FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
+  }
+  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
+  return true;
 }

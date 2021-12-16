@@ -11,6 +11,7 @@ import { ArgumentOutOfRangeError } from "rxjs";
 import { watchEffect, computed, ref } from "vue";
 import { sortBy } from "lodash";
 
+// Has no effect
 const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
 
 // Boolean flag: true if there are either no inbounds in-flight or inbounds at the station

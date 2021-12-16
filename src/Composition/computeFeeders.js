@@ -22,6 +22,8 @@ export function computeFeeders(bookings) {
   // The many elements must be unique
   const bookings_in = u.createMappingOneToMany(bookings, "id_nf");
 
+  // Remove duplicate entries in each entry of bookings_in and bookings_out
+
   u.print("computeFeeders::bookings_in", bookings_in);
   u.print("computeFeeders::bookings_out", bookings_out);
 
