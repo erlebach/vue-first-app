@@ -3,6 +3,14 @@ import store from "../store/index.js";
 import { colorByCity } from "../Composition/graphImpl.js"; // should not be called from here
 import { assignNodeLabels, transferNodesEdgesToGraph } from "./graphImpl.js"; // not good practice for utils
 
+export function floor(x) {
+  return Math.floor(x);
+}
+
+export function int(x) {
+  return parseInt(x);
+}
+
 export function checkEdgesDirection(edges, msg) {
   const wrongOrder = [];
   edges.forEach((r) => {

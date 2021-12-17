@@ -142,12 +142,14 @@ function getRow(e) {
     flt_num_f: e.FLT_NUM,
     flt_num_nf: e.NEXT_FLT_NUM,
     tail: e.REG, // both flights have the same tail. (tail has always has 4 digits)
+    tail_f: e.REG, // Add both tail_f and tail_nf since I will be
+    tail_nf: e.REG, // merging this list with bookings where tails are different
     // 0: inbound not departed
     // 1: inbound departed, not landed
     // 2: inbound landed, outbound not departed (at PTY)
     // 3: outbound departed
     // 4: outbound landed
-    status: -1, // value not yet set
+    status: undefined,
   };
   // if flight has not departed, rotation is estimated based on
   // scheduled times
@@ -329,8 +331,8 @@ const GetTableData = () => {
 function saveData() {
   GetTableData().then((response) => {
     const data = response[0];
-    u.print("readin dataMap[fltnum]", u.createMapping(data, "FLT_NUM"));
-    u.print("readin data", data);
+    // u.print("readin dataMap[fltnum]", u.createMapping(data, "FLT_NUM"));
+    // u.print("readin data", data);
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
 
@@ -683,13 +685,25 @@ export function computeTails(ptyPairs, flightTable) {
 function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
   // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
-  // u.print("computeAllPairs, stationPairs: ", stationPairs);
-  // u.print("computeAllPairs, ptyPairs: ", ptyPairs);
+  // u.print(
+  //   `computeAllPairs, stationPairs ${stationPairs.length}: `,
+  //   sortBy(stationPairs, "orig_f")
+  // );
+  // u.print(
+  //   `computeAllPairs, ptyPairs ${ptyPairs.length}: `,
+  //   sortBy(ptyPairs, "orig_f")
+  // );
   stationPairs.forEach((r) => {
     const row_f = flightIdMap[r.id_f];
     const row_nf = flightIdMap[r.id_nf];
-    // u.print("computeAllPairs::stationPairs, row_f", row_f);
-    // u.print("computeAllPairs::stationPairs, row_nf", row_nf);
+    // u.print(
+    //   `computeAllPairs::stationPairs, row_f, ${row_f.id}, ${row_f.tail}`,
+    //   row_f
+    // );
+    // u.print(
+    //   `computeAllPairs::stationPairs, row_nf, ${row_nf.id}, ${row_nf.tail}`,
+    //   row_nf
+    // );
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
@@ -720,14 +734,20 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       depDelay_f: row_f.depDelay,
       depDelay_nf: row_nf.depDelay,
       tail: row_f.tail,
+      tail_f: row_f.tail,
+      tail_nf: row_nf.tail,
       fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
-      est_rotation: -1, // MUST FIX
+      // sch_dep_nf - sch_arr_f
+      planned_rotation: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min
     };
     allPairs.push(row);
   });
 
   ptyPairs.forEach((e) => {
     //u.print("ptyPairs row: ", e);
+    u.print(
+      `computeAllPairs::stationPairs, e, ${e.id_f}, ${e.id_nf}, ${e.tail}, ${e.tail_f}, ${e.tail_nf}`
+    );
     const row = {
       id_f: e.id_f,
       id_nf: e.id_nf,
@@ -753,9 +773,11 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       arrDelay_nf: e.arrDelay_nf,
       depDelay_f: e.depDelay_f,
       depDelay_nf: e.depDelay_nf,
-      tail: e.tail_f,
+      tail: e.tail,
+      tail_f: e.tail,
+      tail_nf: e.tail,
       fltnumPair: e.flt_num_f + " - " + e.flt_num_nf,
-      est_rotation: -1, // MUST FIX
+      planned_rotation: (e.sch_dep_nf - e.sch_arr_f) / 60000000, // ns -> min
     };
     allPairs.push(row);
   });
@@ -925,8 +947,8 @@ export function saveAtIntervals(nbSec) {
     // compute new entries to keptRows: rotation at stations
     allUpdates.push(keptRows);
     const now = moment().calendar();
-    const filenm = "/data/flight_data_" + now + ".txt";
-    saveAs(new File(allUpdates, filenm, { type: "text/plain; charset=utf-8" }));
+    // const filenm = "/data/flight_data_" + now + ".txt";
+    // saveAs(new File(allUpdates, filenm, { type: "text/plain; charset=utf-8" }));
   }, nbSec * 1000); // ms
 }
 
@@ -938,8 +960,8 @@ export function saveOnce(nbSec) {
     // compute new entries to keptRows: rotation at stations
     allUpdates.push(keptRows);
     const now = moment().calendar();
-    const filenm = "/data/flight_data_" + now + ".txt";
-    saveAs(new File(allUpdates, filenm, { type: "text/plain; charset=utf-8" }));
+    // const filenm = "/data/flight_data_" + now + ".txt";
+    // saveAs(new File(allUpdates, filenm, { type: "text/plain; charset=utf-8" }));
   }, nbSec * 1000); // ms
 }
 

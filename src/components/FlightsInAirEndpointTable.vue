@@ -543,7 +543,7 @@ export default {
     );
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
-    saveOnce(1);
+    saveOnce(0);
     //saveAtIntervals(3); // Retrieves data at fixed intervals
 
     function defineNodes(city, edges, flights, nb_tiers) {

@@ -40,7 +40,7 @@ export function setupConfiguration(parameters) {
       style: {
         //stroke: "darkorange", // I could not overide
         lineWidth: 6.0,
-        lineAppendWidth: 3, // only used to help select the edge
+        lineAppendWidth: 20, // only used to help select the edge (I should make the width a function of screen resolution)
         endArrow: {
           // ARROWS ARE NOT DISPLAYING. THEY USED TO.
           // measurement in pixels.
@@ -232,11 +232,15 @@ const myTooltip = new G6.Tooltip({
     const nano2min = 1 / 1e9 / 60;
     const node = e.item.getModel(); // Is this the best way?
     // const depDelay = (node.outZ - node.schDepZ) * nano2min;
-    const depDelayP = node.depDelayP;
-    const depDelay = node.depDelay;
+    const depDelayP = u.floor(node.depDelayP);
+    const depDelay = u.floor(node.depDelay);
     // const arrDelay = (node.inZ - node.schArrZ) * nano2min;
-    const arrDelayP = node.arrDelayP;
-    const arrDelay = node.arrDelay;
+    const arrDelayP = u.floor(node.arrDelayP);
+    const arrDelay = u.floor(node.arrDelay);
+    const rotSlackP = u.floor(node.rotSlackP);
+    const slackP = u.floor(node.slackP);
+    const ACTSlackP = u.floor(node.ACTSlackP);
+    const minACTP = u.floor(node.minACTP);
 
     if (e.item.getType() === "node") {
       let depDelayColor;
@@ -309,14 +313,14 @@ const myTooltip = new G6.Tooltip({
         <li>Sch Dep: ${node.schDepTMZ} UTC</li>
         <li>Sch Arr: ${node.schArrTMZ} UTC</li>
         <li style="color:${depDelayColor};">Dep Delay: ${depDelay} min</li>
-        <li style="color:${depDelayPColor};">Dep DelayP: ${depDelayP} min</li>
+        <li style="color:${depDelayPColor};">Dep DelayP:  ${depDelayP} min</li>
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
         <li style="color:${arrDelayPColor};">Arr DelayP: ${arrDelayP} min</li>
         <li>Planned Rotation: ${node.plannedRot} min</li>
-        <li>Predicted Rotation Slack: ${node.rotSlackP} min</li>
-        <li>Predicted Slack: ${node.slackP} min</li>
-        <li>Predicted ACT Slack: ${node.ACTSlackP} min</li>
-        <li>min ACTP: ${node.minACTP} min</li>
+        <li>Predicted Rotation Slack: ${rotSlackP} min</li>
+        <li>Predicted Slack: ${slackP} min</li>
+        <li>Predicted ACT Slack: ${ACTSlackP} min</li>
+        <li>min ACTP: ${minACTP} min</li>
         <li>${connectLabel}: ${node.hubConnections}</li>
       </ul>
       </div>`;
@@ -343,7 +347,12 @@ const myTooltip = new G6.Tooltip({
       const actAvail = edge.actAvail;
       const actSched = edge.actSched;
       const actActual = (outbound.outZ - inbound.inZ) * nano2min;
+      const ACTSlack = u.floor(edge.ACTSlack);
+      const ACTSlackP = u.floor(edge.ACTSlackP);
+      const ACTAvailable = u.floor(edge.ACTAvailable);
+      const ACTAvailableP = u.floor(edge.ACTAvailableP);
       outDiv.innerHTML = `<div>
+
 
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
@@ -354,10 +363,10 @@ const myTooltip = new G6.Tooltip({
         <li>Tail: ${outbound.tail}</li>
         <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
         <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
-        <li>ACTSlack: ${edge.ACTSlack} min</li>
-        <li>ACTSlackP: ${edge.ACTSlackP} min</li>
-        <li>ACTAvailable: ${edge.ACTAvailable} min</li>
-        <li>ACTAvailableP: ${edge.ACTAvailableP} min</li>
+        <li>ACTSlack: ${ACTSlack} min</li>
+        <li>ACTSlackP: ${ACTSlackP} min</li>
+        <li>ACTAvailable: ${ACTAvailable} min</li>
+        <li>ACTAvailableP: ${ACTAvailableP} min</li>
         <li>Nb incoming flights connecting <br> with outbound flight: ${
           edge.inDegree
         }</li>
