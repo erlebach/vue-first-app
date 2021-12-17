@@ -443,7 +443,8 @@ export default {
     // rows of AllPairs table are selectable
     const selectedAllPairsRow = ref(undefined);
     const tiers = ref("3");
-    const inputArrDelay = ref(100); // imposed on original flight = arrDelayP (predicted)
+    const inputArrDelay = ref(0); // imposed on original flight = arrDelayP (predicted)
+    // Make the id of the first flight is kept, otherwise errors occur.
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
 
     const infoRef = reactive({
@@ -632,7 +633,8 @@ export default {
       const flightIdMap = u.createMapping(flights, "id");
       // I should combine ptyPairs with stationPairs to create allPairs array
       const edges = defineEdges(city, allPairs, nb_tiers);
-      const nodes = defineNodes(city, edges, flights, nb_tiers);
+      //const nodes = defineNodes(city, edges, flights, nb_tiers);
+      const nodes = data.nodesTraversed;
       // u.print("drawGraph, nodes", nodes);
       // u.print("drawGraph, edges", edges);
 
@@ -666,11 +668,19 @@ export default {
 
     function drawGraphRigidModel(delayObj, nbTiers) {
       u.print("delayObj: ", delayObj);
-      const { nodes, edges, graphEdges, id2level, level2ids, table } = delayObj;
+      const {
+        nodes,
+        edges,
+        edgesTraversed,
+        nodesTraversed,
+        id2level,
+        level2ids,
+        table,
+      } = delayObj;
 
       infoRef.nbNodes = nodes.length;
       infoRef.nbEdges = nodes.length;
-      infoRef.nbGraphEdges = graphEdges.length;
+      infoRef.nbGraphEdges = edgesTraversed.length;
       infoRef.level2ids = [
         level2ids[0].length,
         level2ids[1].length,
@@ -683,14 +693,6 @@ export default {
         infoRef.nbId2level++;
       }
 
-      // u.print("==> drawGraphRigidModel, delayObj", delayObj);
-      // u.print("==> drawGraphRigidModel::level2ids", level2ids);
-      // u.print("==> drawGraphRigidModel::id2level", id2level);
-      // u.print("==> drawGraphRigidModel::nodes", nodes);
-      // u.print("==> drawGraphRigidModel::edges", edges);
-      // u.print("==> drawGraphRigidModel::table", table);
-      // console.log(`==> nbTiers: ${nbTiers}`);
-      // console.log("inside drawGraphRigidModel");
       const nb_tiers = 0; // not used
       // const flights = data.flightTable;
       // const allPairs = data.allPairs;
@@ -709,14 +711,14 @@ export default {
 
       // Construct the edges of the full graph, starting with level zero node
       const gNodes = [];
-      let gEdges = [];
+      // let gEdges = [];
       const tableIds = u.createMapping(table, "id");
       u.print("tableIds", tableIds);
 
       // gNodes: all ids from all levels
 
       for (let id in id2level) {
-        console.log(`id: ${id}`);
+        // console.log(`id: ${id}`);
         gNodes.push(tableIds[id]);
       }
 
@@ -731,20 +733,18 @@ export default {
       //   gNodes.push(r);
       // });
 
-      graphEdges.forEach((r) => {
-        gEdges.push(r);
+      edgesTraversed.forEach((r) => {
         r.source = r.id_f;
         r.target = r.id_nf;
         r.id = r.id_f + r.id_nf; // perhaps temporary?
       });
-      const gEdgesId = u.createMapping(gEdges, "id");
-      gEdges.length = 0;
-      for (let id in gEdgesId) {
-        gEdges.push(gEdgesId[id]);
-      }
-      // create gEdges
-      // u.print("gEdges", gEdges);
-      // u.print("gNodes", gNodes);
+
+      const gEdges = edgesTraversed;
+
+      u.print(
+        "drawRigidBody",
+        `gEdges: ${gEdges.length}, edgesTraversed: ${edgesTraversed.length}`
+      );
 
       // gEdges has duplicate (id_f, id_nf) pairs. How to remove these duplicates.
 
@@ -786,8 +786,9 @@ export default {
       }
 
       // This element must be mounted before creating the graph
-      const data = { nodes: gNodes, edges: gEdges };
-      // endpointsGraph.data(data);
+      const data = { nodes: nodesTraversed, edges: gEdges };
+      u.print("data", data);
+      endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
       // endpointsGraph.refresh(); // not helping with tooltip problem
       endpointsGraph.render();

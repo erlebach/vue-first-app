@@ -255,7 +255,7 @@ const myTooltip = new G6.Tooltip({
     const depDelay = (node.outZ - node.schDepZ) * nano2min;
     const arrDelay = (node.inZ - node.schArrZ) * nano2min;
 
-    if (e.item.getType() == "node") {
+    if (e.item.getType() === "node") {
       let depDelayColor;
       let arrDelayColor;
       if (depDelay < 5) {
@@ -307,7 +307,7 @@ const myTooltip = new G6.Tooltip({
       </ul>
       </div>`;
       return outDiv;
-    } else if (e.item.getType() == "edge") {
+    } else if (e.item.getType() === "edge") {
       const edge = e.item.getModel();
       const inbound = e.item.getSource().getModel();
       const outbound = e.item.getTarget().getModel();

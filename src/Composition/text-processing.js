@@ -306,7 +306,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 2,
+      days: 1,
     },
     {
       headers: {
@@ -422,7 +422,7 @@ function saveData() {
     // At the end of the day, the inbound-outbound pairs whose inbound has not departed the station (outside PTY)
     // typically has one ORIG listed. Thus the pair is not admissible.
 
-    if (ptyPairs.length == 0) {
+    if (ptyPairs.length === 0) {
       // console.log(
       //   "========================================================================"
       // );
@@ -437,9 +437,11 @@ function saveData() {
 
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
-    const ids2flights = u.createMapping(flightTable, "id");
 
-    stationPairs = computeTails(ptyPairs, flightTable, ids2flights); // WORK ON THIS CODE
+    // compute allPairs
+    console.log(`before computeTail, nb ptyPairs: ${ptyPairs.length}`);
+    stationPairs = computeTails(ptyPairs, flightTable); // WORK ON THIS CODE
+    console.log(`after computeTail, nb stationPairs: ${stationPairs.length}`);
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
     // console.log(
     //   `==> text-processing, stationPairs.length: ${stationPairs.length}`
@@ -481,12 +483,26 @@ function saveData() {
     // u.print("after return from synth, inboundsMap", inboundsMap);
     // u.print("after return from synth, outboundsMap", outboundsMap);
     u.print("after return from synth, flightTable", flightTable);
-    // u.print("after return from synth, stationPairs", stationPairs);
+    u.print("after return from synth, stationPairs", stationPairs);
     u.print("after return from synth, ptyPairs", ptyPairs);
     // u.print("after return from synth, flightIdMap", flightIdMap);
 
     computeAllPairs(stationPairs, flightIdMap, ptyPairs);
     u.print("after computeAllPairs, allPairs", allPairs);
+    u.print("after computeAllPairs, sorted allPairs", sortBy(allPairs, "id_f"));
+    // make unique
+    allPairs.forEach((r) => {
+      r.id = r.id_f + "-" + r.id_nf;
+    });
+    const allPairsUniqueId = u.createMapping(allPairs, "id");
+    u.print("after computeAllPairs, allPairsUniqueId", allPairsUniqueId);
+    const allPairsUnique = [];
+    for (let id in allPairsUniqueId) {
+      allPairsUnique.push(allPairsUniqueId[id]);
+    }
+    u.print("after computeAllPairs, allPairsUnique", allPairsUnique);
+    // Calculate seems to give the same number of entries as when computed more simply from flights
+    // in computeTails
 
     setStatus(true);
   });
@@ -624,35 +640,46 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
 //-------------------------------------------------------------------------------------
 
 // 2021-11-15 : WORK ON THIS CODE
-export function computeTails(ptyPairs, flightTable, id2flights) {
-  // For each outbound flight, determine the connecting return flight (same tail)
+export function computeTails(ptyPairs, flightTable) {
+  const id2flights = u.createMapping(flightTable, "id");
+  // For each outbound flight from either PTY or Station, determine the connecting return flight (same tail)
   // order by tail
   // order by id_f
   // order by id_nf
   const fl = lodash.orderBy(flightTable, ["tail", "sch_dep"]);
   const tails = u.createMappingOneToMany(fl, "tail");
-  // u.print("fl: ", fl);
+  u.print("computeTails::flightTable: ", flightTable);
+  u.print("computeTails::fl: ", fl);
+  u.print("computeTails::tails: ", tails);
   // u.print("computeTails, tails: ", tails);
   // console.log(`computeTails1, tails.length: ${tails.length}`);
-  const connections = [];
+
+  // tails[tail] is a list, ordered by departure time, of all flights with the given tail
+
+  const sameTailConnections = [];
   let count = 0;
   for (const tail in tails) {
-    const row = tails[tail];
-    for (let i = 0; i < row.length - 1; i++) {
-      const dest = row[i].dest;
-      const orig = row[i + 1].orig;
-      if (orig === dest && orig !== "PTY" && dest !== "ORIG") {
-        connections.push({ id_f: row[i].id, id_nf: row[i + 1].id });
+    const rows = tails[tail]; // each tail has several rows
+    for (let i = 0; i < rows.length - 1; i++) {
+      // u.print("tail in tails, rows", rows);
+      const dest = rows[i].dest;
+      const orig = rows[i + 1].orig;
+      // if (orig === dest && orig !== "PTY" && dest !== "ORIG") {
+      if (orig === dest) {
+        sameTailConnections.push({ id_f: rows[i].id, id_nf: rows[i + 1].id });
         count++;
       }
     }
   }
-  // u.print("computeTails, tails: ", tails);
-  // u.print("computeTails, connections: ", connections);
+  u.print("computeTails, flightTable: ", flightTable);
+  u.print("computeTails, tails: ", tails);
+  u.print("computeTails, ptyPairs: ", ptyPairs);
+  u.print("computeTails, sameTailConnections: ", sameTailConnections);
   // u.print("computeTails, connections.length: ", connections.length);
-  return connections; // id pairs
+  return sameTailConnections; // id pairs   (same length as )
 }
 
+//--------------------------------------------------------------------
 function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
   // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
@@ -661,8 +688,8 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   stationPairs.forEach((r) => {
     const row_f = flightIdMap[r.id_f];
     const row_nf = flightIdMap[r.id_nf];
-    // u.print("stationPairs, row_f", row_f);
-    // u.print("stationPairs, row_nf", row_nf);
+    // u.print("computeAllPairs::stationPairs, row_f", row_f);
+    // u.print("computeAllPairs::stationPairs, row_nf", row_nf);
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
@@ -758,7 +785,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     r.rotSlack = r.ACTAvailable - 60;
     r.rotSlackP = r.ACT;
     r.pax = "undef"; // probably not required
-    //if (r.eta_f !== 0 && r.orig_f == "MIA") { // }
+    //if (r.eta_f !== 0 && r.orig_f === "MIA") { // }
 
     // if (r.out_f !== 0) {
     //   r.arr_delay = (r.eta_f - r.sch_arr_f) / 60000;
@@ -881,7 +908,11 @@ function computeFlightList(ptyPairs) {
   //   = ${actAvail - minConnectTime} min</li>
 
   // console.log(`number of flights: ${flights.length}`);
-  // u.print("flights", flights);
+  // Flights from PTY and flights from  STATION
+  u.print(
+    "text-processing::computeFlightList::flights",
+    sortBy(flights, "orig")
+  );
   return flights;
 }
 

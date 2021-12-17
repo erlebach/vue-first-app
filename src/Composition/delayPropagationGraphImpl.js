@@ -232,13 +232,28 @@ const myTooltip = new G6.Tooltip({
     const nano2min = 1 / 1e9 / 60;
     const node = e.item.getModel(); // Is this the best way?
     // const depDelay = (node.outZ - node.schDepZ) * nano2min;
-    const depDelay = node.depDelayP;
+    const depDelayP = node.depDelayP;
+    const depDelay = node.depDelay;
     // const arrDelay = (node.inZ - node.schArrZ) * nano2min;
-    const arrDelay = node.arrDelayP;
+    const arrDelayP = node.arrDelayP;
+    const arrDelay = node.arrDelay;
 
-    if (e.item.getType() == "node") {
+    if (e.item.getType() === "node") {
       let depDelayColor;
       let arrDelayColor;
+      let depDelayPColor;
+      let arrDelayPColor;
+      if (depDelayP < 5) {
+        depDelayPColor = "green";
+      } else if (depDelayP < 15) {
+        depDelayPColor = "darkorange";
+      } else if (depDelayP < 30) {
+        depDelayPColor = "red";
+      } else if (depDelayP < 45) {
+        depDelayPColor = "darkred";
+      } else {
+        depDelayPColor = "black";
+      }
       if (depDelay < 5) {
         depDelayColor = "green";
       } else if (depDelay < 15) {
@@ -251,6 +266,17 @@ const myTooltip = new G6.Tooltip({
         depDelayColor = "black";
       }
 
+      if (arrDelayP < 5) {
+        arrDelayPColor = "green";
+      } else if (arrDelayP < 15) {
+        arrDelayPColor = "darkorange";
+      } else if (arrDelayP < 30) {
+        arrDelayPColor = "red";
+      } else if (arrDelayP < 45) {
+        arrDelayPColor = "darkred";
+      } else {
+        arrDelayPColor = "black";
+      }
       if (arrDelay < 5) {
         arrDelayColor = "green";
       } else if (arrDelay < 15) {
@@ -269,6 +295,9 @@ const myTooltip = new G6.Tooltip({
       } else {
         connectLabel = "Nb Feeders";
       }
+      if (node.id === "2021-12-16AUAPTY17:320349") {
+        u.print("tooltip, node: ", node);
+      }
       outDiv.style.backgroundColor = "lightSteelBlue";
       outDiv.innerHTML = `<div>
       <h4>Flight (node)</h4>
@@ -280,7 +309,9 @@ const myTooltip = new G6.Tooltip({
         <li>Sch Dep: ${node.schDepTMZ} UTC</li>
         <li>Sch Arr: ${node.schArrTMZ} UTC</li>
         <li style="color:${depDelayColor};">Dep Delay: ${depDelay} min</li>
+        <li style="color:${depDelayPColor};">Dep DelayP: ${depDelayP} min</li>
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
+        <li style="color:${arrDelayPColor};">Arr DelayP: ${arrDelayP} min</li>
         <li>Planned Rotation: ${node.plannedRot} min</li>
         <li>Predicted Rotation Slack: ${node.rotSlackP} min</li>
         <li>Predicted Slack: ${node.slackP} min</li>
@@ -290,7 +321,7 @@ const myTooltip = new G6.Tooltip({
       </ul>
       </div>`;
       return outDiv;
-    } else if (e.item.getType() == "edge") {
+    } else if (e.item.getType() === "edge") {
       const edge = e.item.getModel();
       const inbound = e.item.getSource().getModel();
       const outbound = e.item.getTarget().getModel();
