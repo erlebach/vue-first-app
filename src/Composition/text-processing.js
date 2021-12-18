@@ -73,16 +73,24 @@ function getRow(e) {
   let next_tmz;
   let next_dtz;
   // console.log(`getRow: SCH_DEP_DTMZ: ${e.SCH_DEP_DTMZ}`);
-  if (e.SCH_DEP_DTMZ !== null) {
+  if (e.SCH_DEP_DTMZ !== undefined) {
     next_tmz = e.SCH_DEP_DTMZ.slice(11, 16);
   } else {
+    // This should never happen
     next_tmz = "00:00";
+    u.print("e: ", e);
+    console.log("getRow::, SCH_DEP_DTMZ is undefined. That should not happen");
+    console.log(
+      "getRow::, Ideally, change all null to undefined. Safer programming"
+    );
   }
   const id_f = e.SCH_DEP_DTZ + e.ORIG_CD + e.DEST_CD + next_tmz + e.FLT_NUM;
-  if (e.NEXT_STD !== null) {
+  if (e.NEXT_STD !== undefined) {
+    u.print("e.NEXT_STD", e.NEXT_STD);
     next_dtz = e.NEXT_STD.slice(0, 10);
     next_tmz = e.NEXT_STD.slice(11, 16);
   } else {
+    // set it to the scheduled time of departure
     next_dtz = "2000-01-01";
     next_tmz = "00:00";
   }
@@ -155,12 +163,12 @@ function getRow(e) {
   // scheduled times
   // Best estimate (est) rotation
   let in_time, out_time;
-  if (row.out_nf === null) {
+  if (row.out_nf === undefined) {
     out_time = row.sch_dep_nf;
   } else {
     out_time = row.out_nf;
   }
-  if (row.in_f === null) {
+  if (row.in_f === undefined) {
     in_time = row.sch_arr_nf;
   } else {
     in_time = row.in_f;
@@ -175,7 +183,7 @@ function inboundFlightsInAir(data) {
   data.forEach((e) => {
     // flight not cancelled
     if (e.CANCELLED === "0") {
-      if (e.IN_P_FLT === null && e.OUT_P_FLT !== null) {
+      if (e.IN_P_FLT === undefined && e.OUT_P_FLT !== undefined) {
         const row = getRow(e);
         keptRows.push(row);
       }
@@ -199,7 +207,7 @@ function outboundFlightsInAir(data) {
   data.forEach((e) => {
     // flight not cancelled
     if (e.CANCELLED === "0") {
-      if (e.IN_N_FLT === null && e.OUT_N_FLT !== null) {
+      if (e.IN_N_FLT === undefined && e.OUT_N_FLT !== undefined) {
         const row = getRow(e);
         keptRows.push(row);
       }
@@ -225,7 +233,7 @@ function inboundFlightsAtPTY(data) {
     // console.log(`cancelled: ${e.CANCELLED}`);
     if (e.CANCELLED === "0") {
       // console.log(`At PTY, ${e.IN_P_FLT}, ${e.OUT_N_FLT}`);
-      if (e.IN_P_FLT !== null && e.OUT_N_FLT === null) {
+      if (e.IN_P_FLT !== undefined && e.OUT_N_FLT === undefined) {
         const row = getRow(e);
         // u.print("e: ", e);
         // u.print("ROW: ", row);
@@ -251,7 +259,7 @@ function inboundFlightsNotDeparted(data) {
   data.forEach((e) => {
     if (e.CANCELLED === "0") {
       // flight not cancelled
-      if (e.OUT_P_FLT === null) {
+      if (e.OUT_P_FLT === undefined) {
         if (e.ORIG_CD === "MIA") {
           // remove print when debugged
           u.print("inbound not departed", e);
@@ -279,7 +287,7 @@ function outboundFlightsLanded(data) {
   data.forEach((e) => {
     if (e.CANCELLED === "0") {
       // flight not cancelled
-      if (e.IN_N_FLT !== null) {
+      if (e.IN_N_FLT !== undefined) {
         const row = getRow(e);
         keptRows.push(row);
       }
@@ -340,15 +348,15 @@ function saveData() {
     data.forEach((r) => {
       if (
         r.CANCELLED === "0" &&
-        (r.IN_P_FLT === null ||
-          r.IN_N_FLT === null ||
-          r.OUT_P_FLT === null ||
-          r.OUT_N_FLT === null) &&
+        (r.IN_P_FLT === undefined ||
+          r.IN_N_FLT === undefined ||
+          r.OUT_P_FLT === undefined ||
+          r.OUT_N_FLT === undefined) &&
         r.ORIG_CD !== r.DEST_CD &&
         r.NEXT_ORIG_CD !== r.NEXT_DEST_CD
       ) {
         // console.log(r.IN_P_FLT);
-        const in_f = r.IN_P_FLT != null ? datetimeZ2ms(r.IN_P_FLT) : 0;
+        const in_f = r.IN_P_FLT != undefined ? datetimeZ2ms(r.IN_P_FLT) : 0;
         inRows.push({
           in_f: datetimeZ2ms(r.IN_P_FLT),
           in_nf: datetimeZ2ms(r.IN_N_FLT),
@@ -368,6 +376,15 @@ function saveData() {
     // TODO: SPECIFY A TIME OF ANALYSIS
     // Remove all pairs with a feeder already landed.
 
+    // Check for nulls and undefines in all field
+    data.forEach((row) => {
+      for (let attr in row) {
+        if (row[attr] === null) {
+          row[attr] = undefined;
+        }
+      }
+    });
+
     const inboundNotDeparted = inboundFlightsNotDeparted(data);
     const inboundInFlight = inboundFlightsInAir(data);
     const inboundAtPTY = inboundFlightsAtPTY(data); // remove
@@ -381,7 +398,9 @@ function saveData() {
     // console.log(`outboundInFlight.length: ${outboundInFlight.length}`);
     // console.log(`outboundLanded.length: ${outboundLanded.length}`);
     // Only non-cancelled flights
-    const allFlights = [
+
+    // allFlightPairs connect at PTY
+    const allFlightPairs = [
       // 135 flights
       ...inboundNotDeparted,
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
@@ -389,9 +408,9 @@ function saveData() {
       ...outboundInFlight,
       //      ...outboundLanded,
     ];
-    allFlights.forEach((r) => {});
-    console.log(`total nb flights: ${allFlights.length}`);
-    u.print("allFlights", allFlights);
+
+    console.log(`saveDatat::total nb flight pairs: ${allFlightPairs.length}`);
+    u.print("saveData::allFlightPairs", allFlightPairs);
     //u.print("inboundNotDeparted", inboundNotDeparted);
     //u.print("inboundInFlight", inboundInFlight);
     //u.print("inboundAtPTY", inboundAtPTY);
@@ -407,7 +426,7 @@ function saveData() {
     // remove pairs if dest != orig for either _f or _nf
     // Each pair corresponds to two planes with the same tail
     ptyPairs = [];
-    allFlights.forEach((r) => {
+    allFlightPairs.forEach((r) => {
       // console.log(`${r.orig_f}, ${r.dest_f}, ${r.orig_nf}, ${r.dest_nf}`);
       if (r.orig_f !== r.dest_f && r.orig_nf !== r.dest_nf) {
         // console.log("   keep");
@@ -490,21 +509,47 @@ function saveData() {
     // u.print("after return from synth, flightIdMap", flightIdMap);
 
     computeAllPairs(stationPairs, flightIdMap, ptyPairs);
+    // updateFlights(allPairs, flights);
+
+    const allPairsIds_nf = u.createMapping(allPairs, "id_nf");
+    const allPairsIds_f = u.createMapping(allPairs, "id_f");
+    u.print("allPairs_f", sortBy(allPairs, "id_f"));
+    u.print("allPairs_nf", sortBy(allPairs, "id_nf"));
+    u.print("flightTable", sortBy(flightTable, "id"));
+
+    flightTable.forEach((r) => {
+      // console.log(`r.id: ${r.id}`);
+      const a_f = allPairsIds_f[r.id];
+      const a_nf = allPairsIds_nf[r.id];
+      if (a_f !== undefined) {
+        u.print("a_f", a_f);
+        r.plannedRot = a_f.plannedRot;
+      } else if (a_nf !== undefined) {
+        u.print("a_f", a_nf);
+        r.plannedRot = a_nf.plannedRot;
+      } else {
+        console.log(`saveData::CANNOT happen!, r.id: ${r.id}`);
+      }
+    });
+
+    // NEXT PROBLEM TO SOLVE!!!
+    // CANNOT happen just happened: r.id: 2021-12-18VVIPTY05:420126
+
     u.print("after computeAllPairs, allPairs", allPairs);
     u.print("after computeAllPairs, sorted allPairs", sortBy(allPairs, "id_f"));
-    // make unique
-    allPairs.forEach((r) => {
-      r.id = r.id_f + "-" + r.id_nf;
-    });
-    const allPairsUniqueId = u.createMapping(allPairs, "id");
-    u.print("after computeAllPairs, allPairsUniqueId", allPairsUniqueId);
-    const allPairsUnique = [];
-    for (let id in allPairsUniqueId) {
-      allPairsUnique.push(allPairsUniqueId[id]);
-    }
-    u.print("after computeAllPairs, allPairsUnique", allPairsUnique);
-    // Calculate seems to give the same number of entries as when computed more simply from flights
-    // in computeTails
+    // // make unique
+    // allPairs.forEach((r) => {
+    //   r.id = r.id_f + "-" + r.id_nf;
+    // });
+    // const allPairsUniqueId = u.createMapping(allPairs, "id");
+    // u.print("after computeAllPairs, allPairsUniqueId", allPairsUniqueId);
+    // const allPairsUnique = [];
+    // for (let id in allPairsUniqueId) {
+    //   allPairsUnique.push(allPairsUniqueId[id]);
+    // }
+    // u.print("after computeAllPairs, allPairsUnique", allPairsUnique);
+    // // Calculate seems to give the same number of entries as when computed more simply from flights
+    // // in computeTails
 
     setStatus(true);
   });
@@ -683,6 +728,15 @@ export function computeTails(ptyPairs, flightTable) {
 
 //--------------------------------------------------------------------
 function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
+  // Compute allPairs (includes all flight pairs, including turnarounds at PTY and at stations)
+  // allPairs is a global variable (not a good practice)
+
+  // stationPairs: turnaround at stations
+  // ptyPairs: turnaround at PTY
+
+  u.print("computeAllPairs::stationPairs: ", sortBy(stationPairs, "id_f"));
+  u.print("computeAllPairs::ptyPairs: ", sortBy(ptyPairs, "id_f"));
+
   // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
   // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
   // u.print(
@@ -739,10 +793,14 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       fltnumPair: row_f.fltnum + " - " + row_nf.fltnum,
       // sch_dep_nf - sch_arr_f
       planned_rotation: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min
+      plannedRot: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min
     };
     allPairs.push(row);
   });
 
+  // stationPairs contains all the pairs whether turnaround is at PTY or at stations.
+
+  /* 
   ptyPairs.forEach((e) => {
     //u.print("ptyPairs row: ", e);
     u.print(
@@ -781,6 +839,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     };
     allPairs.push(row);
   });
+  */
 
   // I am waiting on Miguel's endpoint (once a day) to provide me with the connection pattern between flights
   // - For a feeder, what are the outgoing flights
@@ -800,13 +859,13 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     }
     // const actAvailable =
     //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
-    r.inDegree = "undef";
-    r.outDegree = "undef";
+    r.inDegree = undefined;
+    r.outDegree = undefined;
 
     // At this stage, all pairs have the same tail
     r.rotSlack = r.ACTAvailable - 60;
     r.rotSlackP = r.ACT;
-    r.pax = "undef"; // probably not required
+    r.pax = undefined; // probably not required
     //if (r.eta_f !== 0 && r.orig_f === "MIA") { // }
 
     // if (r.out_f !== 0) {
@@ -889,19 +948,29 @@ function computeFlightList(ptyPairs) {
   // ALL THESE FLIGHTSS APPEAR TO HAVE LANDED. Strange.
   // This must have to do with my removing certain rows
   flights.forEach((r) => {
-    // console.log(`${r.on}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
-    r.depDelayP = (r.on - r.sch_dep) / 60000; // 60000 ms per minute
+    // console.log(`${r.out}, ${r.in}, ${r.sch_dep}, ${r.sch_arr}`);
+    if (r.id == "2021-12-17MDEPTY14:340825") {
+      const out = dt.timestampToDateTimeZ(r.out);
+      const inn = dt.timestampToDateTimeZ(r.in);
+      u.print("id", r.id);
+      u.print("out", out);
+      u.print("r.out", r.out);
+      u.print("inn", inn);
+      u.print("sch_dep_z", r.sch_dep_z);
+      u.print("sch_arr_z", r.sch_arr_z);
+    }
+    r.depDelayP = (r.out - r.sch_dep) / 60000; // 60000 ms per minute
     r.arrDelayP = (r.in - r.sch_arr) / 60000;
-    r.schDepTMZ = "undef";
-    r.schArrTMZ = "undef";
-    r.depDelay = "undef";
-    r.arrDelay = "undef";
-    r.plannedRot = "undef";
-    r.rotSlackP = "undef";
-    r.slackP = "undef";
-    r.ACTSSlackP = "undef";
-    r.minACTP = "undef";
-    r.hubConnections = "undef";
+    r.schDepTMZ = undefined;
+    r.schArrTMZ = undefined;
+    r.depDelay = undefined;
+    r.arrDelay = undefined;
+    r.plannedRot = undefined;
+    r.rotSlackP = undefined;
+    r.slackP = undefined;
+    r.ACTSSlackP = undefined;
+    r.minACTP = undefined;
+    r.hubConnections = undefined;
   });
   // <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
   // <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
