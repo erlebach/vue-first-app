@@ -410,7 +410,7 @@ function saveData() {
     ];
 
     console.log(`saveDatat::total nb flight pairs: ${allFlightPairs.length}`);
-    u.print("saveData::allFlightPairs", allFlightPairs);
+    u.print("saveData::allFlightPairs", sortBy(allFlightPairs, "id_nf"));
     //u.print("inboundNotDeparted", inboundNotDeparted);
     //u.print("inboundInFlight", inboundInFlight);
     //u.print("inboundAtPTY", inboundAtPTY);
@@ -425,14 +425,19 @@ function saveData() {
 
     // remove pairs if dest != orig for either _f or _nf
     // Each pair corresponds to two planes with the same tail
-    ptyPairs = [];
-    allFlightPairs.forEach((r) => {
-      // console.log(`${r.orig_f}, ${r.dest_f}, ${r.orig_nf}, ${r.dest_nf}`);
-      if (r.orig_f !== r.dest_f && r.orig_nf !== r.dest_nf) {
-        // console.log("   keep");
-        ptyPairs.push(r);
-      }
-    });
+
+    // I should not do this. So set ptyPairs to allFlightPairs
+    // CODE to possibly uncomment
+    // ptyPairs = [];
+    // allFlightPairs.forEach((r) => {
+    //   // console.log(`${r.orig_f}, ${r.dest_f}, ${r.orig_nf}, ${r.dest_nf}`);
+    //   if (r.orig_f !== r.dest_f && r.orig_nf !== r.dest_nf) {
+    //     // console.log("   keep");
+    //     ptyPairs.push(r);
+    //   }
+    // });
+
+    ptyPairs = [...allFlightPairs]; // a clone (copy)
 
     // ptyPairs.forEach((r) => {
     //   // u.print("row: ", r);
@@ -454,15 +459,19 @@ function saveData() {
       //   "========================================================================"
       // );
       flightsInAir = false;
+      console.log("ptyPairs SHOULD NOT BE EMPTY! ERROR.");
     }
 
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
-
+    u.print("saveData::flightTable", sortBy(flightTable, "id"));
     // compute allPairs
     console.log(`before computeTail, nb ptyPairs: ${ptyPairs.length}`);
     stationPairs = computeTails(ptyPairs, flightTable); // WORK ON THIS CODE
+    let flightIdMap = u.createMapping(flightTable, "id");
+    computeAllPairs(stationPairs, flightIdMap, ptyPairs);
     console.log(`after computeTail, nb stationPairs: ${stationPairs.length}`);
+    u.print("saveData::allPairs", sortBy(allPairs, "orig_f"));
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
     // console.log(
     //   `==> text-processing, stationPairs.length: ${stationPairs.length}`
@@ -472,10 +481,9 @@ function saveData() {
     // compute estimated departure and arrival delays
     setupDelays(flightTable);
 
-    let flightIdMap = u.createMapping(flightTable, "id");
-
     // update ptyPairs with arrDelay and depDelay attributes
-    ptyPairs.forEach((r) => {
+    allPairs.forEach((r) => {
+      console.log(r);
       const id_f = r.id_f;
       const id_nf = r.id_nf;
       const row_f = flightIdMap[id_f];
@@ -508,7 +516,6 @@ function saveData() {
     u.print("after return from synth, ptyPairs", ptyPairs);
     // u.print("after return from synth, flightIdMap", flightIdMap);
 
-    computeAllPairs(stationPairs, flightIdMap, ptyPairs);
     // updateFlights(allPairs, flights);
 
     const allPairsIds_nf = u.createMapping(allPairs, "id_nf");
@@ -582,6 +589,8 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   // These maps corresponds to feeders and outbounds at PTY
 
   // console.time("Synthetic execution time");
+  u.print("synthetic::flightInAir", flightsInAir);
+  u.print("synthetic::ptyPairs", sortBy(ptyPairs, "id_f"));
   if (flightsInAir === false) {
     return { inboundsMap, outboundsMap }; // empty objects {}
   }
@@ -695,23 +704,28 @@ export function computeTails(ptyPairs, flightTable) {
   // order by id_nf
   const fl = lodash.orderBy(flightTable, ["tail", "sch_dep"]);
   const tails = u.createMappingOneToMany(fl, "tail");
-  u.print("computeTails::flightTable: ", flightTable);
-  u.print("computeTails::fl: ", fl);
-  u.print("computeTails::tails: ", tails);
-  // u.print("computeTails, tails: ", tails);
-  // console.log(`computeTails1, tails.length: ${tails.length}`);
+  let nbPairs = 0;
+  for (let tail in tails) {
+    nbPairs += tails[tail].length - 1;
+  }
+  console.log(`computeTails, nbPairs: ${nbPairs}`);
+  u.print("computeTails::flightTable sorted by tail and sch_dep", fl);
 
   // tails[tail] is a list, ordered by departure time, of all flights with the given tail
 
   const sameTailConnections = [];
   let count = 0;
+  let countAll = 0;
+  let countAll2 = 0;
   for (const tail in tails) {
     const rows = tails[tail]; // each tail has several rows
+    countAll2 += rows.length - 1;
     for (let i = 0; i < rows.length - 1; i++) {
       // u.print("tail in tails, rows", rows);
       const dest = rows[i].dest;
       const orig = rows[i + 1].orig;
       // if (orig === dest && orig !== "PTY" && dest !== "ORIG") {
+      countAll++;
       if (orig === dest) {
         sameTailConnections.push({ id_f: rows[i].id, id_nf: rows[i + 1].id });
         count++;
@@ -722,6 +736,9 @@ export function computeTails(ptyPairs, flightTable) {
   u.print("computeTails, tails: ", tails);
   u.print("computeTails, ptyPairs: ", ptyPairs);
   u.print("computeTails, sameTailConnections: ", sameTailConnections);
+  console.log(
+    `computeTails::count: ${count}, countAll: ${countAll}, countAll2: ${countAll2}`
+  );
   // u.print("computeTails, connections.length: ", connections.length);
   return sameTailConnections; // id pairs   (same length as )
 }
@@ -935,6 +952,7 @@ function computeFlightList(ptyPairs) {
       status: e.status_nf,
       status0: e.status,
     };
+    // This will automatically remove any orig or dest with ORIG
     if (row_f.orig !== row_f.dest) {
       flights.push(row_f);
     }
