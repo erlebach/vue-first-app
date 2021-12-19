@@ -264,23 +264,29 @@ export function rigidModel(
 }
 //-------------------------------------------------------
 function setupEdgeProps(e, FSUm) {
-  const nano2min = 1 / 1e9 / 60;
-  // u.print("=> setupEdgeProps, e", e); // e.id_f, e.id_f not defined. WHY?
-  // u.print("=> setupEdgeProps, FSUm", FSUm);
-  e.fsu_f = FSUm[e.id_f];
-  e.fsu_nf = FSUm[e.id_nf];
-  // rotation only exists for fixed tails
-
-  // CONSIDER using scheduled ACT available on all flights since we do not know the future.
-  //const actAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // same as calcAvailRot
-  // u.print("=> setupEdgeProps, e", e);
-  const actAvailable =
-    (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
-
-  e.ACTAvailable = actAvailable; // Based on best estimated information
-  e.ACTAvailableP = e.ACTAvailable; // Based on best estimated information
-  e.ACTSlack = e.ACTAvailable - 30; // not clear required
-  e.ACTSlackP = e.ACTSlack;
+  // const nano2min = 1 / 1e9 / 60;
+  // // u.print("=> setupEdgeProps, e", e); // e.id_f, e.id_f not defined. WHY?
+  // // u.print("=> setupEdgeProps, FSUm", FSUm);
+  // e.fsu_f = FSUm[e.id_f];
+  // e.fsu_nf = FSUm[e.id_nf];
+  // // rotation only exists for fixed tails
+  // // CONSIDER using scheduled ACT available on all flights since we do not know the future.
+  // //const actAvailable = (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.IN_DTMZ) * nano2min; // same as calcAvailRot
+  // // u.print("=> setupEdgeProps, e", e);
+  // const actAvailable =
+  //   (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
+  // e.ACTAvailable = actAvailable; // Based on best estimated information
+  // e.ACTAvailableP = e.ACTAvailable; // Based on best estimated information
+  // e.ACTSlack = e.ACTAvailable - 30; // not clear required
+  // e.ACTSlackP = e.ACTSlack;
+  // if (e.tail_f !== e.tail_nf) {
+  //   console.log("setupEdgeProps: tails must be equal. SHOULD NOT HAPPEN!");
+  // }
+  // e.availRot = 0;
+  // e.availRotP = 0;
+  // e.availRotMinReq = 60;
+  // e.rotSlack = e.availRot - availRotMinReq; // slack can be negavie (slack to spare)
+  // e.rotSlackP = e.rotSlack;
 }
 //----------------------------------------------------------------
 function initializeEdges(bookings, FSUm) {
@@ -309,6 +315,13 @@ function initializeEdges(bookings, FSUm) {
     if (e.tail_f === e.tail_nf) {
       // PTY with tail turnaround and passengers
       setupEdgeProps(e, FSUm);
+      const actAvailable =
+        (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
+
+      e.ACTAvailable = actAvailable; // Based on best estimated information
+      e.ACTAvailableP = e.ACTAvailable; // Based on best estimated information
+      e.ACTSlack = e.ACTAvailable - 30; // not clear required
+      e.ACTSlackP = e.ACTSlack;
     } else {
       // CONSIDER using scheduled ACT available on all flights since we do not know the future.
       e.ACTAvailable =

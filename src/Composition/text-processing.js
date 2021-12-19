@@ -6,7 +6,7 @@ import moment from "moment";
 import * as u from "./utils.js";
 import * as dt from "./dates";
 import { date } from "check-types";
-import lodash from "lodash";
+import lodash, { isDate } from "lodash";
 import { ArgumentOutOfRangeError } from "rxjs";
 import { watchEffect, computed, ref } from "vue";
 import { sortBy } from "lodash";
@@ -173,6 +173,7 @@ function getRow(e) {
   } else {
     in_time = row.in_f;
   }
+  // If plane is in the air, use ETD for the out_time and the ETA for the in_time
   row.est_rotation = (out_time - in_time) * ms2min;
   return row;
 }
@@ -316,7 +317,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -406,7 +407,7 @@ function saveData() {
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
       ...inboundAtPTY,
       ...outboundInFlight,
-      //      ...outboundLanded,
+      // ...outboundLanded, // keep if I wish to make sure all pairs are captured correctly. This is an issue end of day.
     ];
 
     console.log(`saveDatat::total nb flight pairs: ${allFlightPairs.length}`);
@@ -488,6 +489,9 @@ function saveData() {
       const id_nf = r.id_nf;
       const row_f = flightIdMap[id_f];
       const row_nf = flightIdMap[id_nf];
+      if (row_f === undefined || row_f === undefined) {
+        console.log(`saveData, id_f: ${id_f}, id_nf: ${id_nf}`);
+      }
       r.depDelay_f = row_f.depDelay;
       r.depDelay_nf = row_nf.depDelay;
       r.arrDelay_f = row_f.arrDelay;
@@ -504,15 +508,34 @@ function saveData() {
 
     // Create a list of feeder-outgoing pairs modeling connections
     const nbConn = 10; // max number of connections
-    const { inboundsMap, outboundsMap } = syntheticConnections(
-      ptyPairs,
-      flightsInAir,
-      nbConn
-    );
+    // return statements no
+    // const { inboundsMap, outboundsMap } =
+    syntheticConnections(ptyPairs, flightsInAir, nbConn);
+
+    u.print("outboundsMap", outboundsMap);
+    u.print("inboundsMap", inboundsMap);
+
+    u.print("saveData::flightsInAir", flightsInAir);
+    const flightTableMap = u.createMapping(flightTable, "id");
+    for (let id_f in outboundsMap) {
+      // console.log(`id_f: ${id_f}`);
+      const r_f = flightTableMap[id_f]; // UNDEFINED. HOW CAN THAT BE. THERE ARE FLIGHTS MISSING?
+      u.print(`outboundsMap[${id_f}`, outboundsMap[id_f]);
+      outboundsMap[id_f].forEach((id_nf) => {
+        // console.log(`id_nf: ${id_nf}`);
+        const r_nf = flightTableMap[id_nf];
+        u.print("saveData::r_f", r_f); // undefined
+        u.print("saveData::r_nf", r_nf);
+      });
+    }
+
     // u.print("after return from synth, inboundsMap", inboundsMap);
     // u.print("after return from synth, outboundsMap", outboundsMap);
-    u.print("after return from synth, flightTable", flightTable);
-    u.print("after return from synth, stationPairs", stationPairs);
+    u.print("after return from synth, flightTable", sortBy(flightTable, "id"));
+    u.print(
+      "after return from synth, stationPairs",
+      sortBy(stationPairs, "id_nf")
+    );
     u.print("after return from synth, ptyPairs", ptyPairs);
     // u.print("after return from synth, flightIdMap", flightIdMap);
 
@@ -529,10 +552,10 @@ function saveData() {
       const a_f = allPairsIds_f[r.id];
       const a_nf = allPairsIds_nf[r.id];
       if (a_f !== undefined) {
-        u.print("a_f", a_f);
+        // u.print("a_f", a_f);
         r.plannedRot = a_f.plannedRot;
       } else if (a_nf !== undefined) {
-        u.print("a_f", a_nf);
+        // u.print("a_f", a_nf);
         r.plannedRot = a_nf.plannedRot;
       } else {
         console.log(`saveData::CANNOT happen!, r.id: ${r.id}`);
@@ -589,7 +612,6 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   // These maps corresponds to feeders and outbounds at PTY
 
   // console.time("Synthetic execution time");
-  u.print("synthetic::flightInAir", flightsInAir);
   u.print("synthetic::ptyPairs", sortBy(ptyPairs, "id_f"));
   if (flightsInAir === false) {
     return { inboundsMap, outboundsMap }; // empty objects {}
@@ -689,6 +711,42 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   // console.log("==> end of SyntheticConnections");
   // u.print("syntheticConnections, outboundsMap: ", outboundsMap);
   // u.print("syntheticConnections, inboundsMap: ", inboundsMap);
+
+  // Final cleanup. Remove from inboundsMap and outboundsMap, all ids where id.slice(10:18) == "ORIGORIG"
+  // or id.slice(10:14) == null or id.slice(10:14) == undef
+
+  for (let ix in inboundsMap) {
+    if (ix.slice(10, 14) !== "ORIG") {
+      const ids = [];
+      inboundsMap[ix].forEach((id) => {
+        if (id.slice(10, 14) !== "ORIG") {
+          ids.push(id);
+        }
+      });
+      inboundsMap[ix] = ids;
+    } else {
+      delete inboundsMap[ix];
+    }
+  }
+
+  for (let ix in outboundsMap) {
+    console.log(`ix: ${ix}`);
+    if (ix.slice(10, 14) !== "ORIG") {
+      console.log("not ORIG");
+      const ids = [];
+      outboundsMap[ix].forEach((id) => {
+        if (id.slice(10, 14) !== "ORIG") {
+          ids.push(id);
+        }
+      });
+      outboundsMap[ix] = ids;
+    } else {
+      delete outboundsMap[ix];
+    }
+  }
+
+  u.print("synthetic::inboundsMap", inboundsMap);
+  u.print("synthetic::outboundsMap", outboundsMap);
 
   return { inboundsMap, outboundsMap };
 }
@@ -815,6 +873,12 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     allPairs.push(row);
   });
 
+  // When computing rotation for the flightTable, do I use _f or _nf rotation?
+  // The correct answer (see check_rotations.py under copa/) is _nf (the outbound flight)
+  // In other workds, given an id from the flightTable, find a flight in allPairs such that id is the outgoing flight.
+  // Then assign the pair's planned rotation to this outgoing flight.  (this should be done so that dFSU has the correct
+  // planned rotation)
+
   // stationPairs contains all the pairs whether turnaround is at PTY or at stations.
 
   /* 
@@ -874,14 +938,14 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     } else {
       r.availRotMinReq = 60; // hardcoded
     }
+    r.rotSlack = r.ACTAvailable - 60;
+    r.rotSlackP = r.ACT;
     // const actAvailable =
     //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
     r.inDegree = undefined;
     r.outDegree = undefined;
 
     // At this stage, all pairs have the same tail
-    r.rotSlack = r.ACTAvailable - 60;
-    r.rotSlackP = r.ACT;
     r.pax = undefined; // probably not required
     //if (r.eta_f !== 0 && r.orig_f === "MIA") { // }
 
@@ -929,9 +993,8 @@ function computeFlightList(ptyPairs) {
       out: e.out_f,
       in: e.in_f,
       fltnum: e.flt_num_f,
-      tail: e.tail,
+      tail: e.tail_f,
       status: e.status_f,
-      status0: e.status,
     };
     const row_nf = {
       id: e.id_nf,
@@ -948,9 +1011,8 @@ function computeFlightList(ptyPairs) {
       out: e.out_nf,
       in: e.in_nf,
       fltnum: e.flt_num_nf,
-      tail: e.tail,
+      tail: e.tail_nf,
       status: e.status_nf,
-      status0: e.status,
     };
     // This will automatically remove any orig or dest with ORIG
     if (row_f.orig !== row_f.dest) {
@@ -977,8 +1039,10 @@ function computeFlightList(ptyPairs) {
       u.print("sch_dep_z", r.sch_dep_z);
       u.print("sch_arr_z", r.sch_arr_z);
     }
-    r.depDelayP = (r.out - r.sch_dep) / 60000; // 60000 ms per minute
-    r.arrDelayP = (r.in - r.sch_arr) / 60000;
+    // r.depDelayP = (r.out - r.sch_dep) / 60000; // 60000 ms per minute
+    // r.arrDelayP = (r.in - r.sch_arr) / 60000;
+    r.depDelayP = undefined;
+    r.arrDelayP = undefined;
     r.schDepTMZ = undefined;
     r.schArrTMZ = undefined;
     r.depDelay = undefined;
@@ -1059,46 +1123,55 @@ export function setupDelays(flightTable) {
   flightTable.forEach((r) => {
     let arrDelay = 0;
     let depDelay = 0;
+    // Either scheduled time of arrival (if not departed), or ETA (if in the air), or IN (if landed)
+    let estArrTime = 0;
+    // Either scheduled time of departure (or ETD) (if not departed), or OUT (if in the air or landed)
+    let estDepTime = 0;
 
-    // u.print("=> text-processing::setupDelays::flightTable row: ", r);
     if (r.status === "NOT DEP") {
       if (r.etd > 0) {
-        depDelay = (r.etd - r.sch_dep) / 60000; // min
+        estDepTime = r.etd;
       } else {
-        depDelay = 0;
+        estDepTime = r.sch_dep;
       }
-      arrDelay = 0;
+      estArrTime = r.sch_arr;
     } else if (r.status === "AIR") {
       if (r.out > 0) {
-        depDelay = (r.out - r.sch_dep) / 60000;
+        estDepTime = r.out;
       } else {
-        depDelay = undefined; // should not happen
+        estDepTime = undefined;
       }
       if (r.eta > 0) {
-        arrDelay = (r.eta - r.sch_arr) / 60000;
+        estArrTime = r.eta;
       } else {
-        arrDelay = undefined; // should not happen
+        estArrTime = undefined;
       }
     } else if (r.status === "LANDED") {
       if (r.out > 0) {
-        depDelay = (r.out - r.sch_dep) / 60000;
+        estDepTime = r.out;
       } else {
-        depDelay = undefined; // should not happen
+        estDepTime = undefined;
       }
       if (r.in > 0) {
-        arrDelay = (r.in - r.sch_arr) / 60000;
+        estArrTime = r.in;
       } else {
-        arrDelay = undefined; // should not happen
+        estArrTime = undefined;
       }
     }
 
-    r.arrDelay = arrDelay;
+    r.estDepTime = estDepTime;
+    r.estArrTime = estArrTime;
     r.depDelay = depDelay;
+    r.arrDelay = arrDelay;
+    r.depDelay = (r.estDepTime - r.sch_dep) / 60000;
+    r.arrDelay = (r.estArrTime - r.sch_arr) / 60000;
 
-    if (arrDelay === undefined) {
+    // undefined + 3 equals NaN
+
+    if (arrDelay === undefined || isNaN(arrDelay)) {
       countUndefinedArrDelay += 1;
     }
-    if (depDelay === undefined) {
+    if (depDelay === undefined || isNaN(depDelay)) {
       countUndefinedDepDelay += 1;
     }
   });

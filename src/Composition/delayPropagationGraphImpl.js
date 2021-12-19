@@ -302,6 +302,7 @@ const myTooltip = new G6.Tooltip({
       if (node.id === "2021-12-16AUAPTY17:320349") {
         u.print("tooltip, node: ", node);
       }
+      u.print("tooltip node: ", node);
       outDiv.style.backgroundColor = "lightSteelBlue";
       outDiv.innerHTML = `<div>
       <h4>Flight (node)</h4>
@@ -330,6 +331,7 @@ const myTooltip = new G6.Tooltip({
       const inbound = e.item.getSource().getModel();
       const outbound = e.item.getTarget().getModel();
       outDiv.style.backgroundColor = "yellow";
+      u.print("tooltip edge: ", edge);
 
       let actColor;
       if (edge.actAvail < 5) {
@@ -351,30 +353,39 @@ const myTooltip = new G6.Tooltip({
       const ACTSlackP = u.floor(edge.ACTSlackP);
       const ACTAvailable = u.floor(edge.ACTAvailable);
       const ACTAvailableP = u.floor(edge.ACTAvailableP);
+      const orig_f = inbound.id.slice(10, 13);
+      const midpoint = inbound.id.slice(13, 16);
+      const dest_nf = outbound.id.slice(13, 16);
       outDiv.innerHTML = `<div>
 
 
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
         <li>Inbound id: ${inbound.id}</li>
-        <li>Outbound id: ${outbound.id}</li>
-        <li>Inbound from: ${inbound.id.slice(10, 13)}</li>
-        <li>Outbound to: ${outbound.id.slice(13, 16)}</li>
-        <li>Tail: ${outbound.tail}</li>
-        <li>Sch inbound arr Zulu: ${edge.schArrInTMZ} UTC</li>
-        <li>Sch outbound dep Zulu: ${edge.schDepOutTMZ} UTC</li>
+        <li>Outbound id: ${outbound.id}</li> 
+        <!-- <li>Inbound from: ${orig_f}</li> --> 
+        <!-- <li>Outbound to: ${dest_nf}</li> --> 
+        <li>Route:  ${orig_f} - ${midpoint} - ${dest_nf}</li>
+        <li>Sch inbound arr Zulu: ${inbound.schArrTMZ} UTC</li>
+        <li>Sch outbound dep Zulu: ${outbound.schDepTMZ} UTC</li>
         <li>ACTSlack: ${ACTSlack} min</li>
         <li>ACTSlackP: ${ACTSlackP} min</li>
         <li>ACTAvailable: ${ACTAvailable} min</li>
         <li>ACTAvailableP: ${ACTAvailableP} min</li>
+        <li>rotSlackP: ${edge.rotSlackP} min</li>
+        <li>in-arrDelay: ${inbound.arrDelay} min</li>
+        <li>in-arrDelayP: ${inbound.depDelayP} min</li>
+        <li>out-depDelay: ${outbound.depDelay} min</li>
+        <li>out-depDelayP: ${outbound.depDelayP} min</li>
         <li>Nb incoming flights connecting <br> with outbound flight: ${
           edge.inDegree
         }</li>
         <li>Nb outgoing flights connecting <br> with inbound flight: ${
           edge.outDegree
         }</li>
-        <li>rotSlackP: ${edge.rotSlackP} min</li>
         <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
+        <li>Tail (inbound=>oubound): ${edge.tail_f} => ${edge.tail_nf}</li>
+
         <!-- If the slack < 45 min, draw in red --> 
         <!-- 
         <li style="color:${actColor};">Available Connection Time: ${actAvail} min </li>
@@ -382,7 +393,6 @@ const myTooltip = new G6.Tooltip({
         <li>Planned Connection Time (outbound.schDep-inbound.schArr): ${actSched} min </li>
         <li>Actual Connection Time (outbound.outZ-inbound.inZ): ${actActual} min </li>
         <li>Available Connection Time (outbound.schDep-inbound.inZ): ${actAvail} min </li>
-        <li>Tail (inbound=>oubound): ${inbound.tail} => ${outbound.tail}</li>
         <li>Connection Time Slack: ${actAvail} - ${minConnectTime}
           = ${actAvail - minConnectTime} min</li>
           -->
