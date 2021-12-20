@@ -83,6 +83,46 @@ export function createMappingOneToMany(arr, attr, unique = false) {
   return mapping;
 }
 
+export function createMappingOneToManyAttr(arr, attr, attr2, unique = false) {
+  // Given an array of objects "arr" where each object has the attributes "attr" and "attr2",
+  // create a dictionary of "attr2" indexed by "attr"
+  // Assume the arrary:
+  //    arr = [
+  //		{attr: "house", attr2: 25, id: 2},
+  //		{attr: "chair", attr2: 27, id: 5},
+  //		{attr: "house", attr2: 47, id: 7}
+  //    ]
+  //    createMappingOneToManyAttr(arr, "attr", "attr2") returns the object
+  //    {
+  //       "house": [25, 47],
+  //       "chair": [27],
+  //    }
+  // unique (false): if true: force the "many" to have no repeats
+  const mapping = Object.create(null);
+
+  if (unique === false) {
+    arr.forEach((el) => {
+      mapping[el[attr]] = [];
+    });
+
+    arr.forEach((el) => {
+      mapping[el[attr]].push(el[attr2]);
+    });
+  } else {
+    console.log("unique === true in computeFeeders");
+    arr.forEach((el) => {
+      mapping[el[attr]] = new Set();
+    });
+    arr.forEach((el) => {
+      mapping[el[attr]].add(el[attr2]);
+    });
+    for (let el in mapping) {
+      mapping[el] = [...mapping[el]];
+    }
+  }
+  return mapping;
+}
+
 export function createMapping(arr, attr) {
   const mapping = Object.create(null);
 

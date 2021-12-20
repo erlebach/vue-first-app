@@ -77,3 +77,5 @@ I can  draw the graph with new edges/nodes without destroying it. However, the c
   Edges of same tail should have plannedRot (OK) and availRot (not present) and Predicted Available Rotation (availRotP). 
   as well as availRotSlack = availRot - minReq, and availRotSlackP = availRotP - minReq;  (WOrk on this next). 
 -------------------------------------------------------------
+2021-12-20
+- FSU: id: 2021-12-20PTYCNF20:280765:, inbounds and outbounds are undefined. WHY? 

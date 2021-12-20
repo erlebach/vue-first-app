@@ -212,7 +212,7 @@ const myTooltip = new G6.Tooltip({
   getContent: (e) => {
     const outDiv = document.createElement("div");
     outDiv.style.width = "40rem"; // font size in root element
-    outDiv.style.height = "35rem";
+    outDiv.style.height = "37rem";
     outDiv.style.position = "relative"; // position and z-index necessary
     outDiv.style.zIndex = "100"; // be draw above datatable header
     // Right edge of tootip is against viewport edge (fixed pos)
@@ -384,13 +384,15 @@ const myTooltip = new G6.Tooltip({
         <li>in-arrDelayP: ${inbound.depDelayP} min</li>
         <li>out-depDelay: ${outbound.depDelay} min</li>
         <li>out-depDelayP: ${outbound.depDelayP} min</li>
+        <!--  EDGES DO NOT HAVE DEGREES. Nodes have degrees. 
         <li>Nb incoming flights connecting <br> with outbound flight: ${
           edge.inDegree
         }</li>
         <li>Nb outgoing flights connecting <br> with inbound flight: ${
           edge.outDegree
         }</li>
-        <!-- <div style="display: none;"> -->
+        -->
+        <!-- Only display rotation info on pairs with identical tails -->
         <div style="display: ${displayRot};">
         <li>Planned Rot: ${edge.plannedRot}</li>
         <li>Avail Rot: ${edge.availRot}</li>

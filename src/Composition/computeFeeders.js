@@ -15,17 +15,30 @@ export function computeFeeders(bookings) {
   // Each list should not have id duplicates
 
   const bookings_out = u.createMappingOneToMany(bookings, "id_f");
+  const bookingsIds_out = u.createMappingOneToManyAttr(
+    bookings,
+    "id_f",
+    "id_nf"
+  );
 
   // attribute: outgoing flight id
   // Given id_nf, generate all the incoming flights,
   // or equivalently, the bookings that connect all incoming flights to the outgoing flight id_f
   // The many elements must be unique
   const bookings_in = u.createMappingOneToMany(bookings, "id_nf");
+  const bookingsIds_in = u.createMappingOneToManyAttr(
+    bookings,
+    "id_nf",
+    "id_f"
+  );
+  u.print("bookingsIds_in", bookingsIds_in);
+  u.print("bookingsIds_out", bookingsIds_out);
 
   // Remove duplicate entries in each entry of bookings_in and bookings_out
 
   u.print("computeFeeders::bookings_in", bookings_in);
   u.print("computeFeeders::bookings_out", bookings_out);
 
-  return { bookings_in, bookings_out };
+  // Remove bookings_in, bookings_out once code works without them
+  return { bookings_in, bookings_out, bookingsIds_in, bookingsIds_out };
 }
