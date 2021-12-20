@@ -66,3 +66,14 @@ result. That implies that the graph is not being updated properly. I could solve
 Solved: do a graph.destroy() and recreate the graph with different edges/nodes. 
 I can  draw the graph with new edges/nodes without destroying it. However, the calculation of degree of the nodes will be incorrect. 
 ---------------------------------------------------------
+2021-12-19
+- Scheduled rotation is an edge quantity (feeder-outbound pair, or _f, _nf pair). 
+- However, the flightTable has a rotation associated with it. This rotation, to be consistent with Copa tables, 
+	is associated with an outbound flight. In other words, to get the rotation for a flight in the FSU table, 
+	identify the flight pair such that this flight is outbound, and assign the rotation to it. 
+- plannedRot is now on the _nf vertex of each edge. Sometimes it is not defined, in which case, I set it to 10,000. This is 
+  the case when a node (flight) is not connected to an incoming flight with the same tail. (WHY DOES THIS HAPPEN?)
+- Fix edge and node tooltips. 
+  Edges of same tail should have plannedRot (OK) and availRot (not present) and Predicted Available Rotation (availRotP). 
+  as well as availRotSlack = availRot - minReq, and availRotSlackP = availRotP - minReq;  (WOrk on this next). 
+-------------------------------------------------------------

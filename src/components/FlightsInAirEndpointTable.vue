@@ -806,6 +806,7 @@ export default {
       // centerGraph(endpointsGraph);
 
       dp.colorByCity(endpointsGraph);
+      dp.followTails(endpointsGraph);
       endpointsGraph.render(); // not sure required
 
       dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!

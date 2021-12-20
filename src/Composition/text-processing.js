@@ -75,7 +75,7 @@ function getRow(e) {
   // console.log(`getRow: SCH_DEP_DTMZ: ${e.SCH_DEP_DTMZ}`);
   if (e.SCH_DEP_DTMZ !== undefined) {
     next_tmz = e.SCH_DEP_DTMZ.slice(11, 16);
-  } else {
+  } else if (e.ORIG_CD !== "ORIG") {
     // This should never happen
     next_tmz = "00:00";
     u.print("e: ", e);
@@ -436,9 +436,11 @@ function saveData() {
     //     // console.log("   keep");
     //     ptyPairs.push(r);
     //   }
-    // });
+    // }); 2021-12-19PTYCLO15:060246
 
     ptyPairs = [...allFlightPairs]; // a clone (copy)
+    u.print(`ptyPairs sort by id_f`, sortBy(ptyPairs, "id_f"));
+    u.print(`ptyPairs sort by id_nf`, sortBy(ptyPairs, "id_nf"));
 
     // ptyPairs.forEach((r) => {
     //   // u.print("row: ", r);
@@ -465,7 +467,7 @@ function saveData() {
 
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
-    u.print("saveData::flightTable", sortBy(flightTable, "id"));
+    u.print("saveData::flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
     // compute allPairs
     console.log(`before computeTail, nb ptyPairs: ${ptyPairs.length}`);
     stationPairs = computeTails(ptyPairs, flightTable); // WORK ON THIS CODE
@@ -515,7 +517,7 @@ function saveData() {
     u.print("outboundsMap", outboundsMap);
     u.print("inboundsMap", inboundsMap);
 
-    u.print("saveData::flightsInAir", flightsInAir);
+    u.print("saveData::flightsInAir", flightsInAir); // bool
     const flightTableMap = u.createMapping(flightTable, "id");
     for (let id_f in outboundsMap) {
       // console.log(`id_f: ${id_f}`);
@@ -531,7 +533,7 @@ function saveData() {
 
     // u.print("after return from synth, inboundsMap", inboundsMap);
     // u.print("after return from synth, outboundsMap", outboundsMap);
-    u.print("after return from synth, flightTable", sortBy(flightTable, "id"));
+    u.print("after return from synth, flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
     u.print(
       "after return from synth, stationPairs",
       sortBy(stationPairs, "id_nf")
@@ -547,23 +549,26 @@ function saveData() {
     u.print("allPairs_nf", sortBy(allPairs, "id_nf"));
     u.print("flightTable", sortBy(flightTable, "id"));
 
+    // id: 2021-12-19PTYCLO15:060246  not found in allPairs. How is that possible?
+    // Next line may be incorrect: plannedRot of a pair should be set on the outbound flight
     flightTable.forEach((r) => {
       // console.log(`r.id: ${r.id}`);
-      const a_f = allPairsIds_f[r.id];
-      const a_nf = allPairsIds_nf[r.id];
-      if (a_f !== undefined) {
-        // u.print("a_f", a_f);
-        r.plannedRot = a_f.plannedRot;
-      } else if (a_nf !== undefined) {
-        // u.print("a_f", a_nf);
-        r.plannedRot = a_nf.plannedRot;
+      const row_f = allPairsIds_f[r.id];
+      const row_nf = allPairsIds_nf[r.id];
+      // if (row_f !== undefined) {
+      // u.print("a_f", a_f);
+      // r.plannedRot = row_f.plannedRot;
+      // } else if (row_nf !== undefined) {
+      if (row_nf !== undefined) {
+        u.print("saveData::r.id", r.id);
+        u.print("saveData::row_nf, row_nf", row_nf);
+        r.plannedRot = row_nf.plannedRot;
       } else {
-        console.log(`saveData::CANNOT happen!, r.id: ${r.id}`);
+        // pairs where one leg has ORIG for ORIG_CD are removed. So the missing id
+        // in allPairs makes sense.The other leg has ORIG_CD === "ORIG"
+        u.print(`saveData::CANNOT happen!, r.id: ${r.id}, flightTable row`, r);
       }
     });
-
-    // NEXT PROBLEM TO SOLVE!!!
-    // CANNOT happen just happened: r.id: 2021-12-18VVIPTY05:420126
 
     u.print("after computeAllPairs, allPairs", allPairs);
     u.print("after computeAllPairs, sorted allPairs", sortBy(allPairs, "id_f"));
@@ -811,6 +816,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
 
   u.print("computeAllPairs::stationPairs: ", sortBy(stationPairs, "id_f"));
   u.print("computeAllPairs::ptyPairs: ", sortBy(ptyPairs, "id_f"));
+  u.print("computeAllPairs::flightIdMap: ", sortBy(flightIdMap, "id_f"));
 
   // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
   // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
@@ -840,6 +846,10 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       in_nf: row_nf.in,
       eta_f: row_f.eta,
       eta_nf: row_nf.eta,
+      estDepTime_f: row_f.estDepTime,
+      estArrTime_f: row_f.estArrTime,
+      estDepTime_nf: row_nf.estDepTime,
+      estArrTime_nf: row_nf.estArrTime,
       out_f: row_f.out,
       out_nf: row_nf.out,
       orig_f: row_f.orig,
@@ -939,7 +949,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       r.availRotMinReq = 60; // hardcoded
     }
     r.rotSlack = r.ACTAvailable - 60;
-    r.rotSlackP = r.ACT;
+    r.rotSlackP = r.rotSlack;
     // const actAvailable =
     //  20     (e.fsu_nf.SCH_DEP_DTMZ - e.fsu_f.SCH_ARR_DTMZ) * nano2min; /
     r.inDegree = undefined;
@@ -1174,6 +1184,7 @@ export function setupDelays(flightTable) {
     if (depDelay === undefined || isNaN(depDelay)) {
       countUndefinedDepDelay += 1;
     }
+    u.print("setupDelays::flightTable, r", r);
   });
   // console.log(
   //   `text-processing::setupDelays, countUndefinedArrDelay: ${countUndefinedArrDelay}`

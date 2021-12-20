@@ -317,7 +317,8 @@ const myTooltip = new G6.Tooltip({
         <li style="color:${depDelayPColor};">Dep DelayP:  ${depDelayP} min</li>
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
         <li style="color:${arrDelayPColor};">Arr DelayP: ${arrDelayP} min</li>
-        <li>Planned Rotation: ${node.plannedRot} min</li>
+        <!-- why undefined plannedRot -->
+        <li>Planned Rotation: ${node.plannedRot} min</li>  
         <li>Predicted Rotation Slack: ${rotSlackP} min</li>
         <li>Predicted Slack: ${slackP} min</li>
         <li>Predicted ACT Slack: ${ACTSlackP} min</li>
@@ -356,9 +357,16 @@ const myTooltip = new G6.Tooltip({
       const orig_f = inbound.id.slice(10, 13);
       const midpoint = inbound.id.slice(13, 16);
       const dest_nf = outbound.id.slice(13, 16);
+
+      // only display rotation data on edges where flight tails match
+      let displayRot;
+      if (edge.tail_f === edge.tail_nf) {
+        displayRot = "true";
+      } else {
+        displayRot = "none";
+      }
+
       outDiv.innerHTML = `<div>
-
-
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
         <li>Inbound id: ${inbound.id}</li>
@@ -372,7 +380,6 @@ const myTooltip = new G6.Tooltip({
         <li>ACTSlackP: ${ACTSlackP} min</li>
         <li>ACTAvailable: ${ACTAvailable} min</li>
         <li>ACTAvailableP: ${ACTAvailableP} min</li>
-        <li>rotSlackP: ${edge.rotSlackP} min</li>
         <li>in-arrDelay: ${inbound.arrDelay} min</li>
         <li>in-arrDelayP: ${inbound.depDelayP} min</li>
         <li>out-depDelay: ${outbound.depDelay} min</li>
@@ -383,6 +390,14 @@ const myTooltip = new G6.Tooltip({
         <li>Nb outgoing flights connecting <br> with inbound flight: ${
           edge.outDegree
         }</li>
+        <!-- <div style="display: none;"> -->
+        <div style="display: ${displayRot};">
+        <li>Planned Rot: ${edge.plannedRot}</li>
+        <li>Avail Rot: ${edge.availRot}</li>
+        <li>Avail RotP: ${edge.availRotP}</li>
+        <li>Avail Rot Slack: ${edge.availRotSlack} min</li>
+        <li>Avail Rot SlackP: ${edge.availRotSlackP} min</li>
+        </div>
         <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
         <li>Tail (inbound=>oubound): ${edge.tail_f} => ${edge.tail_nf}</li>
 
@@ -487,6 +502,22 @@ function pausecomp(millis) {
   do {
     curDate = new Date();
   } while (curDate - date < millis);
+}
+//-------------------------------------------------------------
+export function followTails(graph) {
+  // thicken edges that represent a connection between two identical tails
+  const edges = graph.getEdges();
+  u.print("followTails::edges: ", edges);
+  edges.forEach((edge) => {
+    const props = edge.getModel();
+    if (props.tail_f === props.tail_nf) {
+      graph.updateItem(edge, {
+        style: {
+          lineWidth: 20,
+        },
+      });
+    }
+  });
 }
 //-------------------------------------------------------------
 export function assignNodeLabels(graph) {
