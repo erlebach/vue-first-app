@@ -76,6 +76,21 @@ I can  draw the graph with new edges/nodes without destroying it. However, the c
 - Fix edge and node tooltips. 
   Edges of same tail should have plannedRot (OK) and availRot (not present) and Predicted Available Rotation (availRotP). 
   as well as availRotSlack = availRot - minReq, and availRotSlackP = availRotP - minReq;  (WOrk on this next). 
+  The variable rotSlack in the code is really availRotSlack (might change the variable at a later time)
 -------------------------------------------------------------
 2021-12-20
 - FSU: id: 2021-12-20PTYCNF20:280765:, inbounds and outbounds are undefined. WHY? 
+- Added nbInbounds and nbOutbounds to FSU in initializeNodes
+- Added inboundsIds and outboundsIds to FSU in initializeNodes
+  - inboundsIds (list of ids) replaces inbounds (list of records)
+initializeNodes is important to get right. Slack, rotation, etc are updated in this routine. 
+
+initializeNodes is converted (inbounds ==> inboundsIds)
+
+Given bookings_in[id], which returns a list of ids, I need to get the booking row with this id pair. 
+id_f - id_nf ==> id  (is the id of the bookings list). 
+Create a bookingsMap = u.createMapping(bookings, 'id')
+
+Create a function getBooking(bookingsMap, id_f, id_nf)  {
+	return bookingsMap[id_f + '-' _ id_nf]
+}

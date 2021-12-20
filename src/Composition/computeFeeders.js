@@ -14,6 +14,12 @@ export function computeFeeders(bookings) {
   // bookings_in[id_nf]: list of id_nf's feeders
   // Each list should not have id duplicates
 
+  bookings.forEach((r) => {
+    r.id = r.id_f + "-" + r.id_nf;
+  });
+
+  const bookingsIdMap = u.createMapping(bookings, "id");
+
   const bookings_out = u.createMappingOneToMany(bookings, "id_f");
   const bookingsIds_out = u.createMappingOneToManyAttr(
     bookings,
@@ -40,5 +46,11 @@ export function computeFeeders(bookings) {
   u.print("computeFeeders::bookings_out", bookings_out);
 
   // Remove bookings_in, bookings_out once code works without them
-  return { bookings_in, bookings_out, bookingsIds_in, bookingsIds_out };
+  return {
+    bookings_in,
+    bookings_out,
+    bookingsIdMap,
+    bookingsIds_in,
+    bookingsIds_out,
+  };
 }
