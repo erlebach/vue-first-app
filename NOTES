@@ -94,3 +94,13 @@ Create a bookingsMap = u.createMapping(bookings, 'id')
 Create a function getBooking(bookingsMap, id_f, id_nf)  {
 	return bookingsMap[id_f + '-' _ id_nf]
 }
+
+Tiers 1 through 4 appear to be be working properly: there are three links when tier is four. 
+When tier is 5, there are sometimes 5 or more links, which implies something is not quite right.This occurs
+when the graph is too complex. 
+
+ERROR: Sometimes, Level=0 is not present. WHY NOT??
+initialId: 2021-12-21PTYBAQ03:180826: in this case, there is no level=0. 
+In the node tooltip, give the node level. 
+The level 0 node is not always present. TODO: FIx ERROR. The level=0 nodes should ALWAYS be present!
+

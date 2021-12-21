@@ -86,7 +86,7 @@ function getRow(e) {
   }
   const id_f = e.SCH_DEP_DTZ + e.ORIG_CD + e.DEST_CD + next_tmz + e.FLT_NUM;
   if (e.NEXT_STD !== undefined) {
-    u.print("e.NEXT_STD", e.NEXT_STD);
+    // u.print("e.NEXT_STD", e.NEXT_STD);
     next_dtz = e.NEXT_STD.slice(0, 10);
     next_tmz = e.NEXT_STD.slice(11, 16);
   } else {
@@ -263,7 +263,7 @@ function inboundFlightsNotDeparted(data) {
       if (e.OUT_P_FLT === undefined) {
         if (e.ORIG_CD === "MIA") {
           // remove print when debugged
-          u.print("inbound not departed", e);
+          // u.print("inbound not departed", e);
         }
         const row = getRow(e);
         keptRows.push(row);
@@ -317,7 +317,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -371,8 +371,8 @@ function saveData() {
         });
       }
     });
-    u.print("inRows", inRows);
-    console.log(`data.length: ${data.length}`);
+    // u.print("inRows", inRows);
+    // console.log(`data.length: ${data.length}`);
 
     // TODO: SPECIFY A TIME OF ANALYSIS
     // Remove all pairs with a feeder already landed.
@@ -410,8 +410,8 @@ function saveData() {
       // ...outboundLanded, // keep if I wish to make sure all pairs are captured correctly. This is an issue end of day.
     ];
 
-    console.log(`saveDatat::total nb flight pairs: ${allFlightPairs.length}`);
-    u.print("saveData::allFlightPairs", sortBy(allFlightPairs, "id_nf"));
+    // console.log(`saveDatat::total nb flight pairs: ${allFlightPairs.length}`);
+    // u.print("saveData::allFlightPairs", sortBy(allFlightPairs, "id_nf"));
     //u.print("inboundNotDeparted", inboundNotDeparted);
     //u.print("inboundInFlight", inboundInFlight);
     //u.print("inboundAtPTY", inboundAtPTY);
@@ -439,8 +439,8 @@ function saveData() {
     // }); 2021-12-19PTYCLO15:060246
 
     ptyPairs = [...allFlightPairs]; // a clone (copy)
-    u.print(`ptyPairs sort by id_f`, sortBy(ptyPairs, "id_f"));
-    u.print(`ptyPairs sort by id_nf`, sortBy(ptyPairs, "id_nf"));
+    // u.print(`ptyPairs sort by id_f`, sortBy(ptyPairs, "id_f"));
+    // u.print(`ptyPairs sort by id_nf`, sortBy(ptyPairs, "id_nf"));
 
     // ptyPairs.forEach((r) => {
     //   // u.print("row: ", r);
@@ -467,14 +467,14 @@ function saveData() {
 
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
-    u.print("saveData::flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
+    // u.print("saveData::flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
     // compute allPairs
-    console.log(`before computeTail, nb ptyPairs: ${ptyPairs.length}`);
+    // console.log(`before computeTail, nb ptyPairs: ${ptyPairs.length}`);
     stationPairs = computeTails(ptyPairs, flightTable); // WORK ON THIS CODE
     let flightIdMap = u.createMapping(flightTable, "id");
     computeAllPairs(stationPairs, flightIdMap, ptyPairs);
-    console.log(`after computeTail, nb stationPairs: ${stationPairs.length}`);
-    u.print("saveData::allPairs", sortBy(allPairs, "orig_f"));
+    // console.log(`after computeTail, nb stationPairs: ${stationPairs.length}`);
+    // u.print("saveData::allPairs", sortBy(allPairs, "orig_f"));
     const stationPairsMap = u.createMapping(stationPairs, "id_f");
     // console.log(
     //   `==> text-processing, stationPairs.length: ${stationPairs.length}`
@@ -486,7 +486,7 @@ function saveData() {
 
     // update ptyPairs with arrDelay and depDelay attributes
     allPairs.forEach((r) => {
-      console.log(r);
+      // console.log(r);
       const id_f = r.id_f;
       const id_nf = r.id_nf;
       const row_f = flightIdMap[id_f];
@@ -514,40 +514,40 @@ function saveData() {
     // const { inboundsMap, outboundsMap } =
     syntheticConnections(ptyPairs, flightsInAir, nbConn);
 
-    u.print("outboundsMap", outboundsMap);
-    u.print("inboundsMap", inboundsMap);
+    // u.print("outboundsMap", outboundsMap);
+    // u.print("inboundsMap", inboundsMap);
 
-    u.print("saveData::flightsInAir", flightsInAir); // bool
+    // u.print("saveData::flightsInAir", flightsInAir); // bool
     const flightTableMap = u.createMapping(flightTable, "id");
     for (let id_f in outboundsMap) {
       // console.log(`id_f: ${id_f}`);
       const r_f = flightTableMap[id_f]; // UNDEFINED. HOW CAN THAT BE. THERE ARE FLIGHTS MISSING?
-      u.print(`outboundsMap[${id_f}`, outboundsMap[id_f]);
+      // u.print(`outboundsMap[${id_f}`, outboundsMap[id_f]);
       outboundsMap[id_f].forEach((id_nf) => {
         // console.log(`id_nf: ${id_nf}`);
         const r_nf = flightTableMap[id_nf];
-        u.print("saveData::r_f", r_f); // undefined
-        u.print("saveData::r_nf", r_nf);
+        // u.print("saveData::r_f", r_f); // undefined
+        // u.print("saveData::r_nf", r_nf);
       });
     }
 
     // u.print("after return from synth, inboundsMap", inboundsMap);
     // u.print("after return from synth, outboundsMap", outboundsMap);
-    u.print("after return from synth, flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
-    u.print(
-      "after return from synth, stationPairs",
-      sortBy(stationPairs, "id_nf")
-    );
-    u.print("after return from synth, ptyPairs", ptyPairs);
+    // u.print("after return from synth, flightTable", sortBy(flightTable, "id")); // 2021-12-19PTYCLO15:060246 OK
+    // u.print(
+    //   "after return from synth, stationPairs",
+    //   sortBy(stationPairs, "id_nf")
+    // );
+    // u.print("after return from synth, ptyPairs", ptyPairs);
     // u.print("after return from synth, flightIdMap", flightIdMap);
 
     // updateFlights(allPairs, flights);
 
     const allPairsIds_nf = u.createMapping(allPairs, "id_nf");
     const allPairsIds_f = u.createMapping(allPairs, "id_f");
-    u.print("allPairs_f", sortBy(allPairs, "id_f"));
-    u.print("allPairs_nf", sortBy(allPairs, "id_nf"));
-    u.print("flightTable", sortBy(flightTable, "id"));
+    // u.print("allPairs_f", sortBy(allPairs, "id_f"));
+    // u.print("allPairs_nf", sortBy(allPairs, "id_nf"));
+    // u.print("flightTable", sortBy(flightTable, "id"));
 
     // id: 2021-12-19PTYCLO15:060246  not found in allPairs. How is that possible?
     // Next line may be incorrect: plannedRot of a pair should be set on the outbound flight
@@ -560,8 +560,8 @@ function saveData() {
       // r.plannedRot = row_f.plannedRot;
       // } else if (row_nf !== undefined) {
       if (row_nf !== undefined) {
-        u.print("saveData::r.id", r.id);
-        u.print("saveData::row_nf, row_nf", row_nf);
+        // u.print("saveData::r.id", r.id);
+        // u.print("saveData::row_nf, row_nf", row_nf);
         r.plannedRot = row_nf.plannedRot;
       } else {
         // pairs where one leg has ORIG for ORIG_CD are removed. So the missing id
@@ -570,8 +570,8 @@ function saveData() {
       }
     });
 
-    u.print("after computeAllPairs, allPairs", allPairs);
-    u.print("after computeAllPairs, sorted allPairs", sortBy(allPairs, "id_f"));
+    // u.print("after computeAllPairs, allPairs", allPairs);
+    // u.print("after computeAllPairs, sorted allPairs", sortBy(allPairs, "id_f"));
     // // make unique
     // allPairs.forEach((r) => {
     //   r.id = r.id_f + "-" + r.id_nf;
@@ -735,9 +735,9 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
   }
 
   for (let ix in outboundsMap) {
-    console.log(`ix: ${ix}`);
+    // console.log(`ix: ${ix}`);
     if (ix.slice(10, 14) !== "ORIG") {
-      console.log("not ORIG");
+      // console.log("not ORIG");
       const ids = [];
       outboundsMap[ix].forEach((id) => {
         if (id.slice(10, 14) !== "ORIG") {
@@ -1184,7 +1184,7 @@ export function setupDelays(flightTable) {
     if (depDelay === undefined || isNaN(depDelay)) {
       countUndefinedDepDelay += 1;
     }
-    u.print("setupDelays::flightTable, r", r);
+    // u.print("setupDelays::flightTable, r", r);
   });
   // console.log(
   //   `text-processing::setupDelays, countUndefinedArrDelay: ${countUndefinedArrDelay}`

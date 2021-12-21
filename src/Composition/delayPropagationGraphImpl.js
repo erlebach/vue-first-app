@@ -302,27 +302,36 @@ const myTooltip = new G6.Tooltip({
       if (node.id === "2021-12-16AUAPTY17:320349") {
         u.print("tooltip, node: ", node);
       }
-      u.print("tooltip node: ", node);
+      // u.print("tooltip node: ", node);
       outDiv.style.backgroundColor = "lightSteelBlue";
       outDiv.innerHTML = `<div>
       <h4>Flight (node)</h4>
       <ul>
         <li>ID: ${node.id}</li>
         <li>OD: ${node.id.slice(10, 13)}-${node.id.slice(13, 16)}</li>
+        <hr/>
         <li>Flt#: ${node.id.slice(21)}</li>
         <li>Tail: ${node.tail}</li>
+        <hr/>
         <li>Sch Dep: ${node.schDepTMZ} UTC</li>
         <li>Sch Arr: ${node.schArrTMZ} UTC</li>
+        <hr/>
         <li style="color:${depDelayColor};">Dep Delay: ${depDelay} min</li>
-        <li style="color:${depDelayPColor};">Dep DelayP:  ${depDelayP} min</li>
+        <li style="color:${depDelayPColor};">Pred Dep Delay:  ${depDelayP} min</li>
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
-        <li style="color:${arrDelayPColor};">Arr DelayP: ${arrDelayP} min</li>
+        <li style="color:${arrDelayPColor};">Pred Arr Delay: ${arrDelayP} min</li>
         <!-- why undefined plannedRot -->
+        <hr/>
         <li>Planned Rotation: ${node.plannedRot} min</li>  
-        <li>Predicted Rotation Slack: ${rotSlackP} min</li>
-        <li>Predicted Slack: ${slackP} min</li>
-        <li>Predicted ACT Slack: ${ACTSlackP} min</li>
-        <li>min ACTP: ${minACTP} min</li>
+        <li>Avail Rotation: ${node.availRot} min</li>  
+        <li>Pred Avail Rotation: ${node.availRotP} min</li>  
+        <li>Pred Rot Slack: ${rotSlackP} min</li>
+        <li>Pred Slack: ${slackP} min</li>
+        <hr/>
+        <li>Pred ACT Slack: ${ACTSlackP} min</li>
+        <li>Pred Minimum ACT: ${minACTP} min</li>
+        <li>Level: ${node.level} min</li>
+        <hr/>
         <li>${connectLabel}: ${node.hubConnections}</li>
       </ul>
       </div>`;
@@ -332,7 +341,7 @@ const myTooltip = new G6.Tooltip({
       const inbound = e.item.getSource().getModel();
       const outbound = e.item.getTarget().getModel();
       outDiv.style.backgroundColor = "yellow";
-      u.print("tooltip edge: ", edge);
+      // u.print("tooltip edge: ", edge);
 
       let actColor;
       if (edge.actAvail < 5) {
@@ -369,6 +378,7 @@ const myTooltip = new G6.Tooltip({
       outDiv.innerHTML = `<div>
       <h4>Connection (edge, inbound-outbound)</h4>
       <ul>
+        <hr/>
         <li>Inbound id: ${inbound.id}</li>
         <li>Outbound id: ${outbound.id}</li> 
         <!-- <li>Inbound from: ${orig_f}</li> --> 
@@ -376,14 +386,17 @@ const myTooltip = new G6.Tooltip({
         <li>Route:  ${orig_f} - ${midpoint} - ${dest_nf}</li>
         <li>Sch inbound arr Zulu: ${inbound.schArrTMZ} UTC</li>
         <li>Sch outbound dep Zulu: ${outbound.schDepTMZ} UTC</li>
-        <li>ACTSlack: ${ACTSlack} min</li>
-        <li>ACTSlackP: ${ACTSlackP} min</li>
-        <li>ACTAvailable: ${ACTAvailable} min</li>
-        <li>ACTAvailableP: ${ACTAvailableP} min</li>
+        <hr/>
         <li>in-arrDelay: ${inbound.arrDelay} min</li>
         <li>in-arrDelayP: ${inbound.depDelayP} min</li>
         <li>out-depDelay: ${outbound.depDelay} min</li>
         <li>out-depDelayP: ${outbound.depDelayP} min</li>
+        <hr/>
+        <li>ACTSlack: ${ACTSlack} min</li>
+        <li>ACTSlackP: ${ACTSlackP} min</li>
+        <li>ACTAvailable: ${ACTAvailable} min</li>
+        <li>ACTAvailableP: ${ACTAvailableP} min</li>
+
         <!--  EDGES DO NOT HAVE DEGREES. Nodes have degrees. 
         <li>Nb incoming flights connecting <br> with outbound flight: ${
           edge.inDegree
@@ -394,14 +407,17 @@ const myTooltip = new G6.Tooltip({
         -->
         <!-- Only display rotation info on pairs with identical tails -->
         <div style="display: ${displayRot};">
+        <hr/>
         <li>Planned Rot: ${edge.plannedRot}</li>
         <li>Avail Rot: ${edge.availRot}</li>
         <li>Avail RotP: ${edge.availRotP}</li>
         <li>Avail Rot Slack: ${edge.availRotSlack} min</li>
         <li>Avail Rot SlackP: ${edge.availRotSlackP} min</li>
+        <hr/>
         </div>
-        <li>PAX: ${edge.pax} </li>  <!-- equal to pax_nf -->
-        <li>Tail (inbound=>oubound): ${edge.tail_f} => ${edge.tail_nf}</li>
+        <!-- <li>PAX: ${edge.pax} </li>  --> <!-- equal to pax_nf -->
+        <li>Tail ${edge.tail_f} => ${edge.tail_nf}</li>
+        <hr/>
 
         <!-- If the slack < 45 min, draw in red --> 
         <!-- 

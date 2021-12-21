@@ -169,12 +169,16 @@ is returned from the endpoint. -->
               <label for="tier3">3</label>
             </div>
             <div class="p-field-radiobutton">
-              <RadioButton id="tier3" name="tiers" value="4" v-model="tiers" />
-              <label for="tier3">4</label>
+              <RadioButton id="tier4" name="tiers" value="4" v-model="tiers" />
+              <label for="tier4">4</label>
             </div>
             <div class="p-field-radiobutton">
-              <RadioButton id="tier3" name="tiers" value="5" v-model="tiers" />
-              <label for="tier3">5</label>
+              <RadioButton id="tier5" name="tiers" value="5" v-model="tiers" />
+              <label for="tier5">5</label>
+            </div>
+            <div class="p-field-radiobutton">
+              <RadioButton id="tier6" name="tiers" value="6" v-model="tiers" />
+              <label for="tier6">6</label>
             </div>
           </div>
         </Panel>
@@ -446,13 +450,15 @@ export default {
     const inputArrDelay = ref(0); // imposed on original flight = arrDelayP (predicted)
     // Make the id of the first flight is kept, otherwise errors occur.
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
+    const delayObjRef = ref(null);
+    const maxLevels = 6;
 
     const infoRef = reactive({
       nbEdges: 0,
       nbNodes: 0,
       nbGraphEdges: 0,
       level2ids: 0,
-      nbId2level: 0,
+      nbId2level: 0, // max number of levels
     });
 
     const flightsRef = reactive({
@@ -521,8 +527,9 @@ export default {
     }
 
     watch(
-      [selectedAllPairsRow, tier.getTier, inputArrDelay, maxArrDelayRef],
-      ([row, nbTiers, arrDelay, maxArrDelay], o) => {
+      [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
+      ([row, arrDelay, maxArrDelay], o) => {
+        console.log("===== watch selectedAllPairsRow, etc =======");
         // console.log("selected row: ", selectedAllPairsRow.value);
         // console.log("before getBEndPointFilesComputed");
         const data = getEndPointFilesComputed;
@@ -538,9 +545,20 @@ export default {
         //console.log("selected row: ", row);
 
         // NEXT STEP: draw   graphRigidModel
-        drawGraphRigidModel(delayObj, nbTiers);
+        delayObjRef.value = delayObj;
+        console.log(`Select new row, new graph, tiers: ${tiers.value}`);
+        drawGraphRigidModel(delayObj, tiers.value);
       }
     );
+
+    // Update graph according to the number of tiers
+    watch(tiers, (nbTiers) => {
+      console.log("===== watch(tiers) =======");
+      // console.log(`watch tier: ${nbTiers}`);
+      // u.print("delayObjRef.value", delayObjRef.value);
+      drawGraphRigidModel(delayObjRef.value, nbTiers);
+    });
+
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
     saveOnce(0);
@@ -667,7 +685,7 @@ export default {
     }
 
     function drawGraphRigidModel(delayObj, nbTiers) {
-      u.print("delayObj: ", delayObj);
+      // u.print("delayObj: ", delayObj);
       const {
         nodes,
         edges,
@@ -678,20 +696,22 @@ export default {
         table,
       } = delayObj;
 
+      // Implement change of tiersss.
+      // Change the nodes, and remove all edges connected to those nodes.
+      // Draw the nodes/edges but simply make them invisible.
+      // Start from full list of nodes each time.
+
       infoRef.nbNodes = nodes.length;
       infoRef.nbEdges = nodes.length;
       infoRef.nbGraphEdges = edgesTraversed.length;
-      infoRef.level2ids = [
-        level2ids[0].length,
-        level2ids[1].length,
-        level2ids[2].length,
-        level2ids[3].length,
-        level2ids[4].length,
-      ];
-      infoRef.nbId2level = 0;
-      for (let id in id2level) {
-        infoRef.nbId2level++;
+      infoRef.level2ids = [];
+      for (let i = 0; i < maxLevels; i++) {
+        infoRef.level2ids.push(level2ids[i].length);
       }
+      infoRef.nbId2level = maxLevels;
+      // for (let id in id2level) {
+      // infoRef.nbId2level++;
+      // }
 
       const nb_tiers = 0; // not used
       // const flights = data.flightTable;
@@ -700,11 +720,14 @@ export default {
       // table: all nodes (why only 96)
 
       // Extract ids for levels 0 throught level_max
-      const max_levels = 6;
+      // const max_levels = 6;
+      const max_levels = 2;
       const dataPerLevel = {};
 
+      // Why is nbTiers null?  <<<<<<<<<<< *************** ERROR
+
       // Extract the ids for each level
-      for (let level = 0; level < max_levels; level++) {
+      for (let level = 0; level < nbTiers; level++) {
         dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
         // u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
       }
@@ -717,10 +740,21 @@ export default {
 
       // gNodes: all ids from all levels
 
-      for (let id in id2level) {
-        // console.log(`id: ${id}`);
-        gNodes.push(tableIds[id]);
-      }
+      Object.entries(id2level).forEach((entry) => {
+        const id = entry[0];
+        const level = entry[1];
+        console.log(`level: ${level}, nbTiers: ${nbTiers}`);
+        if (level < nbTiers) {
+          console.log("  level < nbTiers");
+          gNodes.push(tableIds[id]);
+        }
+      });
+      console.log(`nb gNodes: ${gNodes.length}`);
+
+      // for (let id in id2level) {
+      //   // console.log(`id: ${id}`);
+      //   gNodes.push(tableIds[id]);
+      // }
 
       // gNodes are the nodes traversed in rigidBody
 
@@ -786,7 +820,8 @@ export default {
       }
 
       // This element must be mounted before creating the graph
-      const data = { nodes: nodesTraversed, edges: gEdges };
+      // const data = { nodes: nodesTraversed, edges: gEdges };
+      const data = { nodes: gNodes, edges: gEdges };
       u.print("data", data);
       endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
