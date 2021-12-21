@@ -372,41 +372,55 @@ function listCities(flightTable, flightIds) {
 function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
   const {
-    flightTable,
-    inboundsMap,
-    outboundsMap,
-    allPairs,
-    ptyPairs,
-    stationPairs,
+    // flightTable,
+    // inboundsMap,
+    // outboundsMap,
+    // allPairs,
+    // ptyPairs,
+    // stationPairs,
+    dBookings,
+    dFSU,
+    dTails,
   } = dataRef.value;
 
   console.log("==============================================================");
+  u.print("dataRef.value", dataRef.value);
   console.log("==============================================================");
 
-  [
-    flightTable,
-    inboundsMap,
-    outboundsMap,
-    ptyPairs,
-    stationPairs,
-    allPairs,
-  ].forEach((e) => {
-    console.log(`Length of flight arrays from data: ${e.length}`);
-  });
+  // [
+  //   flightTable,
+  //   inboundsMap,
+  //   outboundsMap,
+  //   ptyPairs,
+  //   stationPairs,
+  //   allPairs,
+  //   dBookings,
+  //   dFSU,
+  //   dTails,
+  // ].forEach((e) => {
+  //   console.log(`Length of flight arrays from data: ${e.length}`);
+  // });
 
   u.print("InitialId: ", initialId);
   console.log(`InitialId: ${initialId}`);
 
+  console.log("vue::dBookings", dBookings);
+  console.log("vue::dFSU", dFSU);
+  console.log("vue::dTails", dTails);
+
   const delayObj = computePropagationDelays(
-    flightTable,
-    inboundsMap,
-    outboundsMap,
-    ptyPairs,
-    stationPairs,
-    allPairs,
+    // flightTable,
+    // inboundsMap,
+    // outboundsMap,
+    // ptyPairs,
+    // stationPairs,
+    // allPairs,
     initialId,
     inputArrDelay,
-    maxArrDelay
+    maxArrDelay,
+    dBookings,
+    dFSU,
+    dTails
   );
   return delayObj;
 }
@@ -534,13 +548,18 @@ export default {
         console.log("===== watch selectedAllPairsRow, etc =======");
         // console.log("selected row: ", selectedAllPairsRow.value);
         // console.log("before getBEndPointFilesComputed");
-        const data = getEndPointFilesComputed;
+        const dataRef = getEndPointFilesComputed;
         u.print("selected row", row);
         const initialId = row.id_f;
         // u.print("data", data);
         // console.log(`before propagateData, initialId: ${initialId}`);
         // u.print("before propagateData, data: ", data.valiue);
-        const delayObj = propagateData(data, initialId, arrDelay, maxArrDelay); // args: ref, value
+        const delayObj = propagateData(
+          dataRef,
+          initialId,
+          arrDelay,
+          maxArrDelay
+        ); // args: ref, value
         rigidBodyRef.table = delayObj.table;
         // u.print("==> table: ", table);
         // From this row, construct the rigid model

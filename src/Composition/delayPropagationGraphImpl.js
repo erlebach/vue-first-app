@@ -394,10 +394,10 @@ const myTooltip = new G6.Tooltip({
         outbound.depDelayP
       } min</li>
         <hr/>
-        <li>ACTSlack: ${ACTSlack} min</li>
-        <li>Pred ACTSlack: ${ACTSlackP} min</li>
-        <li>ACTAvailable: ${ACTAvailable} min</li>
-        <li>Pred ACTAvailable: ${ACTAvailableP} min</li>
+        <li>ACT Slack: ${ACTSlack} min</li>
+        <li>Avail ACT: ${ACTAvailable} min</li>
+        <li>Pred ACT Slack: ${ACTSlackP} min</li>
+        <li>Pred Avail ACT: ${ACTAvailableP} min</li>
 
         <!--  EDGES DO NOT HAVE DEGREES. Nodes have degrees. 
         <li>Nb incoming flights connecting <br> with outbound flight: ${

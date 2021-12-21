@@ -24,6 +24,9 @@ let flightTable = [];
 let ptyPairs = [];
 let stationPairs = [];
 let allPairs = []; // combine ptyPairs and stationPairs
+let dBookings = []; // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
+let dFSU = [];
+let dTails = [];
 
 // inboundsMap[id_nf] is the list of associated feeder flights
 // Note that there is no guarantee that there will be a feeder flight with the same tail as the outgoing tail number.
@@ -558,7 +561,7 @@ function saveData() {
       // if (row_f !== undefined) {
       // u.print("a_f", a_f);
       // r.plannedRot = row_f.plannedRot;
-      // } else if (row_nf !== undefined) {
+      // } else if (row_nf !== undefined) { // }
       if (row_nf !== undefined) {
         // u.print("saveData::r.id", r.id);
         // u.print("saveData::row_nf, row_nf", row_nf);
@@ -587,18 +590,32 @@ function saveData() {
     // // in computeTails
 
     setStatus(true);
+
+    flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
+
+    // console.log("call create_FSU_BOOK_TAILS");
+    // dBookings, dFSU, dTails are globals.
+    //const { dBookings, dFSU, dTails } = create_FSU_BOOK_TAILS(
+    create_FSU_BOOK_TAILS(allPairs, flightTable, inboundsMap, outboundsMap);
+    u.print("saveData::dBookings", dBookings);
+    u.print("saveData::dFSU", dFSU);
+    u.print("saveData::dTails", dTails);
   });
 }
 
 //-----------------------------------------------------------------------
 const getEndPointFilesComputed = computed(() => {
   return {
+    // Figure out why vue module requires flightTable, ptyPairs, allPairs, stationPairs
     flightTable,
     ptyPairs,
     stationPairs,
     allPairs,
-    inboundsMap,
-    outboundsMap,
+    // inboundsMap,
+    // outboundsMap,
+    dBookings, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
+    dFSU,
+    dTails,
   };
 });
 
@@ -1193,3 +1210,276 @@ export function setupDelays(flightTable) {
   //   `text-processing::setupDelays, countUndefinedDepDelay: ${countUndefinedDepDelay}`
   // );
 }
+//-----------------------------------------------------------------
+function create_FSU_BOOK_TAILS(
+  allPairs,
+  flightTable,
+  inboundsMap,
+  outboundsMap
+) {
+  console.log("text-processing::create_FSU_BOOK_TAILS");
+  // both defined globally
+  //const dFSU = [];
+  //const dTails = [];
+
+  // flightTable.forEach((r) => {
+  //   console.log(`create_FSU_BOOK_TAILS::rotation: ${r.plannedRot}`); // all undef
+  // });
+
+  flightTable = sortBy(flightTable, "status");
+  // u.print("create_FSU_BOOK_TAILS::flightTable", flightTable);
+  // u.print("create_FSU_BOOK_TAILS::allPairs", allPairs);
+
+  const allPairsMap_f = u.createMapping(allPairs, "id_f");
+  const allPairsMap_nf = u.createMapping(allPairs, "id_nf");
+
+  // u.print("allPairsMap_f: ", sortBy(allPairsMap_f, "orig_f"));
+  // u.print("allPairsMap_nf: ", sortBy(allPairsMap_nf, "orig_nf"));
+
+  // const dFSU_copy = [...dFSU]; // empty array
+  //  flightTableRow: in/off/on/out are all 0?  (IS THAT TRUE?) WHY?
+  flightTable.forEach((r) => {
+    // rotation based on the departing flight (_nf) in the incoming-outgoing flight pair.
+    const row_f = allPairsMap_f[r.id]; //.plannedRotation;
+    const row_nf = allPairsMap_nf[r.id]; //.plannedRotation;
+    // u.print(`row_f[${r.id}]`, row_f);
+    // u.print(`row_nf[${r.id}]`, row_nf);
+    let plannedRotation = 10000;
+    if (row_nf !== undefined) {
+      plannedRotation = row_nf.plannedRotation;
+    }
+
+    dFSU.push({
+      id: r.id,
+      estArrTime: r.estArrTime, // best guess based on endpoint data, but not propagated via modeling
+      estDepTime: r.estDepTime,
+      arrDelay: r.arrDelay,
+      depDelay: r.depDelay,
+      in: r.in,
+      out: r.out,
+      SCH_ARR_DTMZ: r.sch_arr * 1000, // ns
+      SCH_DEP_DTMZ: r.sch_dep * 1000, // ns
+      ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
+      ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
+      TAIL: r.tail,
+      status: r.status, // not in original dFSU
+    });
+  });
+
+  // Go through allPairs
+  // Identify id_f, and set its plannedRot attribute to the plannedRot field.
+
+  const dFSUId = u.createMapping(dFSU, "id");
+
+  allPairs.forEach((r) => {
+    dFSUId[r.id_nf].plannedRot = r.plannedRot;
+  });
+
+  // console.log("dfSU, dTail, dBookings");
+
+  allPairs.forEach((r) => {
+    dTails.push({
+      id_f: r.id_f,
+      id_nf: r.id_nf,
+    });
+  });
+
+  const flightTableMap = u.createMapping(flightTable, "id");
+  // u.print("flightTableMap", flightTableMap);
+
+  // flightTable.forEach((r) => console.log(`r.id: ${r.id}`);
+
+  // inboundsMap and outboundsMap are based on synthetic data
+
+  //const dBookings = createBookings(
+  // dBookings defined globally
+  createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap);
+
+  // checkBookingsForConsistency(dBookings, dTails);
+
+  // u.print("dTails", dTails);
+  // u.print("before add tails: dBookings", dBookings);
+
+  // dTail are the rotations outside PTY
+  // No need to add dTail in dBookings. The tails are already included
+  return { dBookings, dFSU, dTails };
+}
+//--------------------------------------------------------------------
+function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
+  // Arguments
+  // inboundsMap[id_nf]: list of feeders
+  console.log("text-processing::createBookings");
+  //let dBookings = []; // defined globally
+  for (let id_f in outboundsMap) {
+    // id_f =  2021-12-18PTYPTY20:230341  // leads to undefined r_f. WHY???? (2 days worth of data. MUST DEBUG)
+    const r_f = flightTableMap[id_f]; // UNDEFINED. HOW CAN THAT BE. THERE ARE FLIGHTS MISSING?
+    outboundsMap[id_f].forEach((id_nf) => {
+      const r_nf = flightTableMap[id_nf];
+      // if (r_nf === undefined) {
+      //   u.print("createBookings::r_nf", r_nf);
+      //   console.log(`id_f: ${id_f}, id_nf: ${id_nf}`);
+      // }
+      // if (r_f && r_f.in === undefined) {
+      //   console.log(
+      //     `createBookings::outboundsMap,  ${r_f.id}, in_f is undefined`
+      //   ); // None are undefined
+      // }
+      // if (r_nf && r_nf.in === undefined) {
+      //   console.log(
+      //     `createBookings::outboundsMap,  ${r_f.id}, in_nf is undefined`
+      //   ); // None are undefined
+      // }
+      // WHY IS THIS CONDITIONAL NECESSARY?
+      if (r_f && r_nf) {
+        let plannedRot = 10000;
+        if (r_f.tail !== r_nf.tail) {
+          dBookings.push({
+            id: r_f.id + "-" + r_nf.id,
+            id_f: r_f.id,
+            id_nf: r_nf.id,
+            tail_f: r_f.tail,
+            tail_nf: r_nf.tail,
+            in_f: r_f.in,
+            in_nf: r_nf.in,
+            out_f: r_f.out,
+            out_nf: r_nf.out,
+            SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
+            SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
+            SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
+            SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
+            status_f: r_f.status,
+            status_nf: r_nf.status,
+            plannedRot: 10000,
+          });
+        }
+      } else {
+        console.log(
+          `createBookings, outboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
+        );
+      }
+    });
+  }
+
+  for (let id_nf in inboundsMap) {
+    // console.log(`id_f: ${id_f}`);
+    const r_nf = flightTableMap[id_nf];
+    inboundsMap[id_nf].forEach((id_f) => {
+      // console.log(`id_nf: ${id_nf}`);
+      const r_f = flightTableMap[id_f];
+      // WHY IS THIS CONDITIONAL NECESSARY?
+      if (r_f && r_nf) {
+        if (r_f.tail !== r_nf.tail) {
+          dBookings.push({
+            id: r_f.id + "-" + r_nf.id,
+            id_f: r_f.id,
+            id_nf: r_nf.id,
+            tail_f: r_f.tail,
+            tail_nf: r_nf.tail,
+            in_f: r_f.in,
+            in_nf: r_nf.in,
+            out_f: r_f.out,
+            out_nf: r_nf.out,
+            SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
+            SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
+            SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
+            SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
+            status_f: r_f.status,
+            status_nf: r_nf.status,
+            plannedRot: 10000,
+          });
+        }
+      } else {
+        // All id_f listed have ORIG and DEST as PTY. Do not know what this means.
+        console.log(
+          `createBookings, inboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
+        );
+      }
+    });
+  }
+
+  // u.checkEdgesDirection(dBookings, "check order in dBookings");
+  allPairs.forEach((r) => {
+    // u.print("allPairs row", r);
+    // if (r.in_f === undefined) {
+    //   console.log(`createBookings::allpairs[id_f: ${r.id_f} is undefined`);
+    // }
+    dBookings.push({
+      id: r.id_f + "-" + r.id_nf,
+      id_f: r.id_f,
+      id_nf: r.id_nf,
+      tail_f: r.tail,
+      tail_nf: r.tail,
+      tail: r.tail,
+      in_f: r.in_f,
+      in_nf: r.in_nf,
+      out_f: r.out_f,
+      out_nf: r.out_nf,
+      SCH_DEP_DTMZ_f: r.sch_dep_f * 1000, // ns
+      SCH_ARR_DTMZ_f: r.sch_arr_f * 1000, // ns
+      SCH_DEP_DTMZ_nf: r.sch_dep_nf * 1000, // ns
+      SCH_ARR_DTMZ_nf: r.sch_arr_nf * 1000, // ns
+      status_f: r.status_f,
+      status_nf: r.status_nf,
+      plannedRot: r.plannedRot,
+      rotSlack: r.rotSlack,
+      rotslackP: r.rotSlackP,
+    });
+  });
+  // u.print("exit createBookings, dBookings: ", dBookings);
+  // console.log(
+  //   `createBookings::dBookings.length (non-unique): ${dBookings.length}`
+  // );
+
+  // Remove duplicates (id_f, id_nf) pairs in dBookings
+  const bookingsId = u.createMapping(dBookings, "id");
+  // dBookings = [];
+  for (let id in bookingsId) {
+    dBookings.push(bookingsId[id]);
+  }
+  // console.log(`createBookings::dBookings.length (unique): ${dBookings.length}`);
+
+  // Check that there are no duplicate pairs
+  // There were none, but now we are sure.
+  const dbidf = sortBy(dBookings, "id_f");
+  const dbidnf = sortBy(dBookings, "id_nf");
+  // There are multiple repeats
+
+  // u.print("dBookings sorted by id_f", dbidf);
+  // u.print("dBookings sorted by id_nf", dbidnf);
+  // u.print("exit createBookings, unique dBookings: ", dBookings);
+
+  // Check whether either ORIG or DEST is PTY
+  let countOD_f = 0;
+  let countOD_nf = 0;
+  dBookings.forEach((r) => {
+    // unique id
+    r.id = r.id_f + "-" + r.id_nf;
+    const ORG_f = r.id_f.slice(10, 13);
+    const DST_f = r.id_f.slice(13, 16);
+    const ORG_nf = r.id_nf.slice(10, 13);
+    const DST_nf = r.id_nf.slice(13, 16);
+    if (ORG_f !== "PTY" && DST_f !== "PTY") {
+      countOD_f += 1;
+    }
+    if (ORG_nf !== "PTY" && DST_nf !== "PTY") {
+      countOD_nf += 1;
+    }
+    // No cases where flight goes between two STA.
+  });
+  // console.log(`countOD_f: ${countOD_f}, countOD_nf: ${countOD_nf}`);
+  // u.print("createBookings::bookings", sortBy(dBookings, ["id_f", "id_nf"]));
+
+  // which bookings have in_f set to undefined?
+
+  dBookings = sortBy(dBookings, "status_f");
+
+  // dBookings.forEach((r) => {
+  //   if (r.out_f > 0) {
+  //     console.log(`createBookings::dBookings[idf][${r.id_f}], in_f: ${r.in_f}`);
+  //   }
+  // });
+
+  // 2021-12-13: dBookings have no undefines. I added status, in, out (_f, _nf)
+  return dBookings;
+}
+//---------------------------------------------------------------------------
