@@ -734,13 +734,16 @@ export default {
         // u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
       }
 
-      // Construct the edges of the full graph, starting with level zero node
-      const gNodes = [];
       // let gEdges = [];
       const tableIds = u.createMapping(table, "id");
+      const nodesTraversedIds = u.createMapping(nodesTraversed, "id");
       u.print("tableIds", tableIds);
+      u.print("nodesTraversedIds", nodesTraversedIds);
 
       // gNodes: all ids from all levels
+
+      // Construct the edges of the full graph, starting with level zero node
+      const gNodes = [];
 
       Object.entries(id2level).forEach((entry) => {
         const id = entry[0];
@@ -748,7 +751,9 @@ export default {
         console.log(`level: ${level}, nbTiers: ${nbTiers}`);
         if (level < nbTiers) {
           console.log("  level < nbTiers");
-          gNodes.push(tableIds[id]);
+          //gNodes.push(tableIds[id]);
+          u.print("id", nodesTraversed[id]);
+          gNodes.push(nodesTraversedIds[id]); // There are more fields for tooltips (2021-12-21)
         }
       });
       console.log(`nb gNodes: ${gNodes.length}`);

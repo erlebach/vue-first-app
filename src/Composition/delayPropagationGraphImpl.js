@@ -387,15 +387,17 @@ const myTooltip = new G6.Tooltip({
         <li>Sch inbound arr Zulu: ${inbound.schArrTMZ} UTC</li>
         <li>Sch outbound dep Zulu: ${outbound.schDepTMZ} UTC</li>
         <hr/>
-        <li>in-arrDelay: ${inbound.arrDelay} min</li>
-        <li>in-arrDelayP: ${inbound.depDelayP} min</li>
-        <li>out-depDelay: ${outbound.depDelay} min</li>
-        <li>out-depDelayP: ${outbound.depDelayP} min</li>
+        <li>Delay (arr => dep): ${inbound.arrDelay} => ${
+        outbound.depDelay
+      } min</li>
+        <li>Pred Delay (arr => dep): ${inbound.arrDelayP} => ${
+        outbound.depDelayP
+      } min</li>
         <hr/>
         <li>ACTSlack: ${ACTSlack} min</li>
-        <li>ACTSlackP: ${ACTSlackP} min</li>
+        <li>Pred ACTSlack: ${ACTSlackP} min</li>
         <li>ACTAvailable: ${ACTAvailable} min</li>
-        <li>ACTAvailableP: ${ACTAvailableP} min</li>
+        <li>Pred ACTAvailable: ${ACTAvailableP} min</li>
 
         <!--  EDGES DO NOT HAVE DEGREES. Nodes have degrees. 
         <li>Nb incoming flights connecting <br> with outbound flight: ${

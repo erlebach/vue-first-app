@@ -103,4 +103,11 @@ ERROR: Sometimes, Level=0 is not present. WHY NOT??
 initialId: 2021-12-21PTYBAQ03:180826: in this case, there is no level=0. 
 In the node tooltip, give the node level. 
 The level 0 node is not always present. TODO: FIx ERROR. The level=0 nodes should ALWAYS be present!
-
+----------------------------------------------------------
+2021-12-21
+sch_dep and sch_arr are undefined in the node highlights. 
+Problem might be related to my change from inbounds to inboundsIds in FSU
+FIXED. I now compute gNodes from nodesTraversed rather than from table in  FlightsInAirEndpointTable.vue. 
+nodesTraversed are the nodes of the graph  (subject to further filtering )
+table is a subset of bookings that filters out flight with arrival delays > specified number of minutes. 
+-----------------------------------------------------------
