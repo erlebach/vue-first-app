@@ -161,24 +161,26 @@ is returned from the endpoint. -->
           <!-- <h3># Tiers</h3> -->
           <div style="{height:5em}">
             <div class="p-field-radiobutton">
+              <!-- Tier label correspondss to edges in maximum route length. -->
+              <!-- Tier value corresponds to the number of nodes in a route (edge tier + 1) -->
               <RadioButton id="tier2" name="tiers" value="2" v-model="tiers" />
-              <label for="tier2">2</label>
+              <label for="tier2">1</label>
             </div>
             <div class="p-field-radiobutton">
               <RadioButton id="tier3" name="tiers" value="3" v-model="tiers" />
-              <label for="tier3">3</label>
+              <label for="tier3">2</label>
             </div>
             <div class="p-field-radiobutton">
               <RadioButton id="tier4" name="tiers" value="4" v-model="tiers" />
-              <label for="tier4">4</label>
+              <label for="tier4">3</label>
             </div>
             <div class="p-field-radiobutton">
               <RadioButton id="tier5" name="tiers" value="5" v-model="tiers" />
-              <label for="tier5">5</label>
+              <label for="tier5">4</label>
             </div>
             <div class="p-field-radiobutton">
               <RadioButton id="tier6" name="tiers" value="6" v-model="tiers" />
-              <label for="tier6">6</label>
+              <label for="tier6">5</label>
             </div>
           </div>
         </Panel>
