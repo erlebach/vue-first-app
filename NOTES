@@ -111,3 +111,11 @@ FIXED. I now compute gNodes from nodesTraversed rather than from table in  Fligh
 nodesTraversed are the nodes of the graph  (subject to further filtering )
 table is a subset of bookings that filters out flight with arrival delays > specified number of minutes. 
 -----------------------------------------------------------
+2021-12-22
+Missing information in tooltips: 
+edge (same tails): missing: availRotSlack, availRotSlackP
+edge (different tails): missing nbInbounds, nbOutbounds (same as nbFeeders), availRot, availRotP
+nodes: missing nbInbounds (feeders), nbOutbuonds, availRot, availRotP, level. Note: I should not be using node rotation values in predictions. 
+
+Error is occuring in compouteMinACT() function. No idea why. 
+--------------------------------------------------------------

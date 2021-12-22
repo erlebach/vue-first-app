@@ -721,7 +721,7 @@ export function computeTails(ptyPairs, flightTable) {
       }
     }
   }
-  u.print("computeTails, flightTable: ", flightTable);
+  u.print("computeTails, flightTable: ", sortBy(flightTable, "id"));
   u.print("computeTails, tails: ", tails);
   u.print("computeTails, ptyPairs: ", ptyPairs);
   u.print("computeTails, sameTailConnections: ", sameTailConnections);
@@ -807,7 +807,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
       tail_nf: row_nf.tail, // node var
       fltnumPair: row_f.fltnum + " - " + row_nf.fltnum, // node var
       // sch_dep_nf - sch_arr_f
-      planned_rotation: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min // edge var
+      // planned_rotation: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min // edge var
       plannedRot: (row_nf.sch_dep - row_f.sch_arr) / 60000, // ms -> min // edge var
       availRot: (row_nf.estDepTime - row_f.estArrTime) / 60000, // ms -> min // edge var
     };
@@ -946,8 +946,8 @@ function computeFlightList(ptyPairs) {
     r.plannedRot = undefined; // edge var
     r.availRot = undefined; // edge var
     r.availRotP = undefined; // edge var
-    r.rotSlack = undefined; // edge var
-    r.rotSlackP = undefined; // edge var
+    r.availRotSlack = undefined; // edge var
+    r.availRotSlackP = undefined; // edge var
     r.ACTSSlack = undefined; // edge var
     r.ACTSSlackP = undefined; // edge var
     r.slack = undefined; // min of slack and ACTSlack // edge var
@@ -1064,10 +1064,12 @@ export function setupDelays(flightTable) {
 
     r.estDepTime = estDepTime;
     r.estArrTime = estArrTime;
-    r.depDelay = depDelay;
-    r.arrDelay = arrDelay;
+    // r.depDelay = depDelay;
+    // r.arrDelay = arrDelay;
     r.depDelay = (r.estDepTime - r.sch_dep) / 60000;
     r.arrDelay = (r.estArrTime - r.sch_arr) / 60000;
+    r.depDelayP = r.depDelay;
+    r.arrDelayP = arrDelay;
 
     // undefined + 3 equals NaN
 
@@ -1274,9 +1276,9 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
         }
       } else {
         // All id_f listed have ORIG and DEST as PTY. Do not know what this means.
-        console.log(
-          `createBookings, inboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
-        );
+        // console.log(
+        // `createBookings, inboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
+        // );
       }
     });
   }
@@ -1307,10 +1309,14 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       status_f: r.status_f,
       status_nf: r.status_nf,
       plannedRot: r.plannedRot,
-      rotSlack: r.rotSlack,
-      rotslackP: r.rotSlackP,
+      availRot: r.availRot,
+      availRotP: r.availRotP,
+      availRotSlack: r.availRotSlack,
+      availRotSlackP: r.availRotSlack,
+      availRotMinReq: r.availRotMinReq,
     });
   });
+
   // u.print("exit createBookings, dBookings: ", dBookings);
   // console.log(
   //   `createBookings::dBookings.length (non-unique): ${dBookings.length}`
@@ -1339,6 +1345,8 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   let countOD_nf = 0;
   dBookings.forEach((r) => {
     // unique id
+    const row_f = flightTableMap[r.id_f];
+    const row_nf = flightTableMap[r.id_nf];
     r.id = r.id_f + "-" + r.id_nf;
     const ORG_f = r.id_f.slice(10, 13);
     const DST_f = r.id_f.slice(13, 16);
@@ -1350,6 +1358,17 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     if (ORG_nf !== "PTY" && DST_nf !== "PTY") {
       countOD_nf += 1;
     }
+    if (row_f.tail === row_nf.tail) {
+      u.print("createBookingss, same tails", r);
+      // availRot, availRotP, availRotSlack, availRotSlackP
+    } else {
+      r.plannedRot = undefined;
+      r.availRot = undefined;
+      r.availRotP = undefined;
+      r.availRotSlack = undefined;
+      r.availRotSlackP = undefined;
+      r.availRotMinReq = 60;
+    }
     // No cases where flight goes between two STA.
   });
   // console.log(`countOD_f: ${countOD_f}, countOD_nf: ${countOD_nf}`);
@@ -1357,7 +1376,9 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
 
   // which bookings have in_f set to undefined?
 
+  console.log(`dBookings.length: ${dBookings.length}`);
   dBookings = sortBy(dBookings, "status_f");
+  u.print("dBookings", sortBy(dBookings, "id"));
 
   // dBookings.forEach((r) => {
   //   if (r.out_f > 0) {
@@ -1366,6 +1387,12 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   // });
 
   // 2021-12-13: dBookings have no undefines. I added status, in, out (_f, _nf)
+
+  sortBy(dBookings, "id").forEach((r) => {
+    if (r.tail_f === r.tail_nf) {
+      u.print("bookings row: ", r);
+    }
+  });
   return dBookings;
 }
 //---------------------------------------------------------------------------

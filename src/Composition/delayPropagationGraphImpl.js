@@ -412,9 +412,11 @@ const myTooltip = new G6.Tooltip({
         <hr/>
         <li>Planned Rot: ${edge.plannedRot}</li>
         <li>Avail Rot: ${edge.availRot}</li>
-        <li>Avail RotP: ${edge.availRotP}</li>
+        <li>Pred Avail Rot: ${edge.availRotP}</li>
         <li>Avail Rot Slack: ${edge.availRotSlack} min</li>
-        <li>Avail Rot SlackP: ${edge.availRotSlackP} min</li>
+        <li>Pred Avail Rot Slack: ${
+          edge.availRotSlackP
+        } min</li>  <!-- availRotSlackP NOT DEFINED -->
         <hr/>
         </div>
         <!-- <li>PAX: ${edge.pax} </li>  --> <!-- equal to pax_nf -->
