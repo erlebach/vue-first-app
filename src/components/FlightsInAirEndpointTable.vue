@@ -10,7 +10,7 @@ is returned from the endpoint. -->
     style="display:none;"
     :value="flightsRef.table"
     :scrollable="true"
-    resizableColumns="true"
+    resizableColumns=true
     scrollHeight="300px"
   >
     <template #header>
@@ -222,7 +222,7 @@ is returned from the endpoint. -->
   <DataTable
     :value="rigidBodyRef.table"
     :scrollable="true"
-    resizableColumns="true"
+    resizableColumns=true
     scrollHeight="300px"
     expandedRows="expandedRows"
     columnResizeMode="expand"
@@ -251,7 +251,7 @@ is returned from the endpoint. -->
   <DataTable
     :value="flightsInAirRef.table"
     :scrollable="true"
-    resizableColumns="true"
+    resizableColumns=true
     scrollHeight="300px"
   >
     <template #header>
@@ -371,35 +371,11 @@ function listCities(flightTable, flightIds) {
 
 function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
-  const {
-    // flightTable,
-    // inboundsMap,
-    // outboundsMap,
-    // allPairs,
-    // ptyPairs,
-    // stationPairs,
-    dBookings,
-    dFSU,
-    dTails,
-  } = dataRef.value;
+  const { dBookings, dFSU, dTails, edges, graph } = dataRef.value;
 
   console.log("==============================================================");
-  u.print("dataRef.value", dataRef.value);
+  u.print("propagateData::dataRef.value", dataRef.value);
   console.log("==============================================================");
-
-  // [
-  //   flightTable,
-  //   inboundsMap,
-  //   outboundsMap,
-  //   ptyPairs,
-  //   stationPairs,
-  //   allPairs,
-  //   dBookings,
-  //   dFSU,
-  //   dTails,
-  // ].forEach((e) => {
-  //   console.log(`Length of flight arrays from data: ${e.length}`);
-  // });
 
   u.print("InitialId: ", initialId);
   console.log(`InitialId: ${initialId}`);
@@ -409,18 +385,14 @@ function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   console.log("vue::dTails", dTails);
 
   const delayObj = computePropagationDelays(
-    // flightTable,
-    // inboundsMap,
-    // outboundsMap,
-    // ptyPairs,
-    // stationPairs,
-    // allPairs,
     initialId,
     inputArrDelay,
     maxArrDelay,
     dBookings,
     dFSU,
-    dTails
+    dTails,
+    edges,
+    graph
   );
   return delayObj;
 }
@@ -550,6 +522,7 @@ export default {
         // console.log("before getBEndPointFilesComputed");
         const dataRef = getEndPointFilesComputed;
         u.print("selected row", row);
+        u.print("watch::dataRef", dataRef); // did it change between invocations
         const initialId = row.id_f;
         // u.print("data", data);
         // console.log(`before propagateData, initialId: ${initialId}`);

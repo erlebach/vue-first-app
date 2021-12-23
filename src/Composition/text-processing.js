@@ -10,6 +10,8 @@ import lodash, { isDate } from "lodash";
 import { ArgumentOutOfRangeError } from "rxjs";
 import { watchEffect, computed, ref } from "vue";
 import { sortBy } from "lodash";
+import * as epu from "./endpointUtils.js";
+import { DirectedGraph } from "@datastructures-js/graph";
 
 // Has no effect
 const PWD = "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3";
@@ -27,6 +29,8 @@ let allPairs = []; // combine ptyPairs and stationPairs
 let dBookings = []; // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
 let dFSU = [];
 let dTails = [];
+let graph = [];
+let edges = [];
 
 // inboundsMap[id_nf] is the list of associated feeder flights
 // Note that there is no guarantee that there will be a feeder flight with the same tail as the outgoing tail number.
@@ -320,7 +324,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 2,
+      days: 1,
     },
     {
       headers: {
@@ -347,6 +351,8 @@ function saveData() {
     // u.print("readin data", data);
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
+
+    console.log("enter saveData");
 
     const inRows = []; // empty. BECAUSE ALL PLANES LANDED. STRANGE.
     data.forEach((r) => {
@@ -498,17 +504,23 @@ function saveData() {
     console.log(
       "========== all_pairs, flight_table are finalized ============"
     );
-    u.print("flightTable", flightTable);
-    u.print("allPairs", allPairs);
+    u.print("saveData::flightTable", flightTable);
+    u.print("saveData::allPairs", allPairs);
     //=================================================================================
 
     // console.log("call create_FSU_BOOK_TAILS");
     // dBookings, dFSU, dTails are globals.
     //const { dBookings, dFSU, dTails } = create_FSU_BOOK_TAILS(
     create_FSU_BOOK_TAILS(allPairs, flightTable, inboundsMap, outboundsMap);
+    // { edges } = epu.getEdges(bookings);
+    const obj = epu.getEdges(dBookings);
+    edges = obj.edges;
+    graph = createGraph(edges);
     u.print("saveData::dBookings", dBookings);
     u.print("saveData::dFSU", dFSU);
     u.print("saveData::dTails", dTails);
+    u.print("saveData::edges", edges);
+    u.print("saveData::graph", graph);
   });
 }
 
@@ -525,6 +537,8 @@ const getEndPointFilesComputed = computed(() => {
     dBookings, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
     dFSU,
     dTails,
+    graph,
+    edges,
   };
 });
 
@@ -772,6 +786,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
+      id: row_f.id + "-" + row_nf.id,
       in_f: row_f.in,
       in_nf: row_nf.in,
       eta_f: row_f.eta,
@@ -844,15 +859,15 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     r.outDegree = undefined;
 
     r.plannedRot = r.plannedRotation; // edge var
-    console.log(
-      `r.estArrTime_nf: ${r.estArrTime_nf}, r.estDepTime_f: ${r.estDepTime_f}`
-    ); // both undefined
+    // console.log(
+    //   `r.estArrTime_nf: ${r.estArrTime_nf}, r.estDepTime_f: ${r.estDepTime_f}`
+    // ); // both undefined
     r.availRot = (r.estArrTime_nf - r.estDepTime_f) / 60000; // edge var (in min)
     r.availRotP = r.availRot; // edge var
-    console.log(
-      // r.availRot not defined
-      `computeAllPairs, r.availRot: ${r.availRot}, r.availRotMinReq: ${r.availRotMinReq}`
-    );
+    // console.log(
+    //   // r.availRot not defined
+    //   `computeAllPairs, r.availRot: ${r.availRot}, r.availRotMinReq: ${r.availRotMinReq}`
+    // );
     r.availRotSlack = r.availRot - r.availRotMinReq;
     r.availRotSlackP = r.rotSlack; // edge var
     r.slack = Math.min(r.availRotSlack, r.ACTSlack); // min of slack and ACTSlack // edge var
@@ -1235,7 +1250,6 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
             status_f: r_f.status,
             status_nf: r_nf.status,
-            plannedRot: 10000,
           });
         }
       } else {
@@ -1271,7 +1285,6 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
             status_f: r_f.status,
             status_nf: r_nf.status,
-            plannedRot: 10000,
           });
         }
       } else {
@@ -1289,8 +1302,8 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     // if (r.in_f === undefined) {
     //   console.log(`createBookings::allpairs[id_f: ${r.id_f} is undefined`);
     // }
-    u.print(`allPairs, plannedRot: ${r.plannedRot}`);
-    u.print(`allPairs, availRot: ${r.availRot}`);
+    // u.print(`allPairs, plannedRot: ${r.plannedRot}`);
+    // u.print(`allPairs, availRot: ${r.availRot}`);
     dBookings.push({
       id: r.id_f + "-" + r.id_nf,
       id_f: r.id_f,
@@ -1308,13 +1321,14 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       SCH_ARR_DTMZ_nf: r.sch_arr_nf * 1000, // ns
       status_f: r.status_f,
       status_nf: r.status_nf,
-      plannedRot: r.plannedRot,
-      availRot: r.availRot,
-      availRotP: r.availRotP,
-      availRotSlack: r.availRotSlack,
-      availRotSlackP: r.availRotSlack,
-      availRotMinReq: r.availRotMinReq,
     });
+  });
+
+  // remove duplicate rows in dBookings
+  const dBookingsIdMap = u.createMapping(dBookings, "id");
+  dBookings.length = 0;
+  Object.values(dBookingsIdMap).forEach((value) => {
+    dBookings.push(value);
   });
 
   // u.print("exit createBookings, dBookings: ", dBookings);
@@ -1322,13 +1336,28 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   //   `createBookings::dBookings.length (non-unique): ${dBookings.length}`
   // );
 
-  // Remove duplicates (id_f, id_nf) pairs in dBookings
-  const bookingsId = u.createMapping(dBookings, "id");
-  // dBookings = [];
-  for (let id in bookingsId) {
-    dBookings.push(bookingsId[id]);
-  }
-  // console.log(`createBookings::dBookings.length (unique): ${dBookings.length}`);
+  // u.print("unique dBookings", dBookings);
+
+  // console.log("before allPairs loop");
+  // Remove duplicates based on "id"
+  allPairs.forEach((r) => {
+    // find row in dBookings
+    // console.log(`r.id: ${r.id}`);
+    // console.log("dBookingsIdMap", dBookingsIdMap);
+    const id = r.id_f + "-" + r.id_nf;
+    const row = dBookingsIdMap[id];
+    u.print("before if", row); // 2nd one is undefined. WHY?
+    if (row !== "undefined") {
+      // u.print("if: allPairs, r", r); // defined
+      // u.print("if: allPairs, row", row); // undefined
+      row.plannedRot = r.plannedRot; // error
+      row.availRot = r.availRot;
+      row.availRotP = r.availRotP;
+      row.availRotSlack = r.availRotSlack;
+      row.availRotSlackP = r.availRotSlack;
+      row.availRotMinReq = r.availRotMinReq;
+    }
+  });
 
   // Check that there are no duplicate pairs
   // There were none, but now we are sure.
@@ -1361,6 +1390,12 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     if (row_f.tail === row_nf.tail) {
       u.print("createBookingss, same tails", r);
       // availRot, availRotP, availRotSlack, availRotSlackP
+      // r.plannedRot: r.plannedRot,
+      // r.availRot: r.availRot,
+      // r.availRotP: r.availRotP,
+      // r.availRotSlack: r.availRotSlack,
+      // r.availRotSlackP: r.availRotSlack,
+      // r.availRotMinReq: r.availRotMinReq,
     } else {
       r.plannedRot = undefined;
       r.availRot = undefined;
@@ -1396,3 +1431,85 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   return dBookings;
 }
 //---------------------------------------------------------------------------
+function createGraph(edges) {
+  // Enter the edges into a graph
+  const graph = new DirectedGraph();
+
+  // u.print("inside createGraph, edges", edges);
+
+  // DANGER: MODIFYING ORIGINAL ARRAY.
+  // Safer to copy the array. Will this work if data is updated dynamically?
+
+  // Generate vertices from edges. Each vertex appears only once
+  const nodes = new Set();
+  edges.forEach((e) => {
+    nodes.add(e.src);
+    nodes.add(e.dst);
+    // if (e.src === e.dst) {
+    //   console.log("ATTN: e.src === e.dst"); // should never occur
+    // }
+  });
+
+  nodes.forEach((n) => {
+    graph.addVertex(n);
+  });
+
+  edges.forEach((e) => {
+    graph.addEdge(e.src, e.dst);
+  });
+
+  // What is the difference betwen sources and inbounds or outbounds?
+
+  const sources = Object.create(null);
+  const targets = Object.create(null);
+  graph.sources = sources;
+  graph.targets = targets;
+
+  // these nodes are just ids
+  nodes.forEach((n) => {
+    // console.log("node n: ", n);
+    sources[n] = new Set(); //[];
+    targets[n] = new Set(); //[];
+  });
+
+  let edges_undefined = 0;
+
+  edges.forEach((e) => {
+    const src = e.src;
+    const dst = e.dst;
+    if (targets[src] === undefined) {
+      // never entered
+      edges_undefined++;
+    } else {
+      //targets[src].push(dst);
+      targets[src].add(dst);
+    }
+    if (sources[dst] === undefined) {
+      edges_undefined++;
+    } else {
+      //sources[dst].push(src);
+      sources[dst].add(src);
+    }
+  });
+
+  for (let e in sources) {
+    e = [...e];
+  }
+  for (let e in targets) {
+    e = [...e];
+  }
+
+  // duplicates in sources and targets were removed by using Sets
+  u.print("createGraph, sources", sources);
+  u.print("createGraph, targets", targets);
+  u.print("createGraph, edges_undefined: ", edges_undefined); // none
+  // u.print("bookings_in", bookings_in);
+  // u.print("bookings_out", bookings_out);
+
+  graph.help =
+    "targets[srcid] returns all the outbounds of the srcid inbound\n" +
+    " sources[srcid] returns all the inbounds of the destid outbound";
+
+  return graph;
+}
+//-------------------------------------------------------------------

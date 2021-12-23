@@ -18,8 +18,6 @@ export function computeFeeders(bookings) {
     r.id = r.id_f + "-" + r.id_nf;
   });
 
-  const bookingsIdMap = u.createMapping(bookings, "id");
-
   // const bookings_out = u.createMappingOneToMany(bookings, "id_f");
   const bookingsIds_out = u.createMappingOneToManyAttr(
     bookings,
@@ -49,7 +47,6 @@ export function computeFeeders(bookings) {
   return {
     // bookings_in,
     // bookings_out,
-    bookingsIdMap,
     bookingsIds_in,
     bookingsIds_out,
   };
