@@ -332,7 +332,10 @@ const myTooltip = new G6.Tooltip({
         <li>Pred Minimum ACT: ${minACTP} min</li>
         <li>Level: ${node.level} min</li>
         <hr/>
-        <li>${connectLabel}: ${node.hubConnections}</li>
+        <!-- in- and out-degree of graph formed from endpoint data --> 
+        <!-- This is NOT the in- and out-degree of the displayed graph -->
+        <li>Nb Inbounds: ${node.nbInbounds}</li>
+        <li>Nb Outbounds: ${node.nbOutbounds}</li>
       </ul>
       </div>`;
       return outDiv;

@@ -27,8 +27,8 @@ export function computeFeeders(bookings) {
 
   // Given id_nf, generate a list of all the incoming flight IDs,
   const bookingIds_in = u.createMappingOneToManyAttr(bookings, "id_nf", "id_f");
-  u.print("bookingIds_in", bookingIds_in);
-  u.print("bookingIds_out", bookingIds_out);
+  u.print("computeFeeders::bookingIds_in", bookingIds_in);
+  u.print("computeFeeders::bookingIds_out", bookingIds_out);
 
   return {
     bookingIds_in,

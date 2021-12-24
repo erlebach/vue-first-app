@@ -32,12 +32,12 @@ let dTails = [];
 let graph = [];
 let edges = [];
 
-// inboundsMap[id_nf] is the list of associated feeder flights
+// inboundsMap[id_nf] is the list of associated feeder flight Ids
 // Note that there is no guarantee that there will be a feeder flight with the same tail as the outgoing tail number.
 // Most of the time, there will be.
 const inboundsMap = {};
 
-// outboundsMap[id_f] is the list of associated outbound flights
+// outboundsMap[id_f] is the list of associated outbound flight Ids
 // Note that there is no guarantee that there will be an outgoing flight with the same tail as the incoming flight.
 // Most of the time, there will be.
 const outboundsMap = {};
@@ -430,6 +430,9 @@ function saveData() {
 
     // Delete allFlights
     flightTable = computeFlightList(ptyPairs);
+    console.log(
+      `computeFlightList::flightTable length 1: ${flightTable.length}`
+    );
     // compute allPairs
     stationPairs = computeTails(ptyPairs, flightTable); // WORK ON THIS CODE
     let flightIdMap = u.createMapping(flightTable, "id");
@@ -468,7 +471,7 @@ function saveData() {
 
     // Create a list of feeder-outgoing pairs modeling connections
     const nbConn = 10; // max number of connections
-    // inboundsMap, outboundsMap computed, global variables
+    // global variables inboundsMap and outboundsMap are computed
     syntheticConnections(ptyPairs, flightsInAir, nbConn);
 
     const flightTableMap = u.createMapping(flightTable, "id");
@@ -495,6 +498,9 @@ function saveData() {
         // u.print(`saveData::CANNOT happen!, r.id: ${r.id}, flightTable row`, r);
       }
     });
+    console.log(
+      `computeFlightList::flightTable length 2: ${flightTable.length}`
+    );
 
     setStatus(true);
 
@@ -507,10 +513,32 @@ function saveData() {
     u.print("saveData::flightTable", flightTable);
     u.print("saveData::allPairs", allPairs);
     //=================================================================================
+    // Check inboundsMap and outboundsMap for undefined
+    console.log("Check inboundsMap and outboundsMap for undefined");
+    console.log(`flightTable length: ${flightTable.length}`);
+    // Set nb inbounds and outbounds to an empty list if they are undefined.
+    // This simplifies processing of downstream tasks
+    flightTable.forEach((r) => {
+      const outIds = outboundsMap[r.id];
+      const inIds = inboundsMap[r.id];
+      if (outIds === undefined) outboundsMap[r.id] = []; // zero outboudns to this node
+      if (inIds === undefined) inboundsMap[r.id] = []; // zero inbounds to this node
+      console.log(
+        `outIds,  inIds: in/out: ${inboundsMap[r.id].length}, ${
+          outboundsMap[r.id].length
+        } `
+      );
+      r.nbInbounds = inboundsMap[r.id].length;
+      r.nbOutbounds = outboundsMap[r.id].length;
+      // if (outIds.length === 0) console.log("outIds has zero length");
+      // if (inIds.length === 0) console.log("inIds has zero length");
+    });
+    // throw "saveData end script";
+    //=================================================================================
 
     // console.log("call create_FSU_BOOK_TAILS");
     // dBookings, dFSU, dTails are globals.
-    //const { dBookings, dFSU, dTails } = create_FSU_BOOK_TAILS(
+    //const { dBookings, dFSU, dTails } = create_FSU_BOOK_TAILS( // )
     create_FSU_BOOK_TAILS(allPairs, flightTable, inboundsMap, outboundsMap);
     // { edges } = epu.getEdges(bookings);
     const obj = epu.getEdges(dBookings);
@@ -521,6 +549,8 @@ function saveData() {
     u.print("saveData::dTails", dTails);
     u.print("saveData::edges", edges);
     u.print("saveData::graph", graph);
+    u.print("saveData::inboundsMap", inboundsMap); // each element is list of ids
+    u.print("saveData::outboundsMap", outboundsMap);
   });
 }
 
@@ -1157,8 +1187,14 @@ function create_FSU_BOOK_TAILS(
       ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
       TAIL: r.tail,
       status: r.status, // not in original dFSU
-      // plannedRot2: r.plannedRot,
+      nbInbounds: r.nbInbounds, // in-degree
+      nbOutbounds: r.nbOutbounds, // in-degree
     });
+    // if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
+    //   r.nbOutbounds = 1;
+    // } else if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
+    //   r.nbInbounds = 1;
+    // }
   });
 
   // Go through allPairs
@@ -1195,6 +1231,9 @@ function create_FSU_BOOK_TAILS(
   //const dBookings = createBookings(
   // dBookings defined globally
   createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap);
+
+  // recalculate nb inbounds and outbounds (taking all nodes into account based on dBookings)
+  computeDegrees(dBookings, dFSU, dTails);
 
   // checkBookingsForConsistency(dBookings, dTails);
 
@@ -1517,3 +1556,38 @@ function createGraph(edges) {
   return graph;
 }
 //-------------------------------------------------------------------
+function computeDegrees(dBookings, dFSU, dTails) {
+  console.log(`computeDegrees::dTails: ${dTails.length}`);
+  console.log(`computeDegrees::dBookings: ${dBookings.length}`);
+  console.log(`computeDegrees::dFSU: ${dFSU.length}`);
+  // Bookings are unique (I am pretty sure)
+
+  dFSU.forEach((r) => {
+    r.nbInbounds = 0;
+    r.nbOutbounds = 0;
+    r.inboundIds = [];
+    r.outboundIds = [];
+  });
+
+  const dFSUm = u.createMapping(dFSU, "id");
+
+  console.log("before dBookings loop");
+  dBookings.forEach((r) => {
+    // u.print("r", r);
+    console.log(`${r.id_f}, ${r.id_nf}`);
+    // u.print("dFSUm[r.id_f]", dFSUm[r.id_f]);
+    // u.print("dFSUm[r.id_nf]", dFSUm[r.id_nf]);
+    dFSUm[r.id_f].nbOutbounds++;
+    dFSUm[r.id_f].outboundIds.push(r.id_nf);
+    // console.log("==> 1");
+    dFSUm[r.id_nf].nbInbounds++;
+    dFSUm[r.id_f].inboundIds.push(r.id_f);
+    // console.log("==> 2");
+  });
+
+  dFSU.forEach((r) => {
+    console.log(`FSUid: ${r.id}, in/out: ${r.nbInbounds}, ${r.nbOutbounds}`);
+  });
+
+  // throw "computeDegrees :: end script";
+}

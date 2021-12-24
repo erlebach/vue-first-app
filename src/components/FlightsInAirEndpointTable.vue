@@ -530,7 +530,7 @@ export default {
 
         // check whether calling propagateData twice still produces a graph
         let delayObj;
-        [0, 1].forEach((i) => {
+        [0].forEach((i) => {
           delayObj = propagateData(dataRef, initialId, arrDelay, maxArrDelay); // args: ref, value
         });
 

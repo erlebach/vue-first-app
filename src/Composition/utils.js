@@ -11,6 +11,17 @@ export function int(x) {
   return parseInt(x);
 }
 
+export function arrOfObjectsCopy(arr) {
+  // copy [...] of each element of arr
+  // if a given elemtn of arr is  an object attribute is an arry or object, only the array
+  // or object reference is copied
+  const arrCopy = [];
+  arr.forEach((r) => {
+    arrCopy.push({ ...r });
+  });
+  return arrCopy;
+}
+
 export function checkEdgesDirection(edges, msg) {
   const wrongOrder = [];
   edges.forEach((r) => {
