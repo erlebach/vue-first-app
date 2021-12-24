@@ -14,40 +14,24 @@ export function computeFeeders(bookings) {
   // bookings_in[id_nf]: list of id_nf's feeders
   // Each list should not have id duplicates
 
-  bookings.forEach((r) => {
-    r.id = r.id_f + "-" + r.id_nf;
-  });
+  // bookings.forEach((r) => {
+  //   r.id = r.id_f + "-" + r.id_nf;
+  // });
 
-  // const bookings_out = u.createMappingOneToMany(bookings, "id_f");
-  const bookingsIds_out = u.createMappingOneToManyAttr(
+  // Given id_f, generate a list all the outgoing flight IDs,
+  const bookingIds_out = u.createMappingOneToManyAttr(
     bookings,
     "id_f",
     "id_nf"
   );
 
-  // attribute: outgoing flight id
-  // Given id_nf, generate all the incoming flights,
-  // or equivalently, the bookings that connect all incoming flights to the outgoing flight id_f
-  // The many elements must be unique
-  // const bookings_in = u.createMappingOneToMany(bookings, "id_nf");
-  const bookingsIds_in = u.createMappingOneToManyAttr(
-    bookings,
-    "id_nf",
-    "id_f"
-  );
-  u.print("bookingsIds_in", bookingsIds_in);
-  u.print("bookingsIds_out", bookingsIds_out);
+  // Given id_nf, generate a list of all the incoming flight IDs,
+  const bookingIds_in = u.createMappingOneToManyAttr(bookings, "id_nf", "id_f");
+  u.print("bookingIds_in", bookingIds_in);
+  u.print("bookingIds_out", bookingIds_out);
 
-  // Remove duplicate entries in each entry of bookings_in and bookings_out
-
-  // u.print("computeFeeders::bookings_in", bookings_in);
-  // u.print("computeFeeders::bookings_out", bookings_out);
-
-  // Remove bookings_in, bookings_out once code works without them
   return {
-    // bookings_in,
-    // bookings_out,
-    bookingsIds_in,
-    bookingsIds_out,
+    bookingIds_in,
+    bookingIds_out,
   };
 }

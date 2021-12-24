@@ -416,7 +416,7 @@ function saveData() {
       ...inboundInFlight, // Why are all ptyPairs not include planes in flight? I DO NOT UNDERSTAND
       ...inboundAtPTY,
       ...outboundInFlight,
-      // ...outboundLanded, // keep if I wish to make sure all pairs are captured correctly. This is an issue end of day.
+      ...outboundLanded, // keep if I wish to make sure all pairs are captured correctly. This is an issue end of day.
     ];
 
     ptyPairs = [...allFlightPairs]; // a clone (copy)
@@ -1157,7 +1157,7 @@ function create_FSU_BOOK_TAILS(
       ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
       TAIL: r.tail,
       status: r.status, // not in original dFSU
-      plannedRot2: r.plannedRot,
+      // plannedRot2: r.plannedRot,
     });
   });
 
@@ -1304,6 +1304,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     // }
     // u.print(`allPairs, plannedRot: ${r.plannedRot}`);
     // u.print(`allPairs, availRot: ${r.availRot}`);
+    u.print("allPairs, xxx row: ", r);
     dBookings.push({
       id: r.id_f + "-" + r.id_nf,
       id_f: r.id_f,
@@ -1376,7 +1377,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     // unique id
     const row_f = flightTableMap[r.id_f];
     const row_nf = flightTableMap[r.id_nf];
-    r.id = r.id_f + "-" + r.id_nf;
+    // r.id = r.id_f + "-" + r.id_nf;   // // <<<< CHECK THAT r.id is well defined (different id_f and id_nf on all rows!!!)
     const ORG_f = r.id_f.slice(10, 13);
     const DST_f = r.id_f.slice(13, 16);
     const ORG_nf = r.id_nf.slice(10, 13);
@@ -1423,9 +1424,12 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
 
   // 2021-12-13: dBookings have no undefines. I added status, in, out (_f, _nf)
 
+  // the "id" attribute looks ok
   sortBy(dBookings, "id").forEach((r) => {
     if (r.tail_f === r.tail_nf) {
-      u.print("bookings row: ", r);
+      //  u.print("bookings tail row: ", r);
+    } else {
+      // u.print("bookings tail row: ", r);
     }
   });
   return dBookings;

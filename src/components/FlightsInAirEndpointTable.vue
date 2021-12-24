@@ -10,7 +10,7 @@ is returned from the endpoint. -->
     style="display:none;"
     :value="flightsRef.table"
     :scrollable="true"
-    resizableColumns=true
+    resizableColumns="true"
     scrollHeight="300px"
   >
     <template #header>
@@ -222,7 +222,7 @@ is returned from the endpoint. -->
   <DataTable
     :value="rigidBodyRef.table"
     :scrollable="true"
-    resizableColumns=true
+    resizableColumns="true"
     scrollHeight="300px"
     expandedRows="expandedRows"
     columnResizeMode="expand"
@@ -251,7 +251,7 @@ is returned from the endpoint. -->
   <DataTable
     :value="flightsInAirRef.table"
     :scrollable="true"
-    resizableColumns=true
+    resizableColumns="true"
     scrollHeight="300px"
   >
     <template #header>
@@ -527,12 +527,13 @@ export default {
         // u.print("data", data);
         // console.log(`before propagateData, initialId: ${initialId}`);
         // u.print("before propagateData, data: ", data.valiue);
-        const delayObj = propagateData(
-          dataRef,
-          initialId,
-          arrDelay,
-          maxArrDelay
-        ); // args: ref, value
+
+        // check whether calling propagateData twice still produces a graph
+        let delayObj;
+        [0, 1].forEach((i) => {
+          delayObj = propagateData(dataRef, initialId, arrDelay, maxArrDelay); // args: ref, value
+        });
+
         rigidBodyRef.table = delayObj.table;
         // u.print("==> table: ", table);
         // From this row, construct the rigid model
@@ -689,6 +690,8 @@ export default {
         level2ids,
         table,
       } = delayObj;
+
+      u.print("delayObj", delayObj);
 
       // Implement change of tiersss.
       // Change the nodes, and remove all edges connected to those nodes.
