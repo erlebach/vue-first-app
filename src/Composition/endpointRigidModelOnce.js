@@ -4,6 +4,7 @@ import * as u from "./utils.js";
 import * as tier from "./Tierref.js";
 import { sortBy } from "lodash";
 import * as hasher from "node-object-hash";
+import { containsProp } from "@vueuse/core";
 // import { watchEffect } from "vue";
 
 let gcounter = 0;
@@ -16,8 +17,8 @@ export function rigidModel(
   dTails,
   edges,
   graph,
-  bookingsIds_in, // CHECK
-  bookingsIds_out, // CHECK
+  // bookingsIds_in, // CHECK
+  // bookingsIds_out, // CHECK
   initialArrDelayP, // delay applied to startingid
   maxArrDelay,
   startingId
@@ -37,7 +38,7 @@ export function rigidModel(
   // u.print("rigidModel::bookings_out", bookings_out);
   u.print("rigidModel::initialArrDelayP", initialArrDelayP);
   u.print("rigidModel::maxArrDelay", maxArrDelay);
-  u.print("rigidModel::bookingsIds_in", bookingsIds_in);
+  // u.print("rigidModel::bookingsIds_in", bookingsIds_in);
   u.print("rigidModel::bookings", bookings);
   u.print("rigidModel::dFSU", dFSU);
 
@@ -60,7 +61,7 @@ export function rigidModel(
       // bookingsIds_in,
       // bookingsIds_out
     );
-    throw "script end";
+    // throw "script end";
   }
 
   // Initial Node. Add a delay of initialArrDelayPa
@@ -104,7 +105,7 @@ export function rigidModel(
   u.print("traverseGraph::startingId", startingId);
   u.print("traverseGraph::bookingsIdMap", bookingsIdMap);
   // u.print("traverseGraph::bookings_in", bookings_in);
-  u.print("traverseGraph::bookingsIds_in", bookingsIds_in);
+  // u.print("traverseGraph::bookingsIds_in", bookingsIds_in);
   u.print("traverseGraph::dFSU", dFSU);
   u.print("traverseGraph::FSUm", FSUm);
 
@@ -114,7 +115,7 @@ export function rigidModel(
     startingId,
     graph,
     bookingsIdMap,
-    bookingsIds_in,
+    // bookingsIds_in,
     dFSU,
     FSUm
   );
@@ -412,131 +413,6 @@ function initializeNodes(FSUm, dTails, bookingsIdMap) {
   });
 }
 //------------------------------------------------------------------
-// Original  version of initializeNodes (2021-12-24). I am trying to minimize
-// changes to the underlying datastructures
-function initializeNodesOrig(
-  FSUm,
-  dTails,
-  bookingsIdMap,
-  // bookings_in,
-  // bookings_out,
-  bookingsIds_in,
-  bookingsIds_out
-) {
-  // Initialize all records in FSUm
-  // console.log("inside initializeNodes");
-  const tailsMapIdnf = u.createMapping(dTails, "id_nf");
-  // u.print("initializeNodes::FSUm", FSUm);
-  // u.print("initializeNodes::sort(FSUm)", sortBy(FSUm, "id"));
-  // u.print("initializeNodes::tailsMapIdnf", sortBy(tailsMapIdnf, "id_nf"));
-  let countUndefInbounds = 0;
-  let countUndefOutbounds = 0;
-  let countBothUndef = 0;
-  let countAll = 0;
-
-  for (let key in FSUm) {
-    countAll++;
-    const n = FSUm[key];
-    // Remove two lines. Probably causing an infinite loop somewhere.
-    const row_nf = FSUm[n.id];
-    const id_nf = row_nf.id;
-    const id_f = tailsMapIdnf[id_nf];
-    // console.log(`n.id: ${n.id}, id_f: ${id_f}, id_nf: ${id_nf}`);
-    // u.print(`id_nf`, id_nf);
-    // u.print(`id_f`, id_f);
-    // u.print(`FSUm[${n.id}, id_nf: ${row_nf}.id]`, row_nf);
-    // Use list of id's rather than list of objects, which will avoid infinite recursion
-    // simplify maintenance'
-
-    // CHECK whether I can remove n.inbounds
-    // No I cannot. Error in endointRigid*.js, line 743 (undefined property) in computeMinACT()
-    //     inbounds is undefined
-
-    //n.inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
-    //n.outbounds = bookings_out[n.id]; // could be undefined (from PTY or Sta)
-    n.inboundsIds = bookingsIds_in[n.id]; // could be empty list (from PTY or Sta)
-    n.outboundsIds = bookingsIds_out[n.id]; // could be empty list (from PTY or Sta)
-
-    if (n.inboundsIds == undefined) {
-      countUndefInbounds++;
-      n.nbInbounds = 0;
-    } else {
-      n.nbInbounds = n.inboundsIds.length;
-    }
-    if (n.outboundsIds == undefined) {
-      countUndefOutbounds++;
-      n.nbOutbounds = 0;
-    } else {
-      n.nbOutbounds = n.outboundsIds.length;
-    }
-    if (n.outboundsIds == undefined && n.inboundsIds == undefined)
-      countBothUndef++;
-    // const inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
-    // const outbounds = bookings_out[n.id]; // could be undefined (from PTY or Sta)
-
-    n.count = 0; // number of times the node has been handled
-
-    // Flights that depart a Station too late arrive in PTY the next morning, and
-    // are not included in the day's flights. So there are no outbounds.
-    // The bookings object has no connections between arriving and departing flights
-    // at  station
-
-    if (id_f === undefined) {
-      // u.print("initializeNodes::id_f is undefined, n", n);
-      n.availRotMinReq = 60;
-      //n.rotSlack = 10000; // high number so that rotation does not influence end results
-      //n.rotSlackP = 10000;
-      n.availRot = 10000;
-      n.availRotP = 10000;
-      n.availRotSlack = 10000;
-      n.availRotSlackP = 10000;
-      continue; // Javascript equivalent of continue
-    } else {
-      if (n.ROTATION_PLANNED_TM < 60) {
-        // scheduled rotation
-        n.availRotMinReq = n.ROTATION_PLANNED_TM;
-      } else {
-        n.availRotMinReq = 60;
-      }
-      // rotSlack should really be renamed availRotSlack for consistency
-      //n.rotSlack = n.ROTATION_PLANNED_TM - n.availRotMinReq;
-      //n.rotSlackP = n.rotSlack;
-      n.availRotSlack = -1; // TODO, 2021-12-20
-      n.availRotSlackP = -1; // TODO, 2021-12-20
-    }
-
-    if (n.id.slice(10, 13) === "PTY") {
-      // outbound flights from PTY
-      //if (n.inbounds !== undefined) { // }
-      // I might replace undefines by empty lists []
-      if (n.inboundsIds !== undefined) {
-        // const obj = computeMinACT(bookings, true); // original code
-        // What is n.id?
-        const obj = computeMinACT(n.id, bookingsIdMap, n.inboundsIds);
-        n.minId = obj.minId;
-        n.minACT = obj.minACT;
-        n.minACTP = n.minACT;
-        n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
-      } else {
-        u.print(
-          "initializeNodes::inbounds undefined, SHOULD NOT HAPPEN! id",
-          n.id
-        );
-      }
-    } else {
-      // oubbound flight from station
-      n.minACT = 100000; //undefined;
-      n.minACTP = n.minACT;
-      n.ACTSlack = 100000; //undefined;
-      n.ACTSlackP = n.ACTSlack;
-    }
-    n.slack = Math.min(n.rotSlack, n.ACTSlack);
-    n.slackP = n.slack;
-    n.depDelayP = n.depDelay; // If flight to study has no delay, it will have no impact.
-    n.arrDelayP = n.arrDelay; // Best guess
-  }
-}
-//-----------------------------------------------------------------
 function printEdgeData(f, msg) {
   console.log(`\n-----  Print edge: ${msg}   ----------------------------`);
   console.log(f);
@@ -658,7 +534,7 @@ function updateInboundEdges(
   outboundNode,
   bookingsIdMap,
   // bookings_in,
-  bookingsIds_in,
+  // bookingsIds_in,
   graphEdges
 ) {
   // add inbounds to graphEdges
@@ -715,7 +591,8 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
   // update of a single node
   const n = node;
   const id_nf = n.id;
-  // console.log("=========== updateOutboundNode ====================");
+  console.log("=========== updateOutboundNode ====================");
+  u.print("=== n", n);
 
   // if an ETA changes, the flight arrival delay increases or decreases.
   // This immediately affects rotSlackP according to
@@ -731,38 +608,39 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
   // );
 
   // if (n === undefined || n.inbounds === undefined) {
-  if (n === undefined || n.inboundsIds === undefined) {
+  if (n === undefined || n.inboundIds === undefined) {
     return undefined;
   }
 
+  n.minId = undefined;
+  n.minACTP = 10000;
+  n.ACTSlackP = 10000;
+  n.availRotSlackP = 10000;
+
   n.count += 1; // This number should never go beyond 1
 
+  // Only call computeMinACT if the flight is leaving PTY
+
   if (n.id.slice(10, 13) === "PTY") {
-    if (n.inboundsIds.length !== 0) {
-      const obj = computeMinACT(n.id, bookingsIdMap, n.inboundsIds);
+    // console.log(`n.inboundIds.length: ${n.inboundIds.length}`);
+    if (n.inboundIds.length > 0) {
+      const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, true);
       n.minId = obj.minId;
-      n.minACT = obj.minACT;
-      n.minACTP = n.minACT; // CHANGE FORMULA
+      n.minACTP = obj.minACT; // CHANGE FORMULA
       n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
     }
-    // these quantities will not affect the rigidModel predictions
-    n.minId = 10000;
-    n.minACT = 10000;
-    n.minACTP = 10000;
-    n.ACTSlackP = 10000;
   } else {
-    n.minACT = 100000; //undefined;
+    // The flight is leaving the station
     n.minACTP = n.minACT;
-    n.ACTSlack = 100000; //undefined;
     n.ACTSlackP = n.ACTSlack;
     // update Rotation rotSlackP
     const nano2min = 1 / 1e9 / 60;
     // QUESTION: why use the zeroth element of inboundsIds?
-    if (n.inboundsIds.length > 0) {
+    if (n.inboundIds.length > 0) {
       // WHY IS THIS CHECK NECESSARY?
-      console.log(`n.inboundsIds[0]= ${n.inboundsIds[0]}`);
-      const e = bookingsIdMap[n.inboundsIds[0] + "-" + id_nf];
-      u.print("e", e); // UNDEFINED. WHY IS THIS? SHOULD NOT HAPPEN? (2021-12-23)
+      // console.log(`n.inboundsIds[0]= ${n.inboundIds[0]}`);
+      const e = bookingsIdMap[n.inboundIds[0] + "-" + id_nf];
+      // u.print("e", e); // UNDEFINED. WHY IS THIS? SHOULD NOT HAPPEN? (2021-12-23)
       // const e = n.inbounds[0]; // FIX inbounds to inboundsIds
       if (e !== undefined) {
         // SHOULD NOT BE REQUIRED (2021-12-23)
@@ -770,18 +648,8 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
         n.availRot = (n.SCH_DEP_DTMZ - row_f.INP_DTMZ) * nano2min;
         n.availRotSlackP = n.availRotSlack - row_f.arrDelayP;
         n.availRotSlack = n.availRot - n.availRotMinReq;
-      } else {
-        n.availRot = 10000;
-        n.availRotSlackP = 10000;
-        n.availRotSlack = 10000;
       }
-    } else {
-      // this node does not participate since it has no inbounds
-      n.availRot = 10000;
-      n.availRotSlackP = 10000;
-      n.availRotSlack = 10000;
     }
-    // Each node should only be touched once.
   }
   // Not sure about rotSlackP. Must look into that.  ****** DEBUG
   n.slackP = Math.min(n.availRotSlackP, n.ACTSlackP);
@@ -801,7 +669,7 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
 }
 //-------------------------------------------------------------------------
 // Remove duplicated class to processOutboundFlightss
-function propDelayNew(id, bookingsIdMap, bookingsIds_in, FSUm, graphEdges) {
+function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
   // console.log(" THERE ARE SURELY ERRORS n the graph topology ");
   // console.log(
@@ -816,7 +684,7 @@ function propDelayNew(id, bookingsIdMap, bookingsIds_in, FSUm, graphEdges) {
     FSUm[id],
     bookingsIdMap,
     // bookings_in,
-    bookingsIds_in,
+    // bookingsIds_in,
     graphEdges
   );
   // the outbound node is id
@@ -841,14 +709,10 @@ function propDelayNew(id, bookingsIdMap, bookingsIds_in, FSUm, graphEdges) {
 // function assumes that inbounds is well formed.
 // The function is called by a node. The function collects information  on
 // all edges connected to this node to estimate the minimum ACT
-function computeMinACT(
-  id_nf,
-  bookingsIdMap,
-  inboundsIds,
-  FSUm = undefined,
-  verbose = false
-) {
-  u.print(`compMinACT, innboundsIds, id_nf: ${id_nf}`, inboundsIds);
+// Compute the minimum availACTP among all feeders
+function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
+  u.print(`==> compMinACT, inboundsIds, id_nf: ${id_nf}`, inboundsIds);
+
   const nano2min = 1 / 1e9 / 60;
   // track which inbound is responsible for the minACT.
   // Create a pure object, with no additional functions
@@ -856,18 +720,23 @@ function computeMinACT(
   obj.minACT = 100000; // default
   obj.inboundMinId = undefined;
 
-  u.print("computeMinACT::bookingsIdMap", bookingsIdMap);
-  u.print("computeMinACT::inboundsIds", inboundsIds); // all empty. strange
+  const feedersACT = []; // for debugging
+
+  // u.print("computeMinACT::bookingsIdMap", bookingsIdMap);
+  // u.print("computeMinACT::inboundsIds", inboundsIds); // all empty. strange
   // loop over incoming flights
+  console.log(`computeMinACT::inboundsIds.length: ${inboundsIds.length}`);
+
   inboundsIds.forEach((id) => {
     const r = bookingsIdMap[id + "-" + id_nf];
-    u.print("loop: computeMinACT::r", r);
+    // u.print("loop: computeMinACT::r", r);
     if (r === undefined) {
       // FIGURE OUT WHY THIS IS HAPPENING
       u.print("(SHOULD NOT HAPPEN) computeMinACT::r ", r); // There is an undefined ROW!! THIS IS NOT POSSIBLE
       u.print("computeMinACT, bookingsIdMap: ", bookingsIdMap);
     } else {
-      u.print("r ", r);
+      // u.print("r ", r);
+      //
     }
     // Given r (an id), get the bookings record
     if (r.ACTAvailableP === undefined) {
@@ -879,7 +748,15 @@ function computeMinACT(
       obj.minACT = r.ACTAvailableP;
       obj.inboundMinId = r.id_f;
     }
+    feedersACT.push({
+      id_nf,
+      id,
+      availACT: r.ACTAvailable,
+      availACTP: r.ACTAvailableP,
+    });
   });
+
+  if (verbose === true) u.print("computeMinACT::feedersACT", feedersACT);
 
   return obj;
 }
@@ -910,7 +787,7 @@ function traverseGraph(
   startingId,
   graph,
   bookingsIdMap,
-  bookingsIds_in,
+  // bookingsIds_in,
   dFSU,
   FSUm
 ) {
@@ -967,7 +844,7 @@ function traverseGraph(
     const isUndefined = propDelayNew(
       key,
       bookingsIdMap,
-      bookingsIds_in,
+      // bookingsIds_in,
       FSUm,
       edgesTraversed
     );
@@ -1055,6 +932,25 @@ function restrictGraph(graphEdges, id2level) {
   return newEdges;
 }
 //--------------------------------------------------------------
+function updateNodeData(n) {
+  // Given estArrTime and estDepTime, update all quantities
+  // Nothing to do.
+}
 //--------------------------------------------------------------
+function updateEdgeData(FSUm, e) {
+  // Given estArrTime and estDepTime at the nodes, update all edge quantities
+  const row_f = FSUm[e.id_f];
+  const row_nf = FSUm[e.id_nf];
+  // availRot  and availACT need not be distinguished. It is the slack times that must be distinguished
+  e.availACTP = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+  e.availACTSlackP = e.availACTP - 30; // hardcoded (in min)
+  if (e.tail_f !== e.tail_nf) {
+    e.availRotP = 10000;
+    e.availRotSlackP = 10000;
+  } else {
+    e.availRotP = e.availACTP;
+    e.availRotSlackP = e.availACTP - e.availRotMinReq;
+  }
+}
 //--------------------------------------------------------------
 //--------------------------------------------------------------

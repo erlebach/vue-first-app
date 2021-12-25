@@ -155,8 +155,8 @@ export function computePropagationDelays(
     dTails,
     edges,
     graph,
-    bookingIds_in, // CHECK
-    bookingIds_out, // CHECK
+    // bookingIds_in, // CHECK
+    // bookingIds_out, // CHECK
     initialArrDelay, // applied to id
     maxArrDelay, // control what nodes are taken into account
     initialID
