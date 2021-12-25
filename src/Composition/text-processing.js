@@ -1428,7 +1428,15 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       countOD_nf += 1;
     }
     if (row_f.tail === row_nf.tail) {
-      // u.print("createBookingss, same tails", r);
+      // u.print("createBookings, same tails", r);
+      r.availRot = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+      r.availRotP = r.availableRot;
+      r.availRotSlack = r.availRot - 60; // Hardcode. I have a more general formula already.  <<<<< 2021-12-25
+      r.availRotSlackP = r.availRotSlack;
+      r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+      r.ACTAvailableP = r.ACTAvailable;
+      r.ACTSlack = r.ACTAvailable - 30;
+      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
       // availRot, availRotP, availRotSlack, availRotSlackP
       // r.plannedRot: r.plannedRot,
       // r.availRot: r.availRot,
@@ -1436,13 +1444,19 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       // r.availRotSlack: r.availRotSlack,
       // r.availRotSlackP: r.availRotSlack,
       // r.availRotMinReq: r.availRotMinReq,
+      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
     } else {
       r.plannedRot = undefined;
       r.availRot = undefined;
       r.availRotP = undefined;
-      r.availRotSlack = undefined;
+      r.availRotSlack = r.availRot - 60; // Hardcode. I have a more general formula already.  <<<<< 2021-12-25
+      r.availRotSlackP = r.availRotSlack;
       r.availRotSlackP = undefined;
       r.availRotMinReq = 60;
+      r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+      r.ACTAvailableP = r.ACTAvailable;
+      r.ACTSlack = r.ACTAvailable - 30;
+      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
     }
     // No cases where flight goes between two STA.
   });
