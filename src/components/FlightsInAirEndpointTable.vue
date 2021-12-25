@@ -143,7 +143,7 @@ is returned from the endpoint. -->
   <!-- Add a panel surrounding the radio buttons -->
   <!-- <span width="200"> -->
   <div>
-    <h2>Endpoint Graph (based on {{ allPairsRef.city }})</h2>
+    <h2>Endpoint Graph</h2>
     <!-- style propagated to text box, but not to panel -->
     <!-- <div class="p-d-flex flex-start" style="font-size:8ex;color:red"> -->
     <div class="p-d-flex start">
@@ -373,16 +373,16 @@ function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
   const { dBookings, dFSU, dTails, edges, graph } = dataRef.value;
 
-  console.log("==============================================================");
-  u.print("propagateData::dataRef.value", dataRef.value);
-  console.log("==============================================================");
+  // console.log("==============================================================");
+  // u.print("propagateData::dataRef.value", dataRef.value);
+  // console.log("==============================================================");
 
-  u.print("InitialId: ", initialId);
-  console.log(`InitialId: ${initialId}`);
+  // u.print("InitialId: ", initialId);
+  // console.log(`InitialId: ${initialId}`);
 
-  console.log("vue::dBookings", dBookings);
-  console.log("vue::dFSU", dFSU);
-  console.log("vue::dTails", dTails);
+  // console.log("vue::dBookings", dBookings);
+  // console.log("vue::dFSU", dFSU);
+  // console.log("vue::dTails", dTails);
 
   const delayObj = computePropagationDelays(
     initialId,

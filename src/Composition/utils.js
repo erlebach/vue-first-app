@@ -11,6 +11,14 @@ export function int(x) {
   return parseInt(x);
 }
 
+export function displayVarName(varName) {
+  // NOT WORKING
+  console.log("displayVarName is NOT WORKING!!!");
+  return 0;
+  // const varToString = (varObj) => Object.keys(varObj)[0];
+  // return varToString({ varName: varName }[1]);
+}
+
 export function arrOfObjectsCopy(arr) {
   // copy [...] of each element of arr
   // if a given elemtn of arr is  an object attribute is an arry or object, only the array

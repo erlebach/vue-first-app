@@ -121,3 +121,9 @@ Error is occuring in compouteMinACT() function. No idea why.
 --------------------------------------------------------------
 2021-12-24
 - nbOutbounds and nbInbounds is not correct. When startingID is PTY-Station, the number of outbounds says zero, but that is obviously incorrect. 
+--------------------------------------------------------------
+2021-12-24
+- 2021-12-24PTYMDE12:240150 has wrong inboundIds (it is the id of the node itself. STRANGE). 
+But nbInbounds and nbOutbounds are both correct (17 and 1). 
+--------------------------------------------------------------
+nbOutbounds is zero somehow (shoudl be 1. WHAT IS GOING ON? )

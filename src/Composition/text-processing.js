@@ -523,11 +523,11 @@ function saveData() {
       const inIds = inboundsMap[r.id];
       if (outIds === undefined) outboundsMap[r.id] = []; // zero outboudns to this node
       if (inIds === undefined) inboundsMap[r.id] = []; // zero inbounds to this node
-      console.log(
-        `outIds,  inIds: in/out: ${inboundsMap[r.id].length}, ${
-          outboundsMap[r.id].length
-        } `
-      );
+      // console.log(
+      //   `outIds,  inIds: in/out: ${inboundsMap[r.id].length}, ${
+      //     outboundsMap[r.id].length
+      //   } `
+      // );
       r.nbInbounds = inboundsMap[r.id].length;
       r.nbOutbounds = outboundsMap[r.id].length;
       // if (outIds.length === 0) console.log("outIds has zero length");
@@ -805,14 +805,14 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   stationPairs.forEach((r) => {
     const row_f = flightIdMap[r.id_f];
     const row_nf = flightIdMap[r.id_nf];
-    u.print(
-      `computeAllPairs::stationPairs, row_f, ${row_f.id}, ${row_f.estDepTime}, ${row_f.estArrTime}`,
-      row_f
-    );
-    u.print(
-      `computeAllPairs::stationPairs, row_nf, ${row_nf.id}, ${row_nf.tail}, ${row_nf.estDepTime}, ${row_nf.estArrTime}`,
-      row_nf
-    );
+    // u.print(
+    //   `computeAllPairs::stationPairs, row_f, ${row_f.id}, ${row_f.estDepTime}, ${row_f.estArrTime}`,
+    //   row_f
+    // );
+    // u.print(
+    //   `computeAllPairs::stationPairs, row_nf, ${row_nf.id}, ${row_nf.tail}, ${row_nf.estDepTime}, ${row_nf.estArrTime}`,
+    //   row_nf
+    // );
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
@@ -1343,7 +1343,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     // }
     // u.print(`allPairs, plannedRot: ${r.plannedRot}`);
     // u.print(`allPairs, availRot: ${r.availRot}`);
-    u.print("allPairs, xxx row: ", r);
+    // u.print("allPairs, xxx row: ", r);
     dBookings.push({
       id: r.id_f + "-" + r.id_nf,
       id_f: r.id_f,
@@ -1386,7 +1386,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     // console.log("dBookingsIdMap", dBookingsIdMap);
     const id = r.id_f + "-" + r.id_nf;
     const row = dBookingsIdMap[id];
-    u.print("before if", row); // 2nd one is undefined. WHY?
+    // u.print("before if", row); // 2nd one is undefined. WHY?
     if (row !== "undefined") {
       // u.print("if: allPairs, r", r); // defined
       // u.print("if: allPairs, row", row); // undefined
@@ -1428,7 +1428,7 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       countOD_nf += 1;
     }
     if (row_f.tail === row_nf.tail) {
-      u.print("createBookingss, same tails", r);
+      // u.print("createBookingss, same tails", r);
       // availRot, availRotP, availRotSlack, availRotSlackP
       // r.plannedRot: r.plannedRot,
       // r.availRot: r.availRot,
@@ -1571,22 +1571,30 @@ function computeDegrees(dBookings, dFSU, dTails) {
 
   const dFSUm = u.createMapping(dFSU, "id");
 
-  console.log("before dBookings loop");
+  // console.log("before dBookings loop");
   dBookings.forEach((r) => {
     // u.print("r", r);
-    console.log(`${r.id_f}, ${r.id_nf}`);
+    // console.log(`${r.id_f}, ${r.id_nf}`);
     // u.print("dFSUm[r.id_f]", dFSUm[r.id_f]);
     // u.print("dFSUm[r.id_nf]", dFSUm[r.id_nf]);
     dFSUm[r.id_f].nbOutbounds++;
     dFSUm[r.id_f].outboundIds.push(r.id_nf);
     // console.log("==> 1");
     dFSUm[r.id_nf].nbInbounds++;
-    dFSUm[r.id_f].inboundIds.push(r.id_f);
+    dFSUm[r.id_nf].inboundIds.push(r.id_f);
     // console.log("==> 2");
   });
 
+  // dFSU.forEach((r) => {
+  //   console.log(`FSUid: ${r.id}, in/out: ${r.nbInbounds}, ${r.nbOutbounds}`);
+  // });
+
+  //  Check that nbOutbounds is consistent with outboundIds.length for all entries
   dFSU.forEach((r) => {
-    console.log(`FSUid: ${r.id}, in/out: ${r.nbInbounds}, ${r.nbOutbounds}`);
+    if (r.nbOutbounds !== r.outboundIds.length)
+      console.log("INCONSISTENT nbOutbounds SHOULD NOT HAPPEN");
+    if (r.nbInbounds !== r.inboundIds.length)
+      console.log("INCONSISTENT nbInbounds SHOULD NOT HAPPEN");
   });
 
   // throw "computeDegrees :: end script";

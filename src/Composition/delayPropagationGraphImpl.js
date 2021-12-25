@@ -317,20 +317,20 @@ const myTooltip = new G6.Tooltip({
         <li>Sch Arr: ${node.schArrTMZ} UTC</li>
         <hr/>
         <li style="color:${depDelayColor};">Dep Delay: ${depDelay} min</li>
-        <li style="color:${depDelayPColor};">Pred Dep Delay:  ${depDelayP} min</li>
+        <li style="color:${depDelayPColor};">Pred Dep Delay:  ${depDelayP} min</li>  <!-- UNDEF -->
         <li style="color:${arrDelayColor};">Arr Delay: ${arrDelay} min</li>
-        <li style="color:${arrDelayPColor};">Pred Arr Delay: ${arrDelayP} min</li>
+        <li style="color:${arrDelayPColor};">Pred Arr Delay: ${arrDelayP} min</li>  <!-- UNDEF -->
         <!-- why undefined plannedRot -->
         <hr/>
         <li>Planned Rotation: ${node.plannedRot} min</li>  
-        <li>Avail Rotation: ${node.availRot} min</li>  
-        <li>Pred Avail Rotation: ${node.availRotP} min</li>  
-        <li>Pred Rot Slack: ${rotSlackP} min</li>
-        <li>Pred Slack: ${slackP} min</li>
+        <li>Avail Rotation: ${node.availRot} min</li>    <!-- UNDEF -->
+        <li>Pred Avail Rotation: ${node.availRotP} min</li>    <!-- UNDEF -->
+        <li>Pred Rot Slack: ${rotSlackP} min</li>  <!-- UNDEF -->
+        <li>Pred Slack: ${slackP} min</li>  <!-- UNDEF -->
         <hr/>
-        <li>Pred ACT Slack: ${ACTSlackP} min</li>
-        <li>Pred Minimum ACT: ${minACTP} min</li>
-        <li>Level: ${node.level} min</li>
+        <li>Pred ACT Slack: ${ACTSlackP} min</li>  <!-- UNDEF -->
+        <li>Pred Minimum ACT: ${minACTP} min</li>  <!-- UNDEF -->
+        <li>Level: ${node.level} min</li>  <!-- UNDEF -->
         <hr/>
         <!-- in- and out-degree of graph formed from endpoint data --> 
         <!-- This is NOT the in- and out-degree of the displayed graph -->
