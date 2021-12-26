@@ -135,6 +135,6 @@ nbOutbounds is zero somehow (shoudl be 1. WHAT IS GOING ON? )
 - I have NOT checked whether doing this on a flight starting from PTY also works. This flight would have multiple feeders. 
   I have to make sure that for the first flight, I do not check all the inbounds for the minACT. 
 - In the tooltips I do not display rotation or ACT data on nodes. These are edge quantities. 
-
+- BUG: the nodes are not always correctly filled with total degree (in-degree + out-degree)
 TODO: rmeove all edge information from FSU and remove all nodes information from bookings. This decreases opportunities for errors. 
 ----------------------------------------------

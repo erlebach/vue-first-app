@@ -27,49 +27,10 @@ export function computePropagationDelays(
   // Still does not work without the copy operation.
   const dFSU = u.arrOfObjectsCopy(dFSU1);
   const dBookings = u.arrOfObjectsCopy(dBookings1);
-  // const dFSU = dFSU1;
-  // const dBookings = dBookings1;
-
-  //const dTails = [...dTails1];
-  // console.log("ENTER computePropagationDelays");
-  // u.print("ENTER computePropagationDelays, dBookings", dBookings);
-  // u.print("ENTER computePropagationDelays, dFSU", dFSU);
-  // u.print("ENTER computePropagationDelays, dFSU[0]", dFSU[0]);
-  // u.print("ENTER computePropagationDelays, dFSU1[0]", dFSU1[0]);
-  // throw "script end";
-
-  // let hashCoercer = hasher({ sort: true, coerce: true });
-  // const hFSU = hashCoercer.hash(dFSU);
-  // const hTails = hashCoercer.hash(dTails);
-  // const hBookings = hashCoercer.hash(dBookings);
-  // const hedges = hashCoercer.hash(edges);
-  // const hgraph = hashCoercer.hash(graph);
-  // console.log(`hash hFSU: ${hFSU}`);
-  // console.log(`hash hTails: ${hTails}`);
-  // console.log(`hash hBookings: ${hBookings}`);
-  // console.log(`hash hedges: ${hedges}`);
-  // console.log(`hash hgraph: ${hgraph}`);
-  // console.log(`dFSU: ${dFSU.length}`);
-  // console.log(`dBookings: ${dBookings.length}`);
-  // console.log(`dTails: ${dTails.length}`);
-  // console.log(`initialID: ${initialID}`);
 
   // console.log("enter computePropagate");
   // id is a composite of id_f and id_nf separated by a '-'
   const dBookingsIdMap = u.createMapping(dBookings, "id"); // CHECK
-  // u.print("dBookingsIdMap", Object.keys(dBookingsIdMap).length); // 685
-
-  // Check that 'id' attribute is not composed of the same id twice
-  // Object.values(dBookingsIdMap).forEach((r) => {
-  //   const id = r.id;
-  //   const idf = r.id.slice(0, 25);
-  //   const idnf = r.id.slice(26, 51);
-  //   console.log(`id, id_f, id_nf: ${r.id}, ${r.id_f}, ${r.id_nf}`);
-  //   console.log(`idf, idfnf: ${idf}, ${idnf}`);
-  //   if (idf === idnf) {
-  //     console.log("idf === idnf: SHOULD NOT HAPPEN");
-  //   }
-  // });
 
   // Propagation is recursive. An error might lead to infinite calls, so stack overflow
   // dFSU and dTail not found
@@ -79,84 +40,27 @@ export function computePropagationDelays(
   // bookingsIds are part of FSU nodes. So computeFeeders is no longer required.
   // Let us check this.
 
-  console.log("------------------------");
-  // u.print("bookingIds_in: ", bookingIds_in);
-  dFSU.forEach((r) => {
-    // const inIds = bookingIds_in[r.id];  // ERROR
-    // const outIds = bookingIds_out[r.id];
-    console.log(`id: ${r.id}`);
-    u.print("FSU.inboundIds: ", r.inboundIds);
-    u.print("FSU.outboundIds: ", r.outboundIds);
-    // u.print("inIds", inIds);
-    // u.print("outIds", outIds);
-    console.log("------------------------");
-  });
-
   const dFSUm = u.createMapping(dFSU, "id");
-  u.print("dFSUm", dFSUm);
 
   // computeFeeders might not be required
   // feeders is not required (same as bookings_in)
-  let {
-    // bookings_in, // remove top two once the code works without
-    // bookings_out,
-    bookingIds_in,
-    bookingIds_out,
-  } = computeFeeders(dBookings);
+  // let { bookingIds_in, bookingIds_out } = computeFeeders(dBookings);
 
-  u.print("before computeFeeders::bookingIds_in", bookingIds_in);
-  u.print("before computeFeeders::bookingIds_out", bookingIds_out);
+  // u.print("before computeFeeders::bookingIds_in", bookingIds_in);
+  // u.print("before computeFeeders::bookingIds_out", bookingIds_out);
 
-  const initIDout = bookingIds_out[initialID];
-  u.print(`outbound from initialID ${initialID}`, initIDout); // value does not change.
-
-  // moreBookingsChecks(
-  //   dFSU,
-  //   dBookings,
-  //   dBookingsIdMap,
-  //   bookingIds_in,
-  //   bookingIds_out,
-  //   dTails
-  // );
-  // const hBookingsIdMap = hashCoercer.hash(dBookingsIdMap);
-  // const hBookingIds_in = hashCoercer.hash(bookingIds_in);
-  // const hBookingIds_out = hashCoercer.hash(bookingIds_out);
-  // console.log(`hash bookingsIdMap: ${hBookingsIdMap}`);
-  // console.log(`hash bookingIds_in: ${hBookingIds_in}`);
-  // console.log(`hash bookingIds_out: ${hBookingIds_out}`);
-  // moreBookingsChecks(
-  //   dFSU,
-  //   dBookings,
-  //   dBookingsIdMap,
-  //   bookingIds_in,
-  //   bookingIds_out,
-  //   dTails
-  // );
-
-  // return {}; // all hashes are unchanged
-
-  // throw "Exit Script";
-
-  // bookings_in[id_nf]: list of incoming flights connecting to id_nf
-  // bookings_out[id_f]: list of outgoing flights connected to id_f
-  // bookingsIds_in[id_nf]: list of incoming flight ids connecting to id_nf
-  // bookingsIds_out[id_f]: list of outgoing flights ids connected to id_f
-  // Attributes in datastructure:
-  // ACTAvailable, ACTAvailableP, ACTSlack, ACTSlackP, INP_DTMPZ_(f,nf), OUTP_DTMZ_(n,nf),
-  // SCH_ARR_DTMZ_(f,nf), SCH_DEP_DTMZ_(f,nf)
+  // const initIDout = bookingIds_out[initialID];
+  // u.print(`outbound from initialID ${initialID}`, initIDout); // value does not change.
 
   // Analyze the impact of an initial arrival delay (using historical data)
   // Does rigidModel compute information that depends on maxArrDelay and initialArrDelay?
   const delayObj = rigidModel(
-    // ERROR IN rigidModel!!!<<<<<
     dFSU,
     dBookings,
     dBookingsIdMap, // CHECK
     dTails,
     edges,
     graph,
-    // bookingIds_in, // CHECK
-    // bookingIds_out, // CHECK
     initialArrDelay, // applied to id
     maxArrDelay, // control what nodes are taken into account
     initialID
@@ -373,3 +277,4 @@ function moreBookingsChecks(
 
   // throw "Exit script";
 }
+//------------------------------------------------------------------------

@@ -534,6 +534,7 @@ export default {
           delayObj = propagateData(dataRef, initialId, arrDelay, maxArrDelay); // args: ref, value
         });
 
+        u.print("delayObj: ", delayObj);
         rigidBodyRef.table = delayObj.table;
         // u.print("==> table: ", table);
         // From this row, construct the rigid model

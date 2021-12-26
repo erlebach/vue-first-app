@@ -130,9 +130,6 @@ export function rigidModel(
 
   // There appears to be no undefined nodes
 
-  // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
-  // u.print("idsTraversed: ", idsTraversed);
-
   // return a dictionary that returns the level for any id
   // also return a dictionary that returns a list of ids for each level
 
@@ -224,13 +221,8 @@ function initializeEdges(bookings, FSUm) {
   let countTailTails = 0;
 
   bookings.forEach((e) => {
-    // bookingsIdMap.forEach((m) => { // }
-    //e.fsu_f = FSUm[e.id_f];
-    //e.fsu_nf = FSUm[e.id_nf];
     const row_f = FSUm[e.id_f];
     const row_nf = FSUm[e.id_nf];
-    // u.print("initializeEdges::bookings, row_f", row_f);
-    // u.print("initializeEdges::bookings, row_nf", row_nf);
     if (row_f === undefined || row_nf === undefined) {
       u.print(
         `bookings, row_f or row_nf undefined, id_f: ${e.id_f}, id_nf: ${e.id_nf}`,
@@ -301,86 +293,7 @@ function initializeEdges(bookings, FSUm) {
 //------------------------------------------------------------------
 // Original function before making mods on 2021-12-24
 // I want to reduce the number of changes to the data structures
-function initializeEdgesOrig(bookings, FSUm) {
-  const ms2min = 1 / 1000 / 60;
-  const milli2min = 1 / 1e3 / 60;
 
-  const fsu_undefined = Object.create(null);
-  // Create two counters
-  fsu_undefined._f = 0;
-  fsu_undefined._nf = 0;
-
-  // u.print("initializeEdges::bookings", sortBy(bookings, "id_f"));
-
-  // Be careful.
-  // Scheduled Rotation: based on scheduled departure and a arrival time (an edge attribute)
-  // availRotMinReq: A fixed value usual set at 60 min. Sometimes can change from airport to airport. So set for each edge separately
-  //   If the schedule rotation time allows for less than 60 min, set availRotMinReq to this value.
-  // availRot: should be set
-
-  let countTailTails = 0;
-
-  bookings.forEach((e) => {
-    // bookingsIdMap.forEach((m) => {
-    //e.fsu_f = FSUm[e.id_f];
-    //e.fsu_nf = FSUm[e.id_nf];
-    const row_f = FSUm[e.id_f];
-    const row_nf = FSUm[e.id_nf];
-    // u.print("initializeEdges::bookings, row_f", row_f);
-    // u.print("initializeEdges::bookings, row_nf", row_nf);
-    if (row_f === undefined || row_nf === undefined) {
-      u.print(
-        `bookings, row_f or row_nf undefined, id_f: ${e.id_f}, id_nf: ${e.id_nf}`,
-        "SHOULD NOT HAPPEN"
-      );
-    }
-
-    // Following information might be better set in text-processing when the data is read in from the endpoint
-    // On the other hand, in the future, the data might be read or load from another source, so setting the data here
-    // might be better. The best approach remains unclear.
-
-    // Scheduled available connection time for passengers (PAX)
-    e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
-    // Predicted PAX connection time (initially set to available time)
-    e.ACTAvailableP = e.ACTAvailable;
-    // Available time slack: how much time is available beyond the minimum requirements (usually airport-dependent)
-    e.minAvailable = 30;
-    e.ACTSlack = e.ACTAvailable - e.minAvailable;
-    e.ACTSlackP = e.ACTAvailableP - e.minAvailable;
-
-    e.availRot = undefined;
-    e.availRotP = undefined;
-    e.availRotMinReq = undefined;
-    e.rotSlack = undefined;
-    e.availRotSlackP = undefined;
-
-    // rotation only exists for fixed tails
-    if (e.tail_f === e.tail_nf) {
-      countTailTails++;
-      // PTY with tail turnaround and passengers
-      // Setup rotation parameters and rotation slack
-      // setupEdgeProps(e, FSUm);
-      // Scheduled rotation time is the same as avaiable connection time.
-      // e.schedRot = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
-      // Available rotation is based on best estimates for feeder arrival and outbound departure times
-      // e.availRotMinReq = 60;
-      // e.availRot = (row_nf.estDepTime - row_f.estArrTime) * milli2min;
-      // u.print("initializeEdges::availRot, e", e);
-      // e.rotSlack = e.availRot - e.availRotMinReq; // slack can be negative (slack to spare)
-      e.availRotP = e.availRot;
-      e.availRotSlackP = e.availRotSlack;
-    }
-
-    // if (e.fsu_f === undefined) {
-    //   fsu_undefined._f++;
-    // }
-    // if (e.fsu_nf === undefined) {
-    //   fsu_undefined._nf++;
-    // }
-    // u.print("initializeEdges::availRot, completed e", e);
-  });
-  // console.log(`countTailTails: ${countTailTails}`);
-}
 //------------------------------------------------------------------
 function initializeNodes(FSUm, dTails, bookingsIdMap) {
   // Initialize all records in FSUm
@@ -390,8 +303,7 @@ function initializeNodes(FSUm, dTails, bookingsIdMap) {
     r.minACTP = r.minACT; // << NEEDED? r.minACT not defined
     r.ACTSlackP = r.ACTSlack;
     r.slackP = r.slack;
-    // r.rotSlackP = r.rotSlack;
-    r.availRotP = r.availRot;
+    // r.rotSlackP = r.rotSlack;    r.availRotP = r.availRot;
     r.arrDelayP = r.arrDelay;
     r.depDelayP = r.depDelay;
     u.print("initializeNodes, r", r);
@@ -474,8 +386,6 @@ function createId2Level(ids) {
   // console.log(`====> enter createId2Level, nb_tiers: ${nb_tiers}`);
   // u.print(`nb_tiers: ${nb_tiers.value}`);
 
-  u.print("createId2Level, ids", ids);
-
   const id2level = {};
   const level2ids = {};
   const nb_tiers = 10; // set to some arbitrary maximum (could lead to errors)
@@ -485,10 +395,9 @@ function createId2Level(ids) {
 
   let nextId = 0;
   const idStart = ids[0];
-  u.print("createid2Level, ids: ", ids);
+  // u.print("createid2Level, ids: ", ids);
   const offsetEven = getOrig(idStart) === "PTY" ? 1 : 0;
-  const offsetodd = (1 + offsetEven) % 2;
-  u.print("createId2Level, ids", ids);
+  // u.print("createId2Level, ids", ids);
 
   for (let level = 0; level < nb_tiers; level++) {
     // Both a while(true) and for(;;) lead to out of memory errors. Strange since the break out
@@ -508,11 +417,6 @@ function createId2Level(ids) {
     }
   }
 
-  // Depending on the number of tiers, select a susbset
-
-  // u.print("id2level: ", { ...id2level });
-  // u.print("level2ids: ", { ...level2ids });
-
   // Recreate ids using only the useful Tiers
   console.log(`nb ids: ${ids.length}`);
   // How to remove all elements from ids array without changing its address
@@ -520,11 +424,6 @@ function createId2Level(ids) {
   for (let tier = 0; tier < nb_tiers; tier++) {
     ids.push(...level2ids[tier]);
   }
-  // // // // console.log(`nb_tiers: ${nb_tiers}`);
-  // // // u.print("ids: ", ids);
-  // // console.log(`length ids: ${ids.length}`);
-  // console.log("--------------------------------");
-  // u.print("new ids: ", ids);
   return { id2level, level2ids };
 }
 //---------------------------------------------------------------
@@ -547,7 +446,7 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
   n.minId = undefined;
   n.minACTP = 10000;
   // n.ACTSlackP = 10000;
-  n.availRotSlackP = 10000;
+  // n.availRotSlackP = 10000;
 
   // I should be able to call computeMinACT whether I am at PTY or at a Station
 
@@ -635,144 +534,6 @@ function updateInboundEdgesNew(
   return null;
 }
 //---------------------------------------------------------------
-function updateInboundEdges(
-  id_nf,
-  FSUm,
-  outboundNode,
-  bookingsIdMap,
-  graphEdges
-) {
-  // add inbounds to graphEdges
-  const ms2min = 1 / 1000 / 60;
-
-  // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
-  const node = outboundNode; // feeder node
-
-  const inboundEdgesIds = outboundNode.inboundIds; // UNDEFINED. SHOULD NOT HAPPEN. Or should it?
-
-  const inboundEdges = [];
-  inboundEdgesIds.forEach((id_f) => {
-    const row = bookingsIdMap[id_f + "-" + id_nf];
-    inboundEdges.push(row);
-  });
-
-  u.print(`inboundEdges, id_nf: ${id_nf}`, inboundEdges);
-  // throw "updateInboundEdges::end script";
-
-  if (inboundEdges === undefined) {
-    return null;
-  }
-
-  let ecount = 0; // counter to reduce output
-  inboundEdges.forEach((e) => {
-    if (e !== undefined) {
-      // WHY IS THIS CHECK NEEDED?
-      // Checking why filter not working
-      // u.print("xxxxxx e= ", e); // undefined
-      graphEdges.push(e);
-      const row_f = FSUm[e.id_f];
-      const row_nf = FSUm[e.id_nf];
-      // u.print("updateInboundEdges, inboundEdge", e);
-      e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
-
-      // ACTAvailable is based on scheduled departure and arrival times
-      const arrDelayP = row_f.arrDelayP;
-      e.ACTAvailableP = e.ACTAvailable - arrDelayP; // Based on best estimated information
-      e.ACTSlackP = e.ACTAvailableP - 30; // harcoded, but really, a function of city/airport
-
-      // update rotation
-      if (e.tail_f === e.tail_nf) {
-        e.availRotSlackP = e.availRotSlack - e.arrDelayP;
-      }
-    }
-    ecount++;
-    if (ecount < 1)
-      u.print(`updateInboundEdges(${ecount}), id_nf: ${id_nf}, e: `, e);
-  });
-  return null;
-}
-//-------------------------------------------------------------
-function updateOutboundNode(FSUm, bookingsIdMap, node) {
-  // update of a single node
-  const n = node;
-  const id_nf = n.id;
-  console.log("=========== updateOutboundNode ====================");
-  u.print("=== n", n);
-
-  // if an ETA changes, the flight arrival delay increases or decreases.
-  // This immediately affects rotSlackP according to
-  // rotSlackP = rotSlack - arrDelay, where rotSlack is the initial value
-
-  // u.print("updateOutboundNode, node", node);
-  // console.log(`updateOutboundNode, node: ${node.id}`);
-  // u.print("updateOutboundNode, node", node);
-
-  // u.print(
-  //   "updateOutboundNode, node.inbounds (used for computeMinAct)",
-  //   n.inboundsIds
-  // );
-
-  // if (n === undefined || n.inbounds === undefined) {
-  if (n === undefined || n.inboundIds === undefined) {
-    return undefined;
-  }
-
-  n.minId = undefined;
-  n.minACTP = 10000;
-  n.ACTSlackP = 10000;
-  n.availRotSlackP = 10000;
-
-  n.count += 1; // This number should never go beyond 1
-
-  // Only call computeMinACT if the flight is leaving PTY
-
-  if (n.id.slice(10, 13) === "PTY") {
-    // console.log(`n.inboundIds.length: ${n.inboundIds.length}`);
-    if (n.inboundIds.length > 0) {
-      const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, false);
-      n.minId = obj.minId;
-      n.minACTP = obj.minACT; // CHANGE FORMULA
-      n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
-    }
-  } else {
-    // The flight is leaving the station
-    n.minACTP = n.minACT;
-    n.ACTSlackP = n.ACTSlack;
-    // update Rotation rotSlackP
-    const ms2min = 1 / 1000 / 60;
-    // QUESTION: why use the zeroth element of inboundsIds?
-    if (n.inboundIds.length > 0) {
-      // WHY IS THIS CHECK NECESSARY?
-      // console.log(`n.inboundsIds[0]= ${n.inboundIds[0]}`);
-      const e = bookingsIdMap[n.inboundIds[0] + "-" + id_nf];
-      // u.print("e", e); // UNDEFINED. WHY IS THIS? SHOULD NOT HAPPEN? (2021-12-23)
-      // const e = n.inbounds[0]; // FIX inbounds to inboundsIds
-      if (e !== undefined) {
-        // SHOULD NOT BE REQUIRED (2021-12-23)
-        const row_f = FSUm[e.id_f];
-        n.availRot = (n.SCH_DEP_DTMZ - row_f.INP_DTMZ) * ms2min;
-        n.availRotSlackP = n.availRotSlack - row_f.arrDelayP;
-        n.availRotSlack = n.availRot - n.availRotMinReq;
-      }
-    }
-  }
-  // Not sure about rotSlackP. Must look into that.  ****** DEBUG
-  n.slackP = Math.min(n.availRotSlackP, n.ACTSlackP);
-  if (n.slackP < 0) {
-    n.depDelayP = -n.slackP; // If flight to study has no delay, it will have no impact.
-    n.arrDelayP = n.depDelayP;
-    //-------------------
-  } else {
-    // Flights never leave early.
-    n.depDelayP = 0; // If flight to study has no delay, it will have no impact.
-    n.arrDelayP = 0;
-  }
-  // Avoid infinite loops
-  // n.inbounds = undefined;
-  // n.outbounds = undefined;
-  return undefined;
-}
-//-------------------------------------------------------------------------
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
@@ -863,22 +624,12 @@ function setInitialDelays(FSUm, initialArrDelayP, startingId) {
   }
   FSUm[startingId].estArrTime =
     FSUm[startingId].SCH_ARR_DTMZ + initialArrDelayP * 60000;
-  console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
+  // console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
 }
 //--------------------------------------------------------------------
 // Depends on startingId, so should be done elsewhere. Every time
 // a new id is selected
-function traverseGraph(
-  startingId,
-  graph,
-  bookingsIdMap,
-  // bookingsIds_in,
-  dFSU,
-  FSUm
-) {
-  let countUndefined = 0;
-  let countDefined = 0;
-
+function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
   let countUndef = 0;
   let countDef = 0;
 
@@ -898,10 +649,6 @@ function traverseGraph(
   // There is no graph created
 
   const dFSUids = u.createMapping(dFSU, "id");
-  u.print(
-    "before traverse, dFSUids[2021-12-16AUAPTY17:320349",
-    dFSUids["2021-12-16AUAPTY17:320349"]
-  );
   const idCount = {};
   for (let id in dFSUids) {
     let count = 0;
@@ -1007,21 +754,4 @@ function updateNodeData(n) {
   // Given estArrTime and estDepTime, update all quantities
   // Nothing to do.
 }
-//--------------------------------------------------------------
-function updateEdgeData(FSUm, e) {
-  // Given estArrTime and estDepTime at the nodes, update all edge quantities
-  const row_f = FSUm[e.id_f];
-  const row_nf = FSUm[e.id_nf];
-  // availRot  and availACT need not be distinguished. It is the slack times that must be distinguished
-  e.availACTP = (row_nf.estDepTime - row_f.estArrTime) / 60000;
-  e.availACTSlackP = e.availACTP - 30; // hardcoded (in min)
-  if (e.tail_f !== e.tail_nf) {
-    e.availRotP = 10000;
-    e.availRotSlackP = 10000;
-  } else {
-    e.availRotP = e.availACTP;
-    e.availRotSlackP = e.availACTP - e.availRotMinReq;
-  }
-}
-//--------------------------------------------------------------
 //--------------------------------------------------------------

@@ -817,7 +817,7 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     const row = {
       id_f: row_f.id,
       id_nf: row_nf.id,
-      id: row_f.id + "-" + row_nf.id,
+      id: row_f.id + "-" + row_nf.id, // Following rows used to define EndPoint table. Should not be needed
       in_f: row_f.in,
       in_nf: row_nf.in,
       eta_f: row_f.eta,
@@ -1186,20 +1186,13 @@ function create_FSU_BOOK_TAILS(
       SCH_DEP_DTMZ: r.sch_dep, // ms
       schArrZ: r.sch_arr, // ms
       schDepZ: r.sch_dep, // ms
-      ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
+      //ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
       ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
       TAIL: r.tail,
       status: r.status, // not in original dFSU
       nbInbounds: r.nbInbounds, // in-degree
       nbOutbounds: r.nbOutbounds, // in-degree
     });
-    //const delta = (r.sch_arr - r.sch_dep) / 60000;
-    //console.log(`text-processing, delta: ${delta} min`);
-    // if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
-    //   r.nbOutbounds = 1;
-    // } else if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
-    //   r.nbInbounds = 1;
-    // }
   });
 
   // Go through allPairs
@@ -1242,9 +1235,6 @@ function create_FSU_BOOK_TAILS(
 
   // checkBookingsForConsistency(dBookings, dTails);
 
-  // u.print("dTails", dTails);
-  // u.print("before add tails: dBookings", dBookings);
-
   // dTail are the rotations outside PTY
   // No need to add dTail in dBookings. The tails are already included
   return { dBookings, dFSU, dTails };
@@ -1252,31 +1242,14 @@ function create_FSU_BOOK_TAILS(
 //--------------------------------------------------------------------
 function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   // Arguments
-  // inboundsMap[id_nf]: list of feeders
   console.log("text-processing::createBookings");
-  //let dBookings = []; // defined globally
   for (let id_f in outboundsMap) {
-    // id_f =  2021-12-18PTYPTY20:230341  // leads to undefined r_f. WHY???? (2 days worth of data. MUST DEBUG)
     const r_f = flightTableMap[id_f]; // UNDEFINED. HOW CAN THAT BE. THERE ARE FLIGHTS MISSING?
     outboundsMap[id_f].forEach((id_nf) => {
       const r_nf = flightTableMap[id_nf];
-      // if (r_nf === undefined) {
-      //   u.print("createBookings::r_nf", r_nf);
-      //   console.log(`id_f: ${id_f}, id_nf: ${id_nf}`);
-      // }
-      // if (r_f && r_f.in === undefined) {
-      //   console.log(
-      //     `createBookings::outboundsMap,  ${r_f.id}, in_f is undefined`
-      //   ); // None are undefined
-      // }
-      // if (r_nf && r_nf.in === undefined) {
-      //   console.log(
-      //     `createBookings::outboundsMap,  ${r_f.id}, in_nf is undefined`
-      //   ); // None are undefined
-      // }
+
       // WHY IS THIS CONDITIONAL NECESSARY?
       if (r_f && r_nf) {
-        let plannedRot = 10000;
         if (r_f.tail !== r_nf.tail) {
           dBookings.push({
             id: r_f.id + "-" + r_nf.id,
@@ -1284,16 +1257,6 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             id_nf: r_nf.id,
             tail_f: r_f.tail,
             tail_nf: r_nf.tail,
-            in_f: r_f.in,
-            in_nf: r_nf.in,
-            out_f: r_f.out,
-            out_nf: r_nf.out,
-            SCH_ARR_DTMZ_f: r_f.sch_arr, // ms (always ms in Javascript)
-            SCH_ARR_DTMZ_nf: r_nf.sch_arr, // ms
-            SCH_DEP_DTMZ_f: r_f.sch_dep, // ms
-            SCH_DEP_DTMZ_nf: r_nf.sch_dep, // ms
-            // I must get these status directly from allPairs. The current approach
-            // only works if all bookings are pairs connecting at PTY
             status_f: r_f.status, // MUST FIX
             status_nf: r_nf.status, // MUST FIX
           });
@@ -1307,12 +1270,9 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   }
 
   for (let id_nf in inboundsMap) {
-    // console.log(`id_f: ${id_f}`);
     const r_nf = flightTableMap[id_nf];
     inboundsMap[id_nf].forEach((id_f) => {
-      // console.log(`id_nf: ${id_nf}`);
       const r_f = flightTableMap[id_f];
-      // WHY IS THIS CONDITIONAL NECESSARY?
       if (r_f && r_nf) {
         if (r_f.tail !== r_nf.tail) {
           dBookings.push({
@@ -1321,51 +1281,22 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             id_nf: r_nf.id,
             tail_f: r_f.tail,
             tail_nf: r_nf.tail,
-            in_f: r_f.in,
-            in_nf: r_nf.in,
-            out_f: r_f.out,
-            out_nf: r_nf.out,
-            SCH_ARR_DTMZ_f: r_f.sch_arr, // ms
-            SCH_ARR_DTMZ_nf: r_nf.sch_arr, // ms
-            SCH_DEP_DTMZ_f: r_f.sch_dep, // ms
-            SCH_DEP_DTMZ_nf: r_nf.sch_dep, // ms
             status_f: r_f.status, // MUST FIX
             status_nf: r_nf.status, // MUST FIX (not correct. Must come from allPairs)
           });
         }
-      } else {
-        // All id_f listed have ORIG and DEST as PTY. Do not know what this means.
-        // console.log(
-        // `createBookings, inboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
-        // );
       }
     });
   }
 
   // u.checkEdgesDirection(dBookings, "check order in dBookings");
   allPairs.forEach((r) => {
-    // u.print("allPairs row", r);
-    // if (r.in_f === undefined) {
-    //   console.log(`createBookings::allpairs[id_f: ${r.id_f} is undefined`);
-    // }
-    // u.print(`allPairs, plannedRot: ${r.plannedRot}`);
-    // u.print(`allPairs, availRot: ${r.availRot}`);
-    // u.print("allPairs, xxx row: ", r);
     dBookings.push({
       id: r.id_f + "-" + r.id_nf,
       id_f: r.id_f,
       id_nf: r.id_nf,
       tail_f: r.tail,
       tail_nf: r.tail,
-      tail: r.tail,
-      in_f: r.in_f,
-      in_nf: r.in_nf,
-      out_f: r.out_f,
-      out_nf: r.out_nf,
-      SCH_DEP_DTMZ_f: r.sch_dep_f, // ms
-      SCH_ARR_DTMZ_f: r.sch_arr_f, // ms
-      SCH_DEP_DTMZ_nf: r.sch_dep_nf, // ms
-      SCH_ARR_DTMZ_nf: r.sch_arr_nf, // ms
       status_f: r.status_f,
       status_nf: r.status_nf,
     });
@@ -1378,45 +1309,20 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
     dBookings.push(value);
   });
 
-  // u.print("exit createBookings, dBookings: ", dBookings);
-  // console.log(
-  //   `createBookings::dBookings.length (non-unique): ${dBookings.length}`
-  // );
-
-  // u.print("unique dBookings", dBookings);
-
-  // console.log("before allPairs loop");
   // Remove duplicates based on "id"
   allPairs.forEach((r) => {
     // find row in dBookings
-    // console.log(`r.id: ${r.id}`);
-    // console.log("dBookingsIdMap", dBookingsIdMap);
     const id = r.id_f + "-" + r.id_nf;
     const row = dBookingsIdMap[id];
-    // u.print("before if", row); // 2nd one is undefined. WHY?
     if (row !== "undefined") {
-      // u.print("if: allPairs, r", r); // defined
-      // u.print("if: allPairs, row", row); // undefined
       row.plannedRot = r.plannedRot; // error
       row.availRot = r.availRot;
       row.availRotP = r.availRotP;
       row.availRotSlack = r.availRotSlack;
       row.availRotSlackP = r.availRotSlack;
       row.availRotMinReq = r.availRotMinReq;
-      // row.status_f =
-      // row.status_nf =
     }
   });
-
-  // Check that there are no duplicate pairs
-  // There were none, but now we are sure.
-  const dbidf = sortBy(dBookings, "id_f");
-  const dbidnf = sortBy(dBookings, "id_nf");
-  // There are multiple repeats
-
-  // u.print("dBookings sorted by id_f", dbidf);
-  // u.print("dBookings sorted by id_nf", dbidnf);
-  // u.print("exit createBookings, unique dBookings: ", dBookings);
 
   // Check whether either ORIG or DEST is PTY
   let countOD_f = 0;
@@ -1437,63 +1343,35 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       countOD_nf += 1;
     }
     if (row_f.tail === row_nf.tail) {
-      // u.print("createBookings, same tails", r);
+      r.plannedRot = (row_nf.SCH_ARR_DTMZ - row_f.SCH_DEP_DTMZ) / 60000;
       r.availRot = (row_nf.estDepTime - row_f.estArrTime) / 60000;
       r.availRotP = r.availableRot;
       r.availRotSlack = r.availRot - 60; // Hardcode. I have a more general formula already.  <<<<< 2021-12-25
       r.availRotSlackP = r.availRotSlack;
-      r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
-      r.ACTAvailableP = r.ACTAvailable;
-      r.ACTSlack = r.ACTAvailable - 30;
-      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
-      // availRot, availRotP, availRotSlack, availRotSlackP
-      // r.plannedRot: r.plannedRot,
-      // r.availRot: r.availRot,
-      // r.availRotP: r.availRotP,
-      // r.availRotSlack: r.availRotSlack,
-      // r.availRotSlackP: r.availRotSlack,
-      // r.availRotMinReq: r.availRotMinReq,
-      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
-    } else {
-      r.plannedRot = undefined;
-      r.availRot = undefined;
-      r.availRotP = undefined;
-      r.availRotSlack = r.availRot - 60; // Hardcode. I have a more general formula already.  <<<<< 2021-12-25
-      r.availRotSlackP = r.availRotSlack;
-      r.availRotSlackP = undefined;
       r.availRotMinReq = 60;
-      r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
-      r.ACTAvailableP = r.ACTAvailable;
-      r.ACTSlack = r.ACTAvailable - 30;
-      r.slack = Math.min(r.availRotSlack, r.ACTSlack);
+    } else {
+      r.plannedRot = 10000;
+      r.availRot = 10000;
+      r.availRotP = 10000;
+      r.availRotSlack = 10000; // Hardcode. I have a more general formula already.  <<<<< 2021-12-25
+      r.availRotSlackP = 10000;
+      r.availRotMinReq = 60;
     }
+    r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+    r.ACTAvailableP = r.ACTAvailable;
+    r.ACTSlack = r.ACTAvailable - 30;
+    r.ACTSlackP = r.ACTSlack;
+    r.ACTAvailable = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+    r.ACTAvailableP = r.ACTAvailable;
+    r.ACTSlack = r.ACTAvailable - 30;
+    r.ACTSlackP = r.ACTSlack;
+    r.slack = Math.min(r.availRotSlack, r.ACTSlack);
+    r.slackP = r.slack;
     // No cases where flight goes between two STA.
   });
-  // console.log(`countOD_f: ${countOD_f}, countOD_nf: ${countOD_nf}`);
-  // u.print("createBookings::bookings", sortBy(dBookings, ["id_f", "id_nf"]));
 
-  // which bookings have in_f set to undefined?
-
-  console.log(`dBookings.length: ${dBookings.length}`);
   dBookings = sortBy(dBookings, "status_f");
-  u.print("dBookings", sortBy(dBookings, "id"));
 
-  // dBookings.forEach((r) => {
-  //   if (r.out_f > 0) {
-  //     console.log(`createBookings::dBookings[idf][${r.id_f}], in_f: ${r.in_f}`);
-  //   }
-  // });
-
-  // 2021-12-13: dBookings have no undefines. I added status, in, out (_f, _nf)
-
-  // the "id" attribute looks ok
-  sortBy(dBookings, "id").forEach((r) => {
-    if (r.tail_f === r.tail_nf) {
-      //  u.print("bookings tail row: ", r);
-    } else {
-      // u.print("bookings tail row: ", r);
-    }
-  });
   return dBookings;
 }
 //---------------------------------------------------------------------------
