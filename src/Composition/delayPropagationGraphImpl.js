@@ -323,12 +323,12 @@ const myTooltip = new G6.Tooltip({
         <!-- why undefined plannedRot -->
         <hr/>
         <li>Planned Rotation: ${node.plannedRot} min</li>  
-        <li>Avail Rotation: ${node.availRot} min</li>    <!-- UNDEF -->
-        <li>Pred Avail Rotation: ${node.availRotP} min</li>    <!-- UNDEF -->
-        <li>Pred Rot Slack: ${rotSlackP} min</li>  <!-- UNDEF -->
-        <li>Pred Slack: ${slackP} min</li>  <!-- UNDEF -->
+        <!-- <li>Avail Rotation: ${node.availRot} min</li> -->   
+        <!-- <li>Pred Avail Rotation: ${node.availRotP} min</li> -->  
+        <!-- <li>Pred Rot Slack: ${rotSlackP} min</li> --> <!-- UNDEF -->
+        <!-- <li>Pred Slack: ${slackP} min</li>  -->
         <hr/>
-        <li>Pred ACT Slack: ${ACTSlackP} min</li>  <!-- UNDEF -->
+        <!-- <li>Pred ACT Slack: ${ACTSlackP} min</li> -->
         <li>Pred Minimum ACT: ${minACTP} min</li>  <!-- UNDEF -->
         <li>Level: ${node.level} min</li>  <!-- UNDEF -->
         <hr/>

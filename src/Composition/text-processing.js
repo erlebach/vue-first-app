@@ -140,6 +140,7 @@ function getRow(e) {
     etd_nf_z: e.ETD_N_FLT,
     sch_dep_f: datetimeZ2ms(e.SCH_DEP_DTMZ),
     sch_arr_f: datetimeZ2ms(e.SCH_ARR_DTMZ),
+    // SCH_ARR_DTMZ_f: datetimeZ2ms(e.SCH_ARR_DTMZ),
     sch_dep_nf: datetimeZ2ms(e.NEXT_STD),
     sch_arr_nf: datetimeZ2ms(e.NEXT_STA),
     sch_dep_z_f: e.SCH_DEP_DTMZ,
@@ -324,7 +325,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -1181,8 +1182,10 @@ function create_FSU_BOOK_TAILS(
       flt_num: r.fltnum,
       in: r.in,
       out: r.out,
-      SCH_ARR_DTMZ: r.sch_arr * 1000, // ns
-      SCH_DEP_DTMZ: r.sch_dep * 1000, // ns
+      SCH_ARR_DTMZ: r.sch_arr, // ms  (Always ms in Javascript)
+      SCH_DEP_DTMZ: r.sch_dep, // ms
+      schArrZ: r.sch_arr, // ms
+      schDepZ: r.sch_dep, // ms
       ROTATION_PLANNED_TM: plannedRotation, // min (get this from all_pairs array)
       ARR_DELAY_MINUTES: r.arrDelay, //arr_delay_minutes,
       TAIL: r.tail,
@@ -1190,6 +1193,8 @@ function create_FSU_BOOK_TAILS(
       nbInbounds: r.nbInbounds, // in-degree
       nbOutbounds: r.nbOutbounds, // in-degree
     });
+    //const delta = (r.sch_arr - r.sch_dep) / 60000;
+    //console.log(`text-processing, delta: ${delta} min`);
     // if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
     //   r.nbOutbounds = 1;
     // } else if (r.id.slice(10, 13) === "PTY" && r.id.slice(13, 16) !== "PTY") {
@@ -1283,12 +1288,14 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             in_nf: r_nf.in,
             out_f: r_f.out,
             out_nf: r_nf.out,
-            SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
-            SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
-            SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
-            SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
-            status_f: r_f.status,
-            status_nf: r_nf.status,
+            SCH_ARR_DTMZ_f: r_f.sch_arr, // ms (always ms in Javascript)
+            SCH_ARR_DTMZ_nf: r_nf.sch_arr, // ms
+            SCH_DEP_DTMZ_f: r_f.sch_dep, // ms
+            SCH_DEP_DTMZ_nf: r_nf.sch_dep, // ms
+            // I must get these status directly from allPairs. The current approach
+            // only works if all bookings are pairs connecting at PTY
+            status_f: r_f.status, // MUST FIX
+            status_nf: r_nf.status, // MUST FIX
           });
         }
       } else {
@@ -1318,12 +1325,12 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
             in_nf: r_nf.in,
             out_f: r_f.out,
             out_nf: r_nf.out,
-            SCH_ARR_DTMZ_f: r_f.sch_arr * 1000, // ns
-            SCH_ARR_DTMZ_nf: r_nf.sch_arr * 1000, // ns
-            SCH_DEP_DTMZ_f: r_f.sch_dep * 1000, // ns
-            SCH_DEP_DTMZ_nf: r_nf.sch_dep * 1000, // ns
-            status_f: r_f.status,
-            status_nf: r_nf.status,
+            SCH_ARR_DTMZ_f: r_f.sch_arr, // ms
+            SCH_ARR_DTMZ_nf: r_nf.sch_arr, // ms
+            SCH_DEP_DTMZ_f: r_f.sch_dep, // ms
+            SCH_DEP_DTMZ_nf: r_nf.sch_dep, // ms
+            status_f: r_f.status, // MUST FIX
+            status_nf: r_nf.status, // MUST FIX (not correct. Must come from allPairs)
           });
         }
       } else {
@@ -1355,10 +1362,10 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       in_nf: r.in_nf,
       out_f: r.out_f,
       out_nf: r.out_nf,
-      SCH_DEP_DTMZ_f: r.sch_dep_f * 1000, // ns
-      SCH_ARR_DTMZ_f: r.sch_arr_f * 1000, // ns
-      SCH_DEP_DTMZ_nf: r.sch_dep_nf * 1000, // ns
-      SCH_ARR_DTMZ_nf: r.sch_arr_nf * 1000, // ns
+      SCH_DEP_DTMZ_f: r.sch_dep_f, // ms
+      SCH_ARR_DTMZ_f: r.sch_arr_f, // ms
+      SCH_DEP_DTMZ_nf: r.sch_dep_nf, // ms
+      SCH_ARR_DTMZ_nf: r.sch_arr_nf, // ms
       status_f: r.status_f,
       status_nf: r.status_nf,
     });
@@ -1396,6 +1403,8 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
       row.availRotSlack = r.availRotSlack;
       row.availRotSlackP = r.availRotSlack;
       row.availRotMinReq = r.availRotMinReq;
+      // row.status_f =
+      // row.status_nf =
     }
   });
 

@@ -127,3 +127,14 @@ Error is occuring in compouteMinACT() function. No idea why.
 But nbInbounds and nbOutbounds are both correct (17 and 1). 
 --------------------------------------------------------------
 nbOutbounds is zero somehow (shoudl be 1. WHAT IS GOING ON? )
+----------------------------------------------
+2021-12-25
+- Dates are 1970 on nodes in tooltips. 
+- I may have fixed most errors. 
+- Manually adding delay to the inbound flight to PTY seems to propagate throughout the network. 
+- I have NOT checked whether doing this on a flight starting from PTY also works. This flight would have multiple feeders. 
+  I have to make sure that for the first flight, I do not check all the inbounds for the minACT. 
+- In the tooltips I do not display rotation or ACT data on nodes. These are edge quantities. 
+
+TODO: rmeove all edge information from FSU and remove all nodes information from bookings. This decreases opportunities for errors. 
+----------------------------------------------

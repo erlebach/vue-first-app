@@ -205,7 +205,7 @@ export function rigidModel(
 }
 //-------------------------------------------------------
 function initializeEdges(bookings, FSUm) {
-  const nano2min = 1 / 1e9 / 60;
+  const ms2min = 1 / 1e3 / 60;
   const milli2min = 1 / 1e3 / 60;
 
   const fsu_undefined = Object.create(null);
@@ -271,7 +271,7 @@ function initializeEdges(bookings, FSUm) {
       // Setup rotation parameters and rotation slack
       // setupEdgeProps(e, FSUm);
       // Scheduled rotation time is the same as avaiable connection time.
-      e.schedRot = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
+      e.schedRot = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
       // Available rotation is based on best estimates for feeder arrival and outbound departure times
       e.availRotMinReq = 60;
       e.availRot = (row_nf.estDepTime - row_f.estArrTime) * milli2min;
@@ -302,7 +302,7 @@ function initializeEdges(bookings, FSUm) {
 // Original function before making mods on 2021-12-24
 // I want to reduce the number of changes to the data structures
 function initializeEdgesOrig(bookings, FSUm) {
-  const nano2min = 1 / 1e9 / 60;
+  const ms2min = 1 / 1000 / 60;
   const milli2min = 1 / 1e3 / 60;
 
   const fsu_undefined = Object.create(null);
@@ -340,7 +340,7 @@ function initializeEdgesOrig(bookings, FSUm) {
     // might be better. The best approach remains unclear.
 
     // Scheduled available connection time for passengers (PAX)
-    e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
+    e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
     // Predicted PAX connection time (initially set to available time)
     e.ACTAvailableP = e.ACTAvailable;
     // Available time slack: how much time is available beyond the minimum requirements (usually airport-dependent)
@@ -528,17 +528,122 @@ function createId2Level(ids) {
   return { id2level, level2ids };
 }
 //---------------------------------------------------------------
+function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
+  // update of a single node
+  const n = node;
+  const id_nf = n.id;
+  console.log("=========== updateOutboundNode ====================");
+  u.print("=== n", n);
+
+  // if an ETA changes, the flight arrival delay increases or decreases.
+  // This immediately affects rotSlackP according to
+  // rotSlackP = rotSlack - arrDelay, where rotSlack is the initial value
+
+  if (n === undefined || n.inboundIds === undefined) {
+    console.log("n is undefined or n.inboundIds is undefined.");
+    return undefined;
+  }
+
+  n.minId = undefined;
+  n.minACTP = 10000;
+  // n.ACTSlackP = 10000;
+  n.availRotSlackP = 10000;
+
+  // I should be able to call computeMinACT whether I am at PTY or at a Station
+
+  n.count += 1; // This number should never go beyond 1
+
+  // Only call computeMinACT if the flight is leaving PTY
+
+  const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, true);
+  u.print("updateOutboundNodeNew::obj ", obj);
+  n.minId = obj.minId;
+  n.minACTP = obj.minACT;
+  const ACTAvailableP = obj.minACT;
+  const ACTSlackP = ACTAvailableP - 30; // manual setting
+  const slackP = ACTSlackP; // this is really an edge quantity
+  if (slackP < 0) {
+    console.log(`=======> id_nf: ${id_nf}`);
+    console.log(`     ==> minACTP: ${n.minACTP}`);
+    console.log(`     ==> minId: ${n.minId}`);
+    console.log(`     ==> slackP: ${slackP}`);
+    console.log(`==> old est dep time: ${n.estDepTime}`);
+    console.log(`    old dep DelayP: ${n.depDelayP}`);
+    console.log(`    old arr DelayP: ${n.arrDelayP}`);
+    n.estDepTime = n.SCH_DEP_DTMZ - slackP * 60000; // in ms
+    n.estArrTime = n.SCH_ARR_DTMZ - slackP * 60000; // in ms
+    n.depDelayP = (n.estDepTime - n.SCH_DEP_DTMZ) / 60000; // in min
+    n.arrDelayP = (n.estArrTime - n.SCH_ARR_DTMZ) / 60000; // in min
+    console.log(` => new est dep time: ${n.estDepTime}`);
+    console.log(`    new dep DelayP: ${n.depDelayP}`);
+    console.log(`    new arr DelayP: ${n.arrDelayP}`);
+
+    // There is no need to update the incoming edges. These will all be updated at the
+    // end of the graph traversal, once all the new estArrTime and estDepTimes have been
+    // computed.
+  }
+
+  return undefined;
+}
+//---------------------------------------------------------------
+// Only need to update estDepTime and estArrTime
+function updateInboundEdgesNew(
+  id_nf,
+  FSUm,
+  outboundNode,
+  bookingsIdMap,
+  graphEdges
+) {
+  //
+  // add inbounds to graphEdges
+  const ms2min = 1 / 1000 / 60;
+  const inboundEdgesIds = outboundNode.inboundIds; // UNDEFINED. SHOULD NOT HAPPEN. Or should it?
+  const inboundEdges = [];
+  inboundEdgesIds.forEach((id_f) => {
+    const row = bookingsIdMap[id_f + "-" + id_nf];
+    inboundEdges.push(row);
+  });
+  u.print(`inboundEdges, id_nf: ${id_nf}`, inboundEdges);
+
+  let ecount = 0; // counter to reduce output
+  inboundEdges.forEach((e) => {
+    let row_f;
+    let row_nf;
+    if (e !== undefined) {
+      // WHY IS THIS CHECK NEEDED?
+      graphEdges.push(e);
+      row_f = FSUm[e.id_f];
+      row_nf = FSUm[e.id_nf];
+      // u.print("updateInboundEdges, inboundEdge", e);
+      // e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) / 60000; // same as calcAvailRot
+
+      // Note that when the node is updated, the estDepTime might get updated, which would
+      // require an update of slack times for all the edges. However, all the slack times would
+      // be updated by the same amount.
+      e.ACTAvailableP = (row_nf.estDepTime - row_f.estArrTime) / 60000;
+      e.ACTSlackP = e.ACTAvailableP - 30; // harcoded, but really, a function of city/airport
+      e.availRotP = 10000;
+      e.availRotSlackP = 10000;
+
+      // update rotation
+      if (e.tail_f === e.tail_nf) {
+        e.availRotP = e.ACTAvailableP;
+        e.availRotSlackP = e.availRotP - e.availRotMinReq;
+      }
+    }
+  });
+  return null;
+}
+//---------------------------------------------------------------
 function updateInboundEdges(
   id_nf,
   FSUm,
   outboundNode,
   bookingsIdMap,
-  // bookings_in,
-  // bookingsIds_in,
   graphEdges
 ) {
   // add inbounds to graphEdges
-  const nano2min = 1 / 1e9 / 60;
+  const ms2min = 1 / 1000 / 60;
 
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
   const node = outboundNode; // feeder node
@@ -568,7 +673,7 @@ function updateInboundEdges(
       const row_f = FSUm[e.id_f];
       const row_nf = FSUm[e.id_nf];
       // u.print("updateInboundEdges, inboundEdge", e);
-      e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * nano2min; // same as calcAvailRot
+      e.ACTAvailable = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
 
       // ACTAvailable is based on scheduled departure and arrival times
       const arrDelayP = row_f.arrDelayP;
@@ -624,7 +729,7 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
   if (n.id.slice(10, 13) === "PTY") {
     // console.log(`n.inboundIds.length: ${n.inboundIds.length}`);
     if (n.inboundIds.length > 0) {
-      const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, true);
+      const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, false);
       n.minId = obj.minId;
       n.minACTP = obj.minACT; // CHANGE FORMULA
       n.ACTSlackP = n.minACTP - 30; // DO NOT HARDCODE 30 min
@@ -634,7 +739,7 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
     n.minACTP = n.minACT;
     n.ACTSlackP = n.ACTSlack;
     // update Rotation rotSlackP
-    const nano2min = 1 / 1e9 / 60;
+    const ms2min = 1 / 1000 / 60;
     // QUESTION: why use the zeroth element of inboundsIds?
     if (n.inboundIds.length > 0) {
       // WHY IS THIS CHECK NECESSARY?
@@ -645,7 +750,7 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
       if (e !== undefined) {
         // SHOULD NOT BE REQUIRED (2021-12-23)
         const row_f = FSUm[e.id_f];
-        n.availRot = (n.SCH_DEP_DTMZ - row_f.INP_DTMZ) * nano2min;
+        n.availRot = (n.SCH_DEP_DTMZ - row_f.INP_DTMZ) * ms2min;
         n.availRotSlackP = n.availRotSlack - row_f.arrDelayP;
         n.availRotSlack = n.availRot - n.availRotMinReq;
       }
@@ -671,37 +776,28 @@ function updateOutboundNode(FSUm, bookingsIdMap, node) {
 // Remove duplicated class to processOutboundFlightss
 function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
-  // console.log(" THERE ARE SURELY ERRORS n the graph topology ");
-  // console.log(
-  // " Or else the errors are in the bookigns_in, FSUm, or graphEdges"
-  // );
-  // console.log("<<<<< INSIDE propDelayNew >>>>");
-
   // I do not think that graphEdges are needed for anything
-  updateInboundEdges(
+  updateInboundEdgesNew(
     id, //  outbound id
     FSUm,
     FSUm[id],
     bookingsIdMap,
-    // bookings_in,
-    // bookingsIds_in,
     graphEdges
   );
   // the outbound node is id
-  updateOutboundNode(FSUm, bookingsIdMap, FSUm[id]);
+  updateOutboundNodeNew(FSUm, bookingsIdMap, FSUm[id]);
 
-  // gcounter++; // global counter
-  // // if (gcounter == 2) throw "propDelayNew, end script";
-
-  // console.log("--------------------------------------------------------------");
-  // console.log("STOP AND DEBUG CODE");
-  // console.log("STOP AND DEBUG CODE");
-  // console.log("STOP AND DEBUG CODE");
-  // console.log("--------------------------------------------------------------");
+  // Use the new estimated departure times to update all edge quantities
+  updateInboundEdgesNew(
+    id, //  outbound id
+    FSUm,
+    FSUm[id],
+    bookingsIdMap,
+    graphEdges
+  );
 
   return 0; // not sure what I am returning
 }
-
 //--------------------------------------------------------------------------
 // Minimum Available Connection Time for Pax for flight "id"
 // id is an outgoing flight
@@ -713,7 +809,7 @@ function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
 function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
   u.print(`==> compMinACT, inboundsIds, id_nf: ${id_nf}`, inboundsIds);
 
-  const nano2min = 1 / 1e9 / 60;
+  const ms2min = 1 / 1000 / 60;
   // track which inbound is responsible for the minACT.
   // Create a pure object, with no additional functions
   const obj = Object.create(null);
@@ -722,8 +818,6 @@ function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
 
   const feedersACT = []; // for debugging
 
-  // u.print("computeMinACT::bookingsIdMap", bookingsIdMap);
-  // u.print("computeMinACT::inboundsIds", inboundsIds); // all empty. strange
   // loop over incoming flights
   console.log(`computeMinACT::inboundsIds.length: ${inboundsIds.length}`);
 
@@ -736,13 +830,6 @@ function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
       u.print("computeMinACT, bookingsIdMap: ", bookingsIdMap);
     } else {
       // u.print("r ", r);
-      //
-    }
-    // Given r (an id), get the bookings record
-    if (r.ACTAvailableP === undefined) {
-      console.log(
-        "computeMinACT::r.ACTAvaialableP is undefined. SHOULD NOT HAPPEN"
-      );
     }
     if (r !== undefined && r.ACTAvailableP < obj.minACT) {
       obj.minACT = r.ACTAvailableP;
@@ -768,16 +855,14 @@ function setInitialDelays(FSUm, initialArrDelayP, startingId) {
   }
 
   if (initialArrDelayP !== undefined) {
-    // u.print("initialArrDelayP:", initialArrDelayP);
-    // console.log(`startingId: ${startingId}`);
-    // u.print(`FSUm[${startingId}]`, FSUm[startingId]);
     FSUm[startingId].arrDelayP = initialArrDelayP;
-    FSUm[startingId].availRotSlackP -= initialArrDelayP;
   } else {
     // Arrival delay as given in FSU table
     // Ideally should be set to ETA, which updates every 15 min or so.
     FSUm[startingId].arrDelayP = FSUm[startingId].ARR_DELAY_MINUTES;
   }
+  FSUm[startingId].estArrTime =
+    FSUm[startingId].SCH_ARR_DTMZ + initialArrDelayP * 60000;
   console.log(`FSUm[startingId].arrDelayP: ${FSUm[startingId].arrDelayP}`);
 }
 //--------------------------------------------------------------------
@@ -800,13 +885,6 @@ function traverseGraph(
   let count = 0;
 
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
-
-  // console.log("TRAVERSE GRAPH, endpointRigidModelOnce");
-  // console.log(`id: ${id}`);
-  // u.print("bookings_in", bookings_in);
-  // u.print("bookings_out", bookings_out);
-  // u.print("bookings", bookings);
-  // u.print("FSUm", FSUm);
 
   // For some reason all flights have a delay. SOMETHING IS SURELY WRONG. But perhaps it is because I am
   // starting with a flight that has not yet left? But in that case, surely, the default should be no delay?
@@ -840,14 +918,7 @@ function traverseGraph(
     // outgoing flight from PTY
     idsTraversed.push(key);
     count += 1;
-    // console.log("-------------------------------------");
-    const isUndefined = propDelayNew(
-      key,
-      bookingsIdMap,
-      // bookingsIds_in,
-      FSUm,
-      edgesTraversed
-    );
+    const isUndefined = propDelayNew(key, bookingsIdMap, FSUm, edgesTraversed);
     ids.push([key, isUndefined]);
     countUndef += isUndefined;
     countDef += 1 - isUndefined;
