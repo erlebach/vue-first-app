@@ -341,6 +341,60 @@ import { computePropagationDelays } from "../Composition/endPointLibraryOnce.js"
 import { boundingBox } from "../Composition/graphImpl.js";
 import * as tier from "../Composition/RigidTierref.js";
 
+function defineNodes(city, edges, flights, nb_tiers) {
+  const nodes = [];
+  const ids = [];
+
+  //    obj.nodes.forEach((e) => {
+  // if (obj.id2level[e.id] < nb_tiers) {
+  //   nodes.push({
+  //     id: e.id,
+
+  edges.forEach((e) => {
+    ids.push(e.source);
+    ids.push(e.target);
+  });
+  const flightIds = u.createMapping(flights, "id");
+  // All nodes have degree two
+  // u.print("ids", ids);
+  // u.print("flightIds", flightIds);
+  ids.forEach((id) => {
+    // if (obj.id2level[e.id] < nb_tiers) {
+    // if (city === e.orig || city === e.dest) {
+    // u.print("id/e", id);
+    const row = flightIds[id];
+    nodes.push(row);
+    // }
+  });
+  return nodes;
+}
+
+function defineEdges(city, obj, nb_tiers) {
+  u.print("defineEdges, obj", obj);
+  const edges = [];
+  obj.forEach((e) => {
+    // console.log(`${city}, ${e.orig_f}, ${e.dest_f}, ${e.dest_nf}`);
+    if (city === e.orig_f || city === e.dest_f || city === e.dest_nf) {
+      edges.push({
+        source: e.id_f,
+        target: e.id_nf,
+        orig_f: e.orig_f,
+        orig_nf: e.orig_nf,
+        dest_f: e.dest_f,
+        dest_nf: e.dest_nf,
+        ACTSlack: e.ACTSlack,
+        ACTSlackP: e.ACTSlackP,
+        ACTAvailable: e.ACTAvailable,
+        ACTAvailableP: e.ACTAvailableP,
+        inDegree: e.inDegree,
+        outDegree: e.outDegree,
+        pax: e.pax,
+        rotSlackP: e.rotSlackP,
+      });
+    }
+  });
+  return edges;
+}
 function centerGraph(graph) {
   //const layout = graph.get("layout");
   boundingBox(graph);
@@ -365,6 +419,18 @@ function listCities(flightTable, flightIds) {
   flightIds.value = names;
 }
 
+function checkCity(city) {
+  return city && city.length === 3;
+}
+
+function checkTime(time) {
+  return time && time.length == 5 && u.checkTime(time);
+}
+
+function checkEntries(tableRef) {
+  return checkCity(tableRef.city) && checkTime(tableRef.time);
+}
+
 // function rowClick() {
 //   console.log("row-click");
 // }
@@ -372,17 +438,6 @@ function listCities(flightTable, flightIds) {
 function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
   // u.print("inside propagateData, data: ", dataRef.value);
   const { dBookings, dFSU, dTails, edges, graph } = dataRef.value;
-
-  // console.log("==============================================================");
-  // u.print("propagateData::dataRef.value", dataRef.value);
-  // console.log("==============================================================");
-
-  // u.print("InitialId: ", initialId);
-  // console.log(`InitialId: ${initialId}`);
-
-  // console.log("vue::dBookings", dBookings);
-  // console.log("vue::dFSU", dFSU);
-  // console.log("vue::dTails", dTails);
 
   const delayObj = computePropagationDelays(
     initialId,
@@ -414,9 +469,7 @@ export default {
     height: Number,
   },
   setup(props, { emit }) {
-    //const store = useStore();
     const ifhelp = ref(false);
-    //const overlayref = ref(); // gives access to component
     const inputTime = ref(null); // variable in component
     const listedTime = ref("");
     const flights_nbRows = ref(0);
@@ -502,31 +555,14 @@ export default {
       defaultNodeSize: 40,
     });
 
-    function checkCity(city) {
-      return city && city.length === 3;
-    }
-
-    function checkTime(time) {
-      return time && time.length == 5 && u.checkTime(time);
-    }
-
-    function checkEntries(tableRef) {
-      return checkCity(tableRef.city) && checkTime(tableRef.time);
-    }
-
     watch(
       [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
       ([row, arrDelay, maxArrDelay], o) => {
         console.log("===== watch selectedAllPairsRow, etc =======");
-        // console.log("selected row: ", selectedAllPairsRow.value);
-        // console.log("before getBEndPointFilesComputed");
         const dataRef = getEndPointFilesComputed;
         u.print("selected row", row);
         u.print("watch::dataRef", dataRef); // did it change between invocations
         const initialId = row.id_f;
-        // u.print("data", data);
-        // console.log(`before propagateData, initialId: ${initialId}`);
-        // u.print("before propagateData, data: ", data.valiue);
 
         // check whether calling propagateData twice still produces a graph
         let delayObj;
@@ -536,9 +572,6 @@ export default {
 
         u.print("delayObj: ", delayObj);
         rigidBodyRef.table = delayObj.table;
-        // u.print("==> table: ", table);
-        // From this row, construct the rigid model
-        //console.log("selected row: ", row);
 
         // NEXT STEP: draw   graphRigidModel
         delayObjRef.value = delayObj;
@@ -559,61 +592,6 @@ export default {
     // to work properly in order to periodically update tables
     saveOnce(0);
     //saveAtIntervals(3); // Retrieves data at fixed intervals
-
-    function defineNodes(city, edges, flights, nb_tiers) {
-      const nodes = [];
-      const ids = [];
-
-      //    obj.nodes.forEach((e) => {
-      // if (obj.id2level[e.id] < nb_tiers) {
-      //   nodes.push({
-      //     id: e.id,
-
-      edges.forEach((e) => {
-        ids.push(e.source);
-        ids.push(e.target);
-      });
-      const flightIds = u.createMapping(flights, "id");
-      // All nodes have degree two
-      // u.print("ids", ids);
-      // u.print("flightIds", flightIds);
-      ids.forEach((id) => {
-        // if (obj.id2level[e.id] < nb_tiers) {
-        // if (city === e.orig || city === e.dest) {
-        // u.print("id/e", id);
-        const row = flightIds[id];
-        nodes.push(row);
-        // }
-      });
-      return nodes;
-    }
-
-    function defineEdges(city, obj, nb_tiers) {
-      u.print("defineEdges, obj", obj);
-      const edges = [];
-      obj.forEach((e) => {
-        // console.log(`${city}, ${e.orig_f}, ${e.dest_f}, ${e.dest_nf}`);
-        if (city === e.orig_f || city === e.dest_f || city === e.dest_nf) {
-          edges.push({
-            source: e.id_f,
-            target: e.id_nf,
-            orig_f: e.orig_f,
-            orig_nf: e.orig_nf,
-            dest_f: e.dest_f,
-            dest_nf: e.dest_nf,
-            ACTSlack: e.ACTSlack,
-            ACTSlackP: e.ACTSlackP,
-            ACTAvailable: e.ACTAvailable,
-            ACTAvailableP: e.ACTAvailableP,
-            inDegree: e.inDegree,
-            outDegree: e.outDegree,
-            pax: e.pax,
-            rotSlackP: e.rotSlackP,
-          });
-        }
-      });
-      return edges;
-    }
 
     watch(getStatus, (status) => {
       if (status > 0) {
@@ -639,7 +617,6 @@ export default {
     });
 
     function drawGraph(city, data) {
-      // console.log("inside drawGraph");
       const nb_tiers = 0; // not used
       const flights = data.flightTable;
       const allPairs = data.allPairs;
@@ -647,15 +624,11 @@ export default {
       const flightIdMap = u.createMapping(flights, "id");
       // I should combine ptyPairs with stationPairs to create allPairs array
       const edges = defineEdges(city, allPairs, nb_tiers);
-      //const nodes = defineNodes(city, edges, flights, nb_tiers);
       const nodes = data.nodesTraversed;
-      // u.print("drawGraph, nodes", nodes);
-      // u.print("drawGraph, edges", edges);
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (graphCreated) {
-        graph.clear(); // difference with destroy?
-        // graph.destroy();
+        graph.clear(); // difference wit
       } else {
         graph = new G6.Graph(connectionConfiguration);
         graphCreated = true;
@@ -667,7 +640,6 @@ export default {
       // This element must be mounted before creating the graph
       graph.data({ nodes, edges });
       graph.render();
-      // u.print("drawGraph, graph", graph);
 
       // for nodes: need: departureDelayP, arrDelayP
       // for edges: need: ACTAvailableP
@@ -681,7 +653,6 @@ export default {
     }
 
     function drawGraphRigidModel(delayObj, nbTiers) {
-      // u.print("delayObj: ", delayObj);
       const {
         nodes,
         edges,
@@ -751,9 +722,6 @@ export default {
 
       // gNodes are the nodes traversed in rigidBody
 
-      u.print("drawGraphRigidModel::gNodes", gNodes);
-      u.print("drawGraphRigidModel::gNodes[0]", gNodes[0]);
-
       edgesTraversed.forEach((r) => {
         r.source = r.id_f;
         r.target = r.id_nf;
@@ -761,11 +729,6 @@ export default {
       });
 
       const gEdges = edgesTraversed;
-
-      u.print(
-        "drawRigidBody",
-        `gEdges: ${gEdges.length}, edgesTraversed: ${edgesTraversed.length}`
-      );
 
       // gEdges has duplicate (id_f, id_nf) pairs. How to remove these duplicates.
 

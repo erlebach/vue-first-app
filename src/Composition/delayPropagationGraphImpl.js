@@ -618,18 +618,12 @@ export function boundingBox(graph) {
       return o.getModel().y;
     })
   );
-  // console.log(`min/max x: ${minX}, ${maxX}`);
-  // console.log(`min/max y: ${minY}, ${maxY}`);
-  //graph.fitView();
 }
 //----------------------------------------------------------
 export function transferNodesEdgesToGraph(graph) {
   const nodes = graph.get("data").nodes;
   const edges = graph.get("data").edges;
-  // console.log("transfer ..., graph, nodes, edges:");
-  // console.log(graph);
-  // console.log(nodes);
-  // console.log(edges);
+
   nodes.forEach((node) => {
     graph.add("node", node, false, false);
   });
