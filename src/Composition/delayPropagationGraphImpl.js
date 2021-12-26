@@ -547,55 +547,14 @@ export function followTails(graph) {
 //-------------------------------------------------------------
 export function assignNodeLabels(graph) {
   const nodes = graph.getNodes();
-  u.print("assignNodeLabels, nodes", nodes);
-  u.print("graph", graph);
-  const degrees = graph.get("degrees");
-  u.print("degrees", degrees);
 
   nodes.forEach((node) => {
-    const Node = graph.findById(node.id);
-    // u.print("node.id", node.id);
-    // u.print("findById, Node", Node);
-    const degree = graph.getNodeDegree(node.getModel().id, "total");
-    //const degree = graph.getNodeDegree(node, "total"); // original
-    // u.print("node", node);
-    // u.print("degree", degree);
+    // Without last arguments, the degrees are not refreshing  (VERY IMPORTANT)
+    const degree = graph.getNodeDegree(node.getModel().id, "total", true);
+
     graph.updateItem(node, {
       label: degree,
     });
-  });
-  return nodes;
-}
-//-------------------------------------------------------------
-export function assignNodeLabelsNew(graph) {
-  const nodes = graph.getNodes();
-  // u.print("assignNodeLabelsNew, nodes", nodes);
-
-  const degrees = graph.get("degrees");
-  // u.print("degrees", degrees);
-
-  nodes.forEach((node) => {
-    // console.log(`node id: ${node.getModel().id}`); // written out
-    // const Node = graph.findById(node.getModel().id);
-    // u.print("findById, Node", Node);
-    const degree = graph.getNodeDegree(node.getModel().id, "total");
-    // u.print("node", node);
-    // u.print("degree", degree);
-    // u.print("node", node);
-    //node.outbounds = undefined; // to avoid infinite loops
-    //node.inbounds = undefined;
-
-    {
-      //  Avoid maximum call stack size exceeded error
-      const mm = node.getModel();
-      mm.inbounds = undefined;
-      mm.outbounds = undefined;
-    }
-    // u.print("node", node);
-    graph.updateItem(node, {
-      label: degree,
-    });
-    // console.log("after updateItem");
   });
   return nodes;
 }

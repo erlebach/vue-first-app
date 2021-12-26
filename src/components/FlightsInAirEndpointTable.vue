@@ -675,7 +675,7 @@ export default {
       dp.colorByCity(graph);
       graph.render(); // not sure required
 
-      dp.assignNodeLabelsNew(graph);
+      dp.assignNodeLabels(graph);
       graph.render();
       return;
     }
@@ -692,7 +692,7 @@ export default {
         table,
       } = delayObj;
 
-      u.print("delayObj", delayObj);
+      u.print("drawGraphRigidModel::delayObj", delayObj);
 
       // Implement change of tiersss.
       // Change the nodes, and remove all edges connected to those nodes.
@@ -707,13 +707,8 @@ export default {
         infoRef.level2ids.push(level2ids[i].length);
       }
       infoRef.nbId2level = maxLevels;
-      // for (let id in id2level) {
-      // infoRef.nbId2level++;
-      // }
 
       const nb_tiers = 0; // not used
-      // const flights = data.flightTable;
-      // const allPairs = data.allPairs;
 
       // table: all nodes (why only 96)
 
@@ -754,21 +749,10 @@ export default {
       });
       console.log(`nb gNodes: ${gNodes.length}`);
 
-      // for (let id in id2level) {
-      //   // console.log(`id: ${id}`);
-      //   gNodes.push(tableIds[id]);
-      // }
-
       // gNodes are the nodes traversed in rigidBody
 
       u.print("drawGraphRigidModel::gNodes", gNodes);
       u.print("drawGraphRigidModel::gNodes[0]", gNodes[0]);
-
-      // nodes.forEach((r) => {
-      //   r.x = 0;
-      //   r.y = 0;
-      //   gNodes.push(r);
-      // });
 
       edgesTraversed.forEach((r) => {
         r.source = r.id_f;
@@ -788,10 +772,6 @@ export default {
       // u.checkEdgesDirection(gEdges, "check wrong order");
 
       // edges always go from level to (level+1)
-
-      for (let level = 0; level < max_levels; level++) {
-        // comment
-      }
 
       // The levels seem ok. Now I must graph them.
       // Once the graph is made, return to rigid model and check the delay propagation value. They do not look correct.
@@ -847,7 +827,7 @@ export default {
       dp.followTails(endpointsGraph);
       endpointsGraph.render(); // not sure required
 
-      dp.assignNodeLabelsNew(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
+      dp.assignNodeLabels(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
       endpointsGraph.render();
       return;
     }
