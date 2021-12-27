@@ -5,6 +5,7 @@ import * as tier from "./Tierref.js";
 import { sortBy } from "lodash";
 import * as hasher from "node-object-hash";
 import { containsProp } from "@vueuse/core";
+import * as dt from "./dates.js";
 // import { watchEffect } from "vue";
 
 let gcounter = 0;
@@ -13,15 +14,24 @@ let gcounter = 0;
 // rigidModel depends on parameters in the user interface.
 
 export function rigidModel(
-  dFSU, // values
-  bookings,
-  bookingsIdMap, // CHECK
+  dFSU1, // values
+  dBookings1,
   dTails,
   graph,
   initialArrDelayP, // delay applied to startingid
   maxArrDelay,
   startingId
 ) {
+  // dBookings1, dFSU1, dTails1, are copies to protect against overwriting elements. (Does not solve error)
+  // These are arrays of Objects. The copy ([...]) copies the references (object addresses), but not the object content.
+  // I need a deep copy.
+  // Still does not work without the copy operation.
+  const dFSU = u.arrOfObjectsCopy(dFSU1);
+  const bookings = u.arrOfObjectsCopy(dBookings1);
+
+  // id is a composite of id_f and id_nf separated by a '-'
+  const bookingsIdMap = u.createMapping(bookings, "id"); // CHECK
+
   // Store minAvail Connection time and connection time slack with the outgoing flight
   // Arguments:
   // initialArrDelayP: delay to impose on the startingId flight for experimentation
@@ -29,19 +39,14 @@ export function rigidModel(
   // IN -> INP, and OUT -> OUTP. Use INP and OUTP in calculations below.
   // For now, ignore OFF and ON
 
-  // let hashCoercer = hasher({ sort: true, coerce: true });
-
-  resetDelays(dFSU, bookings);
+  // resetDelays(dFSU, bookings); // Might not be required
   const FSUm = u.createMapping(dFSU, "id");
 
   // End letter P refers to "Propagated" or "Predicted"
 
   // Edges must be initialized before nodes in order to compute minACT
-  const a = true;
-  if (a === true) {
-    initializeEdges(bookings, FSUm); // does not depend on intial delay
-    initializeNodes(FSUm, dTails, bookingsIdMap);
-  }
+  initializeEdges(bookings, FSUm); // does not depend on intial delay
+  initializeNodes(FSUm, dTails, bookingsIdMap);
 
   // UP UNTIL THIS POINT, there is no dependence on maxArrDelay and initialArrDelayP
 
@@ -81,6 +86,20 @@ export function rigidModel(
   // console.log(`before, edgesTraversed.length: ${edgesTraversed.length}`);
   edgesTraversed = makeUnique(edgesTraversed); // already no duplicates.
 
+  const nodesTraversed = [];
+  for (let id in id2level) {
+    nodesTraversed.push(FSUm[id]);
+  }
+
+  nodesTraversed.forEach((r) => {
+    // divide by 1000: ns to ms
+    const dep = dt.timestampToDateTimeZ(r.SCH_DEP_DTMZ / 1000);
+    r.schDepTMZ = dep.dtz + ", " + dep.tmz;
+    const arr = dt.timestampToDateTimeZ(r.SCH_ARR_DTMZ / 1000);
+    r.schArrTMZ = arr.dtz + ", " + arr.tmz;
+    r.tail = r.TAIL;
+  });
+
   // subset of flights and bookings with predicted arrival delay (arrDelayP)
   // greater than maxArrDelay
   // I could call this function before traversing graph, and overwrite dFSU and dBookings
@@ -114,6 +133,7 @@ export function rigidModel(
     // these are the edges between the nodes that were traversed.
     // the nodes traversed are computed elsewhere, in the vue code
     edgesTraversed, // this is the graph we wish to plot (without inbounds)
+    nodesTraversed, // this is the graph we wish to plot (without inbounds)
     level2ids,
     id2level,
   };
@@ -209,7 +229,14 @@ function initializeNodes(FSUm, dTails, bookingsIdMap) {
     r.slackP = r.slack;
     r.arrDelayP = r.arrDelay;
     r.depDelayP = r.depDelay;
+    // console.log(
+    //   `initializeNodes, arrDelay: ${r.arrDelay}, depDelay: ${r.depDelay}`
+    // );
+    // console.log(
+    //   `initializeNodes, arrDelayP: ${r.arrDelayP}, depDelayP: ${r.depDelayP}`
+    // );
     const obj = computeMinACT(r.id, bookingsIdMap, r.inboundIds);
+    // u.print("computeMinACT, obj", obj);
     r.minACT = obj.minACT;
     r.ACTSlack = r.minACT - 30; // hardcoded 30
     r.minACTP = r.minACT;
@@ -318,10 +345,11 @@ function createId2Level(ids) {
   return { id2level, level2ids };
 }
 //---------------------------------------------------------------
-function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
+function updateOutboundNodeNew(id_nf, FSUm, bookingsIdMap) {
+  //node) {
   // update of a single node
-  const n = node;
-  const id_nf = n.id;
+  // const n = node;
+  const n = FSUm[id_nf];
   // console.log("=========== updateOutboundNode ====================");
   // u.print("=== n", n);
 
@@ -352,6 +380,7 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
   const ACTAvailableP = obj.minACT;
   const ACTSlackP = ACTAvailableP - 30; // manual setting
   const slackP = ACTSlackP; // this is really an edge quantity
+  // console.log(`n.SCH_DEP_DTMZ: ${n.SCH_DEP_DTMZ}`);
   if (slackP < 0) {
     n.estDepTime = n.SCH_DEP_DTMZ - slackP * 60000; // in ms
     n.estArrTime = n.SCH_ARR_DTMZ - slackP * 60000; // in ms
@@ -362,6 +391,7 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
     // end of the graph traversal, once all the new estArrTime and estDepTimes have been
     // computed.
   }
+  // console.log(`... n.arrDelayP: ${n.arrDelayP}, n.depDelayP: ${n.depDelayP}`);
 
   return undefined;
 }
@@ -370,10 +400,11 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
 function updateInboundEdgesNew(
   id_nf,
   FSUm,
-  outboundNode,
+  //outboundNode,
   bookingsIdMap,
   graphEdges
 ) {
+  const outboundNode = FSUm[id_nf];
   //
   // add inbounds to graphEdges
   const ms2min = 1 / 1000 / 60;
@@ -415,25 +446,23 @@ function updateInboundEdgesNew(
   return null;
 }
 //---------------------------------------------------------------
-// Remove duplicated class to processOutboundFlightss
+// Remove duplicate class to processOutboundFlights
 function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
   // id is an incoming flight (either to PTY or to Sta)
   // I do not think that graphEdges are needed for anything
   updateInboundEdgesNew(
     id, //  outbound id
     FSUm,
-    FSUm[id],
     bookingsIdMap,
     graphEdges
   );
   // the outbound node is id
-  updateOutboundNodeNew(FSUm, bookingsIdMap, FSUm[id]);
+  updateOutboundNodeNew(id, FSUm, bookingsIdMap);
 
   // Use the new estimated departure times to update all edge quantities
   updateInboundEdgesNew(
     id, //  outbound id
     FSUm,
-    FSUm[id],
     bookingsIdMap,
     graphEdges
   );

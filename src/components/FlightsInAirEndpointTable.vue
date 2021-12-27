@@ -187,7 +187,7 @@ is returned from the endpoint. -->
       </div>
       <!-- ------ SLIDER ----------, turn visibility on/off -->
       <div class="p-field p-col-12 p-md-1" style="color:green">
-        <Button label="Orientation" @click="toggleOrientation" />
+        <Button label="Toggle Orientation" @click="toggleOrientation" />
         <span style="font-size:1em">
           <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
         </span>
@@ -579,7 +579,10 @@ export default {
     u.print("==> props: ", props);
 
     function toggleOrientation() {
+      endpointsGraph.setMinZoom(0.01);
+
       portrait.value = portrait.value === true ? false : true;
+
       if (portrait.value === true) {
         endpointsGraph.updateLayout({
           rankdir: "LR",
@@ -589,6 +592,9 @@ export default {
           rankdir: "TD",
         });
       }
+      endpointsGraph.fitView();
+      endpointsGraph.render();
+      // endpointsGraph.fitCenter();
     }
 
     watch(
@@ -801,35 +807,39 @@ export default {
       }
 
       const data = { nodes: gNodes, edges: gEdges };
-      endpointsGraph.data(data);
+      // endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
       endpointsGraph.render();
 
       // This element must be mounted before creating the graph
       // const data = { nodes: nodesTraversed, edges: gEdges };
       // const { x, y } = gNodes[0];
+
+      // Not clear why this approach is required given that gNodes[0] contains
+      // x,y
       const node = endpointsGraph.getNodes()[0];
       const { x, y } = node.getModel();
-      console.log(`x: ${x}, y: ${y}`);
-      u.print("gNodes[0]", gNodes[0]);
+
+      // console.log(`x: ${x}, y: ${y}`);
+      // u.print("gNodes[0]", gNodes[0]);
       //u.print("gNodes", gNodes);
-      const canvasXY = endpointsGraph.getCanvasByPoint(x, y);
-      const clientXY = endpointsGraph.getClientByPoint(x, y);
-      u.print("canvasXY", canvasXY);
-      u.print("clientXY", clientXY);
+      // const canvasXY = endpointsGraph.getCanvasByPoint(x, y);
+      // const clientXY = endpointsGraph.getClientByPoint(x, y);
+      // u.print("canvasXY", canvasXY);
+      // u.print("clientXY", clientXY);
       const minZoom = endpointsGraph.getMinZoom();
-      endpointsGraph.setMinZoom(0.02);
-      console.log(`minZoom: ${minZoom}`);
+      // endpointsGraph.setMinZoom(0.02);
+      // console.log(`minZoom: ${minZoom}`);
 
       u.print("node[0]: ", gNodes[0]);
       endpointsGraph.fitView(); //   View and Center do not work
-      endpointsGraph.fitCenter();
-      const centerPoint = endpointsGraph.getViewPortCenterPoint();
+      // endpointsGraph.fitCenter();
+      // const centerPoint = endpointsGraph.getViewPortCenterPoint();
       // Always the same (midpoint of canvas in Canvas coord)
-      const graphCenterPoint = endpointsGraph.getGraphCenterPoint();
+      // const graphCenterPoint = endpointsGraph.getGraphCenterPoint();
       //ep.centerGraph(endpointsGraph);
-      u.print("==> viewport center point", centerPoint);
-      u.print("==> graph center point", graphCenterPoint);
+      // u.print("==> viewport center point", centerPoint);
+      // u.print("==> graph center point", graphCenterPoint);
       endpointsGraph.render();
       // u.print("endpointsGraph", endpointsGraph);
 

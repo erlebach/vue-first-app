@@ -14,22 +14,11 @@ export function computePropagationDelays(
   initialID,
   initialArrDelay, // imposed delay on incoming flight
   maxArrDelay, // control what is taken into account
-  dBookings1, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
-  dFSU1,
+  dBookings, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
+  dFSU,
   dTails,
   graph
 ) {
-  // dBookings1, dFSU1, dTails1, are copies to protect against overwriting elements. (Does not solve error)
-  // These are arrays of Objects. The copy ([...]) copies the references (object addresses), but not the object content.
-  // I need a deep copy.
-
-  // Still does not work without the copy operation.
-  const dFSU = u.arrOfObjectsCopy(dFSU1);
-  const dBookings = u.arrOfObjectsCopy(dBookings1);
-
-  // id is a composite of id_f and id_nf separated by a '-'
-  const dBookingsIdMap = u.createMapping(dBookings, "id"); // CHECK
-
   // Propagation is recursive. An error might lead to infinite calls, so stack overflow
   // dFSU and dTail not found
   // Construct a list of incoming/outgoing pairs
@@ -45,7 +34,6 @@ export function computePropagationDelays(
   const delayObj = rigidModel(
     dFSU,
     dBookings,
-    dBookingsIdMap,
     dTails,
     graph,
     initialArrDelay, // applied to initialID
@@ -68,33 +56,28 @@ export function computePropagationDelays(
   r.setTable(delayObj); // nodes, edges
   // delayNodes: subset of bookings with arrival delay > specified value
   const { nodes: delayNodes, id2level, graphEdges } = delayObj;
-  // u.print("delayNodes", delayNodes);
-  // u.print("graphEdges", graphEdges);
 
   // Probably already computed, so duplication
-  const dFSUIds = u.createMapping(dFSU, "id");
+  // const dFSUIds = u.createMapping(dFSU, "id");
 
-  const nodesTraversed = [];
-  for (let id in id2level) {
-    // console.log(`id2level, id: ${id}`);
-    nodesTraversed.push(dFSUIds[id]);
-  }
+  // const nodesTraversed = [];
+  // for (let id in id2level) {
+  //   nodesTraversed.push(dFSUIds[id]);
+  // }
 
   // Add some elements for the tool tips
-  nodesTraversed.forEach((r) => {
-    // divide by 1000: ns to ms
-    const dep = dt.timestampToDateTimeZ(r.SCH_DEP_DTMZ / 1000);
-    r.schDepTMZ = dep.dtz + ", " + dep.tmz;
-    const arr = dt.timestampToDateTimeZ(r.SCH_ARR_DTMZ / 1000);
-    r.schArrTMZ = arr.dtz + ", " + arr.tmz;
-    r.tail = r.TAIL;
-  });
-  // u.print("nodesTraversed: ", nodesTraversed);
+  // nodesTraversed.forEach((r) => {
+  //   // divide by 1000: ns to ms
+  //   const dep = dt.timestampToDateTimeZ(r.SCH_DEP_DTMZ / 1000);
+  //   r.schDepTMZ = dep.dtz + ", " + dep.tmz;
+  //   const arr = dt.timestampToDateTimeZ(r.SCH_ARR_DTMZ / 1000);
+  //   r.schArrTMZ = arr.dtz + ", " + arr.tmz;
+  //   r.tail = r.TAIL;
+  // });
 
-  delayObj.nodesTraversed = nodesTraversed;
+  // delayObj.nodesTraversed = nodesTraversed;
 
   // QUESTION: How can any planes in the future graph starting from startingId have landed? IMPOSSIBLE
-
   // The table is NOT the nodes traversed.
   const table = [];
   delayNodes.forEach((d) => {
@@ -109,33 +92,9 @@ export function computePropagationDelays(
     });
   });
 
-  // u.print("==> computePropagationDelays::table: ", table);
-  //u.print("==> computePropagationDelays::table.length: ", table.length);
-
-  // QUESTION: How can all elements of dFSU have arrDelayP and depDelayP set?
-  // u.printAttributes("dFSU dep/arr delays", dFSU, [
-  //   "depDelay",
-  //   "depDelayP",
-  //   "arrDelay",
-  //   "arrDelayP",
-  //   "status",
-  // ]);
-
-  // console.log("id2level");
-  // console.log(id2level);
-
-  // table.forEach((row) => {
-  //   row.level = id2level[row.id];
-  // });
-
-  // const FSUnode = dFSUm["2021-12-24PTYMDE12:240150"];
-  // u.print("FSUnode", FSUnode);
-  // throw "end script";
-
-  // console.log(`table length: ${table.length}`);
-  // console.log(table);
   delayObj.table = table;
-  // u.print("computePropagationDelays::delayObj", delayObj);
+
+  u.print("=> delayObj", delayObj);
 
   // Table contains nodes from delayNodes for display.
   return delayObj;
