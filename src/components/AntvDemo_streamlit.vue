@@ -2,7 +2,7 @@
   <!-- <div class="p-d-flex flex-start"> -->
   <div>
     <!-- <FlightsInAirTable filePath="./data/bookings_oneday.json" /> -->
-    <FlightsInAirEndpointTable width="1200" height="800" />
+    <FlightsInAirEndpointTable width="2400" height="800" />
     <!-- <DelayPropagationTable tiers="2" /> -->
     <!-- <DelayPropagationGraph width="1200" height="800" /> -->
   </div>

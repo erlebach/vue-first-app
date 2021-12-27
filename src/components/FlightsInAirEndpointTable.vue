@@ -187,6 +187,7 @@ is returned from the endpoint. -->
       </div>
       <!-- ------ SLIDER ----------, turn visibility on/off -->
       <div class="p-field p-col-12 p-md-1" style="color:green">
+        <Button label="Orientation" @click="toggleOrientation" />
         <span style="font-size:1em">
           <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
         </span>
@@ -433,6 +434,7 @@ import * as u from "../Composition/utils.js";
 import { ref, reactive, isReactive, computed, watch, watchEffect } from "vue";
 import DataTable from "primevue/datatable";
 import ListBox from "primevue/listbox";
+import Button from "primevue/button";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
 import Slider from "primevue/slider";
@@ -466,6 +468,7 @@ export default {
     InputNumber,
     FlightsInAirHelp,
     RadioButton,
+    Button,
     Panel,
     Slider,
   },
@@ -500,6 +503,8 @@ export default {
     const delayObjRef = ref(null);
     const maxLevels = 6;
     const arrDelaySlider = ref(0);
+    // Endpoint graph orientation
+    const portrait = ref(true);
 
     const infoRef = reactive({
       nbEdges: 0,
@@ -571,6 +576,20 @@ export default {
       height: props.height,
       defaultNodeSize: 40,
     });
+    u.print("==> props: ", props);
+
+    function toggleOrientation() {
+      portrait.value = portrait.value === true ? false : true;
+      if (portrait.value === true) {
+        endpointsGraph.updateLayout({
+          rankdir: "LR",
+        });
+      } else {
+        endpointsGraph.updateLayout({
+          rankdir: "TD",
+        });
+      }
+    }
 
     watch(
       // inputArrDelay.value should not have any effect since not a ref
@@ -773,23 +792,44 @@ export default {
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
         // removes all nodes and edges. Leaves configuration intact
-        console.log("==> clear Graph");
+        // console.log("==> clear Graph");
         endpointsGraph.clear();
       } else {
         endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
-        console.log("==> recreate Graph");
+        // console.log("==> recreate Graph");
         endpointsGraphCreated = true;
       }
 
-      // This element must be mounted before creating the graph
-      // const data = { nodes: nodesTraversed, edges: gEdges };
       const data = { nodes: gNodes, edges: gEdges };
       endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
       endpointsGraph.render();
+
+      // This element must be mounted before creating the graph
+      // const data = { nodes: nodesTraversed, edges: gEdges };
+      // const { x, y } = gNodes[0];
+      const node = endpointsGraph.getNodes()[0];
+      const { x, y } = node.getModel();
+      console.log(`x: ${x}, y: ${y}`);
+      u.print("gNodes[0]", gNodes[0]);
+      //u.print("gNodes", gNodes);
+      const canvasXY = endpointsGraph.getCanvasByPoint(x, y);
+      const clientXY = endpointsGraph.getClientByPoint(x, y);
+      u.print("canvasXY", canvasXY);
+      u.print("clientXY", clientXY);
+      const minZoom = endpointsGraph.getMinZoom();
+      endpointsGraph.setMinZoom(0.02);
+      console.log(`minZoom: ${minZoom}`);
+
+      u.print("node[0]: ", gNodes[0]);
       endpointsGraph.fitView(); //   View and Center do not work
       endpointsGraph.fitCenter();
-      ep.centerGraph(endpointsGraph);
+      const centerPoint = endpointsGraph.getViewPortCenterPoint();
+      // Always the same (midpoint of canvas in Canvas coord)
+      const graphCenterPoint = endpointsGraph.getGraphCenterPoint();
+      //ep.centerGraph(endpointsGraph);
+      u.print("==> viewport center point", centerPoint);
+      u.print("==> graph center point", graphCenterPoint);
       endpointsGraph.render();
       // u.print("endpointsGraph", endpointsGraph);
 
@@ -899,6 +939,7 @@ export default {
     });
 
     return {
+      toggleOrientation,
       ifhelp,
       flightsRef,
       allPairsRef,

@@ -143,4 +143,6 @@ TODO: rmeove all edge information from FSU and remove all nodes information from
 - TODO: for a given analysis starting with inbound into PTY, provide delay stats across the downstream flight path on one day. 
 - TODO: Execute an analysis of all inbound flights, measure the effect of 0, 30 and 60 min departure delays on the downstream network 
   for each inbound flight into PTY. Present the results in a table or a graph. 
+- TODO: scale the graph to fit the window (URGENT)
+- TODO: add a orientation toggle button to change the graph to landscape (FIRST)
 ----------------------------------------------
