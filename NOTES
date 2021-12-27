@@ -138,3 +138,9 @@ nbOutbounds is zero somehow (shoudl be 1. WHAT IS GOING ON? )
 - BUG: the nodes are not always correctly filled with total degree (in-degree + out-degree)
 TODO: rmeove all edge information from FSU and remove all nodes information from bookings. This decreases opportunities for errors. 
 ----------------------------------------------
+2021-12-27
+- TODO: Create a specialized node, which includes node statistics. 
+- TODO: for a given analysis starting with inbound into PTY, provide delay stats across the downstream flight path on one day. 
+- TODO: Execute an analysis of all inbound flights, measure the effect of 0, 30 and 60 min departure delays on the downstream network 
+  for each inbound flight into PTY. Present the results in a table or a graph. 
+----------------------------------------------
