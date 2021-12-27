@@ -454,8 +454,8 @@ export function assignNodeLabels(graph) {
 function findAll(graph, type, fn) {
   const result = [];
 
-  console.log("findAll, nb items");
-  console.log(graph.get(`${type}s`).length);
+  // console.log("findAll, nb items");
+  // console.log(graph.get(`${type}s`).length);
   // each(this.get(`${type}s`), (item, i) => {
   graph.get(`${type}s`).forEach((item, i) => {
     if (fn(item, i)) {
@@ -541,8 +541,8 @@ export function boundingBox(graph) {
       return o.getModel().y;
     })
   );
-  console.log(`min/max x: ${minX}, ${maxX}`);
-  console.log(`min/max y: ${minY}, ${maxY}`);
+  // console.log(`min/max x: ${minX}, ${maxX}`);
+  // console.log(`min/max y: ${minY}, ${maxY}`);
   //graph.fitView();
 }
 //----------------------------------------------------------

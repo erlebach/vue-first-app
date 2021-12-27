@@ -32,17 +32,17 @@ export function rigidModel(
 
   let hashCoercer = hasher({ sort: true, coerce: true });
 
-  u.print("rigidModel::startingId", startingId);
-  u.print("rigidModel::bookingsIdMap", bookingsIdMap); // empty arrays
+  // u.print("rigidModel::startingId", startingId);
+  // u.print("rigidModel::bookingsIdMap", bookingsIdMap); // empty arrays
   // u.print("rigidModel::bookings_in", bookings_in);
   // u.print("rigidModel::bookings_out", bookings_out);
-  u.print("rigidModel::initialArrDelayP", initialArrDelayP);
-  u.print("rigidModel::maxArrDelay", maxArrDelay);
+  // u.print("rigidModel::initialArrDelayP", initialArrDelayP);
+  // u.print("rigidModel::maxArrDelay", maxArrDelay);
   // u.print("rigidModel::bookingsIds_in", bookingsIds_in);
-  u.print("rigidModel::bookings", bookings);
-  u.print("rigidModel::dFSU", dFSU);
+  // u.print("rigidModel::bookings", bookings);
+  // u.print("rigidModel::dFSU", dFSU);
 
-  console.log("endpointRigidModelOnce::rigidModel");
+  // console.log("endpointRigidModelOnce::rigidModel");
   resetDelays(dFSU, bookings);
   const FSUm = u.createMapping(dFSU, "id");
 
@@ -67,8 +67,8 @@ export function rigidModel(
   // Initial Node. Add a delay of initialArrDelayPa
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
 
-  u.print("=> rigidModel, startingId", startingId);
-  u.print("=> FSUm", FSUm);
+  // u.print("=> rigidModel, startingId", startingId);
+  // u.print("=> FSUm", FSUm);
   // throw "script end";
 
   // depends on arguments. Should probably be called elsewhere
@@ -102,12 +102,12 @@ export function rigidModel(
   // });
 
   // All Empty arrays!
-  u.print("traverseGraph::startingId", startingId);
-  u.print("traverseGraph::bookingsIdMap", bookingsIdMap);
+  // u.print("traverseGraph::startingId", startingId);
+  // u.print("traverseGraph::bookingsIdMap", bookingsIdMap);
   // u.print("traverseGraph::bookings_in", bookings_in);
   // u.print("traverseGraph::bookingsIds_in", bookingsIds_in);
-  u.print("traverseGraph::dFSU", dFSU);
-  u.print("traverseGraph::FSUm", FSUm);
+  // u.print("traverseGraph::dFSU", dFSU);
+  // u.print("traverseGraph::FSUm", FSUm);
 
   // Depends on startingId, so should be done elsewhere. Every time
   // a new id is selected
@@ -123,10 +123,10 @@ export function rigidModel(
   // Map to access levels and ids (using the ids traversed starting with the flight startingId)
   const { id2level, level2ids } = createId2Level(idsTraversed);
 
-  console.log(`before, edgesTraversed.length: ${edgesTraversed.length}`);
+  // console.log(`before, edgesTraversed.length: ${edgesTraversed.length}`);
   edgesTraversed = makeUnique(edgesTraversed); // already no duplicates.
-  console.log(`after, edgesTraversed.length: ${edgesTraversed.length}`);
-  console.log(`after, edgesTraversed: ${edgesTraversed}`);
+  // console.log(`after, edgesTraversed.length: ${edgesTraversed.length}`);
+  // console.log(`after, edgesTraversed: ${edgesTraversed}`);
 
   // There appears to be no undefined nodes
 
@@ -146,7 +146,7 @@ export function rigidModel(
 
   // filter nodes from dFSU
 
-  console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
+  // console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
 
   // subset of flights and bookings with predicted arrival delay (arrDelayP)
   // greater than maxArrDelay
@@ -159,7 +159,7 @@ export function rigidModel(
   // The edges are formed from the inbounds to each node connected to the node.
 
   // I am not sure graphEdges are needed
-  u.print("rigidModel::edgesTraversed (Set)", edgesTraversed);
+  // u.print("rigidModel::edgesTraversed (Set)", edgesTraversed);
   // Only keep unique edges
 
   // Remove from graphEdges all edges that do not connect two nodes
@@ -170,23 +170,23 @@ export function rigidModel(
   // Note that the rigid model takes feeders into account that are not part of the traversed nodes.
   // The traversed nodes originate at startId, and consider the outbounds recursively.
 
-  console.log(`restrictGraph::edges.length: ${edges.length}`);
+  // console.log(`restrictGraph::edges.length: ${edges.length}`);
   let hEdgesTraversed = hashCoercer.hash(edgesTraversed);
-  console.log(`hash hEdgesTraversed before restrictGraph: ${hEdgesTraversed}`);
-  u.print("edgesTraversed before restrictGraph", edgesTraversed); // ZERO THE SECOND TIME AROUND
+  // console.log(`hash hEdgesTraversed before restrictGraph: ${hEdgesTraversed}`);
+  // u.print("edgesTraversed before restrictGraph", edgesTraversed); // ZERO THE SECOND TIME AROUND
   edgesTraversed = restrictGraph(edgesTraversed, id2level);
   hEdgesTraversed = hashCoercer.hash(edgesTraversed);
-  console.log(`hash hEdgesTraversed after restrictGraph: ${hEdgesTraversed}`);
+  // console.log(`hash hEdgesTraversed after restrictGraph: ${hEdgesTraversed}`);
   // The second time around, restrictGraph returns an empty list. WHY? (2021-12-24)
-  u.print("return from restrictGraph::edgesTraversed", edgesTraversed);
-  u.print("return from restrictGraph::id2level", id2level);
+  // u.print("return from restrictGraph::edgesTraversed", edgesTraversed);
+  // u.print("return from restrictGraph::id2level", id2level);
   const hid2level = hashCoercer.hash(id2level);
-  console.log(`hash id2level: ${hid2level}`);
+  // console.log(`hash id2level: ${hid2level}`);
 
   // console.log("Edges with In Arrival Delay");
   // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
-  u.print("nodesWithArrDelay", nodesWithArrDelay);
-  u.print("edgesWithArrDelay", edgesWithArrDelay);
+  // u.print("nodesWithArrDelay", nodesWithArrDelay);
+  // u.print("edgesWithArrDelay", edgesWithArrDelay);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
   return {
@@ -251,13 +251,13 @@ function initializeEdges(bookings, FSUm) {
     e.slackP = Math.min(e.availRotSlackP, e.ACTSlackP);
     if (isNaN(e.slackP)) {
       console.log(
-        `e.availRotSlackP (${e.availRotSlackP}) or e.ACTSlackP (${e.ACTSlackP}) not a number. SHOULD NOT HAPPEN`
+        `1. e.availRotSlackP (${e.availRotSlackP}) or e.ACTSlackP (${e.ACTSlackP}) not a number. SHOULD NOT HAPPEN`
       );
       console.log(`e.ACTAvailableP: ${e.ACTAvailableP}`); // UNDEFINED
     }
     // rotation only exists for fixed tails
     if (e.tail_f === e.tail_nf) {
-      console.log("==> initializeEdges, single tail rotation");
+      // console.log("==> initializeEdges, single tail rotation");
       countTailTails++;
       // PTY with tail turnaround and passengers
       // Setup rotation parameters and rotation slack
@@ -278,13 +278,13 @@ function initializeEdges(bookings, FSUm) {
       e.slackP = Math.min(e.availRotSlackP, e.ACTSlackP);
       if (isNaN(e.slackP))
         console.log(
-          "e.availRotSlackP or e.ACTSlackP not a number. SHOULD NOT HAPPEN"
+          "2. e.availRotSlackP or e.ACTSlackP not a number. SHOULD NOT HAPPEN"
         );
 
       // TODO: availRotSlackP=1655, rotSlackP
       // Difference between rotSlackP and availRotSlackP  (NOT CLEAR)
     }
-    u.print("initializeEdges, e", e);
+    // u.print("initializeEdges, e", e);
   });
   // console.log(`countTailTails: ${countTailTails}`);
 }
@@ -306,21 +306,21 @@ function initializeNodes(FSUm, dTails, bookingsIdMap) {
     // r.rotSlackP = r.rotSlack;    r.availRotP = r.availRot;
     r.arrDelayP = r.arrDelay;
     r.depDelayP = r.depDelay;
-    u.print("initializeNodes, r", r);
-    if (r.inboundIds.length > 0) {
-      console.log(
-        `==> initializeNodes, r.inboundIds.length: ${r.inboundIds.length}, ${r.nbInbounds}`
-      );
-    }
+    // u.print("initializeNodes, r", r);
+    // if (r.inboundIds.length > 0) {
+    //   console.log(
+    //     `==> initializeNodes, r.inboundIds.length: ${r.inboundIds.length}, ${r.nbInbounds}`
+    //   );
+    // }
     const obj = computeMinACT(r.id, bookingsIdMap, r.inboundIds);
-    u.print("initializeNodes, obj", obj);
+    // u.print("initializeNodes, obj", obj);
     const minACT = obj.minACT;
     const inboundMinId = obj.inboundMinId;
     if (
       r.id === "2021-12-23GYEPTY20:080272" ||
       r.id === "2021-12-24PTYMDE12:090306"
     ) {
-      u.print("initializeNodes, r", r);
+      // u.print("initializeNodes, r", r);
     }
   });
 }
@@ -369,8 +369,8 @@ function resetDelays(dFSU, bookings) {
     b.OUTP_DTMZ_f = b.SCH_DEP_DTMZ_f;
     b.OUTP_DTMZ_nf = b.SCH_DEP_DTMZ_nf;
   });
-  u.print("resetDelays::dFSU", dFSU);
-  u.print("resetDelays::bookings", bookings);
+  // u.print("resetDelays::dFSU", dFSU);
+  // u.print("resetDelays::bookings", bookings);
 }
 //---------------------------------------------------------------
 function getOrig(id) {
@@ -418,7 +418,7 @@ function createId2Level(ids) {
   }
 
   // Recreate ids using only the useful Tiers
-  console.log(`nb ids: ${ids.length}`);
+  // console.log(`nb ids: ${ids.length}`);
   // How to remove all elements from ids array without changing its address
   ids.length = 0;
   for (let tier = 0; tier < nb_tiers; tier++) {
@@ -431,8 +431,8 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
   // update of a single node
   const n = node;
   const id_nf = n.id;
-  console.log("=========== updateOutboundNode ====================");
-  u.print("=== n", n);
+  // console.log("=========== updateOutboundNode ====================");
+  // u.print("=== n", n);
 
   // if an ETA changes, the flight arrival delay increases or decreases.
   // This immediately affects rotSlackP according to
@@ -454,28 +454,28 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
 
   // Only call computeMinACT if the flight is leaving PTY
 
-  const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, true);
-  u.print("updateOutboundNodeNew::obj ", obj);
+  const obj = computeMinACT(n.id, bookingsIdMap, n.inboundIds, false);
+  // u.print("updateOutboundNodeNew::obj ", obj);
   n.minId = obj.minId;
   n.minACTP = obj.minACT;
   const ACTAvailableP = obj.minACT;
   const ACTSlackP = ACTAvailableP - 30; // manual setting
   const slackP = ACTSlackP; // this is really an edge quantity
   if (slackP < 0) {
-    console.log(`=======> id_nf: ${id_nf}`);
-    console.log(`     ==> minACTP: ${n.minACTP}`);
-    console.log(`     ==> minId: ${n.minId}`);
-    console.log(`     ==> slackP: ${slackP}`);
-    console.log(`==> old est dep time: ${n.estDepTime}`);
-    console.log(`    old dep DelayP: ${n.depDelayP}`);
-    console.log(`    old arr DelayP: ${n.arrDelayP}`);
+    // console.log(`=======> id_nf: ${id_nf}`);
+    // console.log(`     ==> minACTP: ${n.minACTP}`);
+    // console.log(`     ==> minId: ${n.minId}`);
+    // console.log(`     ==> slackP: ${slackP}`);
+    // console.log(`==> old est dep time: ${n.estDepTime}`);
+    // console.log(`    old dep DelayP: ${n.depDelayP}`);
+    // console.log(`    old arr DelayP: ${n.arrDelayP}`);
     n.estDepTime = n.SCH_DEP_DTMZ - slackP * 60000; // in ms
     n.estArrTime = n.SCH_ARR_DTMZ - slackP * 60000; // in ms
     n.depDelayP = (n.estDepTime - n.SCH_DEP_DTMZ) / 60000; // in min
     n.arrDelayP = (n.estArrTime - n.SCH_ARR_DTMZ) / 60000; // in min
-    console.log(` => new est dep time: ${n.estDepTime}`);
-    console.log(`    new dep DelayP: ${n.depDelayP}`);
-    console.log(`    new arr DelayP: ${n.arrDelayP}`);
+    // console.log(` => new est dep time: ${n.estDepTime}`);
+    // console.log(`    new dep DelayP: ${n.depDelayP}`);
+    // console.log(`    new arr DelayP: ${n.arrDelayP}`);
 
     // There is no need to update the incoming edges. These will all be updated at the
     // end of the graph traversal, once all the new estArrTime and estDepTimes have been
@@ -502,7 +502,7 @@ function updateInboundEdgesNew(
     const row = bookingsIdMap[id_f + "-" + id_nf];
     inboundEdges.push(row);
   });
-  u.print(`inboundEdges, id_nf: ${id_nf}`, inboundEdges);
+  // u.print(`inboundEdges, id_nf: ${id_nf}`, inboundEdges);
 
   let ecount = 0; // counter to reduce output
   inboundEdges.forEach((e) => {
@@ -568,7 +568,7 @@ function propDelayNew(id, bookingsIdMap, FSUm, graphEdges) {
 // all edges connected to this node to estimate the minimum ACT
 // Compute the minimum availACTP among all feeders
 function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
-  u.print(`==> compMinACT, inboundsIds, id_nf: ${id_nf}`, inboundsIds);
+  // u.print(`==> compMinACT, inboundsIds, id_nf: ${id_nf}`, inboundsIds);
 
   const ms2min = 1 / 1000 / 60;
   // track which inbound is responsible for the minACT.
@@ -580,7 +580,7 @@ function computeMinACT(id_nf, bookingsIdMap, inboundsIds, verbose = false) {
   const feedersACT = []; // for debugging
 
   // loop over incoming flights
-  console.log(`computeMinACT::inboundsIds.length: ${inboundsIds.length}`);
+  // console.log(`computeMinACT::inboundsIds.length: ${inboundsIds.length}`);
 
   inboundsIds.forEach((id) => {
     const r = bookingsIdMap[id + "-" + id_nf];
@@ -657,7 +657,7 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
     });
     idCount[id] = count;
   }
-  u.print("rigidModel, traversing graph, idCount", idCount);
+  // u.print("rigidModel, traversing graph, idCount", idCount);
 
   const ids = [];
 
@@ -671,9 +671,9 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
     countDef += 1 - isUndefined;
   });
 
-  u.print("idsTraversed", idsTraversed);
-  u.print("ids", ids);
-  console.log(`nb idsTraversed: ${idsTraversed.length}`);
+  // u.print("idsTraversed", idsTraversed);
+  // u.print("ids", ids);
+  // console.log(`nb idsTraversed: ${idsTraversed.length}`);
   return { idsTraversed, edgesTraversed };
 }
 //----------------------------------------------------
@@ -693,10 +693,10 @@ function computeNodesEdgesWithArrDelay(dFSU, bookings, maxArrDelay) {
   // The length of dFSU is always the same.
   // But traversing the graph, the arrDelayP times are estimated and thus the length
   // of nodesWithArrDelay can change.
-  console.log(`dFSU.length: ${dFSU.length}`);
-  console.log(
-    `rigidModel::nodesWithArrDelay.length: ${nodesWithArrDelay.length}`
-  );
+  // console.log(`dFSU.length: ${dFSU.length}`);
+  // console.log(
+  //   `rigidModel::nodesWithArrDelay.length: ${nodesWithArrDelay.length}`
+  // );
 
   // filter edges from bookings
 
@@ -746,7 +746,7 @@ function restrictGraph(graphEdges, id2level) {
     }
   });
 
-  console.log(`restrictGraph::graphEdges.length: ${graphEdges.length}`);
+  // console.log(`restrictGraph::graphEdges.length: ${graphEdges.length}`);
   return newEdges;
 }
 //--------------------------------------------------------------

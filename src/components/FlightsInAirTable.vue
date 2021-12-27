@@ -32,7 +32,7 @@
         </div></template
       >
     </Column>
-    <Column field="depDelay" header="depDelay" :sortable="true">
+    <Column field="depDelxay" header="depDelay" :sortable="true">
       <template #body="slotProps">
         <div :style="depDelayStyle(slotProps.data)" class="bold">
           {{ slotProps.data.depDelay }}
@@ -162,13 +162,13 @@ export default {
       const timeShift = 8;
       const nodes = load.data()[0].nodes;
       // ANALYZE and FIX. Then clean.
-      const { keptFlights } = f.flightsInAir(nodes, dtz, tmz, timeShift); 
+      const { keptFlights } = f.flightsInAir(nodes, dtz, tmz, timeShift);
       flightsTable.value = keptFlights;
       nbRows.value = keptFlights.length;
     }
 
     //onMounted(() => {
-      //console.log(">>>>> FlightInAir, Inside onMounted (this) <<<<<");
+    //console.log(">>>>> FlightInAir, Inside onMounted (this) <<<<<");
     //});
 
     const confirmEntry = () => {

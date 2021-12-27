@@ -36,7 +36,7 @@ export function rigidModel(
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
 
   // u.print("=> rigidModelOnce, startingId", startingId);
-  u.print("=> FSUm", FSUm);
+  // u.print("=> FSUm", FSUm);
 
   // I should probably turn this off
   if (setupInitialDelay(FSUm, startingId, initialArrDelayP) === undefined) {
@@ -111,7 +111,7 @@ export function rigidModel(
     });
     idCount[id] = count;
   }
-  u.print("rigidModel, traversing graph, idCount", idCount);
+  // u.print("rigidModel, traversing graph, idCount", idCount);
 
   graph.traverseBfs(startingId, (key, values) => {
     // outgoing flight from PTY
@@ -124,9 +124,9 @@ export function rigidModel(
     countDef += 1 - isUndefined;
   });
 
-  u.print("idsTraversed", idsTraversed);
-  u.print("ids", ids);
-  console.log(`nb idsTraversed: ${idsTraversed.length}`);
+  // u.print("idsTraversed", idsTraversed);
+  // u.print("ids", ids);
+  // console.log(`nb idsTraversed: ${idsTraversed.length}`);
   // There appears to be no undefined nodes
 
   // console.log("\nAfter Traverse All nodes with arrival DelayP > 0\n");
@@ -177,10 +177,10 @@ export function rigidModel(
   // The length of dFSU is always the same.
   // But traversing the graph, the arrDelayP times are estimated and thus the length
   // of nodesWithArrDelay can change.
-  console.log(`dFSU.length: ${dFSU.length}`);
-  console.log(
-    `rigidModel::nodesWithArrDelay.length: ${nodesWithArrDelay.length}`
-  );
+  // console.log(`dFSU.length: ${dFSU.length}`);
+  // console.log(
+  // `rigidModel::nodesWithArrDelay.length: ${nodesWithArrDelay.length}`
+  // );
 
   // filter edges from bookings
 
@@ -203,7 +203,7 @@ export function rigidModel(
   // The edges are formed from the inbounds to each node connected to the node.
 
   // I am not sure graphEdges are needed
-  u.print("rigidModel::graphEdges (Set)", graphEdges);
+  // u.print("rigidModel::graphEdges (Set)", graphEdges);
   // Only keep unique edges
 
   // To get unique edges, first define a unique edges id:
@@ -214,7 +214,7 @@ export function rigidModel(
   graphEdges = [...graphEdges];
   const graphEdgeIds = u.createMapping(graphEdges, "id");
   // convert from Object to array
-  u.print("graphEdgeIds", graphEdgeIds);
+  // u.print("graphEdgeIds", graphEdgeIds);
   graphEdges = [];
   for (let id in graphEdgeIds) {
     graphEdges.push(graphEdgeIds[id]);
@@ -222,7 +222,7 @@ export function rigidModel(
 
   // localCompare required to compare strings lexigraphically
   graphEdges = graphEdges.sort((a, b) => a.id_f.localeCompare(b.id_f));
-  u.print("rigidModel::graphEdges (sorted Array)", graphEdges);
+  // u.print("rigidModel::graphEdges (sorted Array)", graphEdges);
 
   // Remove from graphEdges all edges that do not connect two nodes
   // Note that some node were removed, so ss owill also be removed
@@ -240,13 +240,13 @@ export function rigidModel(
     }
   });
 
-  console.log(`edges.length: ${edges.length}`);
-  console.log(`newEdges.length: ${newEdges.length}`);
+  // console.log(`edges.length: ${edges.length}`);
+  // console.log(`newEdges.length: ${newEdges.length}`);
 
   // console.log("Edges with In Arrival Delay");
   // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
-  u.print("nodesWithArrDelay", nodesWithArrDelay);
-  u.print("edgesWithInArrDelay", edgesWithInArrDelay);
+  // u.print("nodesWithArrDelay", nodesWithArrDelay);
+  // u.print("edgesWithInArrDelay", edgesWithInArrDelay);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
 
@@ -343,7 +343,7 @@ function initializeEdges(bookings, FSUm) {
 //------------------------------------------------------------------
 //------------------------------------------------------------------
 function initializeNodes(FSUm, bookings_in, bookings_out) {
-  console.log("inside initializeNods");
+  // console.log("inside initializeNods");
   Object.values(FSUm).forEach((n) => {
     // Remove two lines. Probably causing an infinite loop somewhere.
     n.inbounds = bookings_in[n.id]; // could be undefined (from PTY or Sta)
@@ -463,8 +463,8 @@ function resetDelays(dFSU, bookings) {
     b.OUTP_DTMZ_f = b.SCH_DEP_DTMZ_f;
     b.OUTP_DTMZ_nf = b.SCH_DEP_DTMZ_nf;
   });
-  u.print("resetDelays::dFSU", dFSU);
-  u.print("resetDelays::bookings", bookings);
+  // u.print("resetDelays::dFSU", dFSU);
+  // u.print("resetDelays::bookings", bookings);
 }
 //---------------------------------------------------------------
 function getOrig(id) {
@@ -480,7 +480,7 @@ function createId2Level(ids) {
   // console.log(`====> enter createId2Level, nb_tiers: ${nb_tiers}`);
   // u.print(`nb_tiers: ${nb_tiers.value}`);
 
-  u.print("createId2Level, ids", ids);
+  // u.print("createId2Level, ids", ids);
 
   const id2level = {};
   const level2ids = {};
@@ -517,7 +517,7 @@ function createId2Level(ids) {
   // u.print("level2ids: ", { ...level2ids });
 
   // Recreate ids using only the useful Tiers
-  console.log(`nb ids: ${ids.length}`);
+  // console.log(`nb ids: ${ids.length}`);
   // How to remove all elements from ids array without changing its address
   ids.length = 0;
   for (let tier = 0; tier < nb_tiers; tier++) {
@@ -538,12 +538,12 @@ function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
   // Delay: ARR_DELAY_MIN and arrDelayP (not the same)
   const node = outboundNode; // feeder node
 
-  console.log("===================================================");
-  u.print("updateInboundEdges, (feeder) outboundNode", outboundNode);
+  // console.log("===================================================");
+  // u.print("updateInboundEdges, (feeder) outboundNode", outboundNode);
   //u.print("updateInboundEdges, bookings_in", bookings_in);
 
   const inboundEdges = bookings_in[outboundNode.id];
-  u.print("updateInboundEdges, inboundEdges", inboundEdges);
+  // u.print("updateInboundEdges, inboundEdges", inboundEdges);
 
   // u.print("inboundEdge:", inboundEdges);
   if (inboundEdges === undefined) {
@@ -570,19 +570,19 @@ function updateInboundEdges(outboundNode, bookings_in, graph_edges) {
 //-------------------------------------------------------------
 function updateOutboundNode(node) {
   const n = node;
-  console.log("===================================================");
+  // console.log("===================================================");
 
   // if an ETA changes, the flight arrival delay increases or decreases.
   // This immediately affects rotSlackP according to
   // rotSlackP = rotSlack - arrDelay, where rotSlack is the initial value
 
   // u.print("updateOutboundNode, node", node);
-  console.log(`updateOutboundNode, node: ${node.id}`);
+  // console.log(`updateOutboundNode, node: ${node.id}`);
 
-  u.print(
-    "updateOutboundNode, node.inbounds (used for computeMinAct)",
-    n.inbounds
-  );
+  // u.print(
+  // "updateOutboundNode, node.inbounds (used for computeMinAct)",
+  // n.inbounds
+  // );
 
   if (n === undefined || n.inbounds === undefined) {
     return undefined;
@@ -592,7 +592,7 @@ function updateOutboundNode(node) {
 
   if (n.id.slice(10, 13) === "PTY") {
     // outbound flights from PTY
-    console.log(" . outbound flight from PTY");
+    // console.log(" . outbound flight from PTY");
     if (n.inbounds !== undefined) {
       const obj = computeMinACT(n.inbounds, true);
       n.minId = obj.minId;
@@ -723,11 +723,11 @@ function createGraph(edges, bookings_in, bookings_out) {
   }
 
   // duplicates in sources and targets were removed by using Sets
-  u.print("createGraph, sources", sources);
-  u.print("createGraph, targets", targets);
-  u.print("createGraph, edges_undefined: ", edges_undefined); // none
-  u.print("bookings_in", bookings_in);
-  u.print("bookings_out", bookings_out);
+  // u.print("createGraph, sources", sources);
+  // u.print("createGraph, targets", targets);
+  // u.print("createGraph, edges_undefined: ", edges_undefined); // none
+  // u.print("bookings_in", bookings_in);
+  // u.print("bookings_out", bookings_out);
 
   graph.help =
     "targets[srcid] returns all the outbounds of the srcid inbound\n" +

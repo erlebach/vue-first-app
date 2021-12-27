@@ -4,7 +4,7 @@ import * as u from "./utils.js";
 function findIndex(fsu, idStart) {
   fsu.forEach((e) => {
     if (e.id.startsWith(idStart)) {
-      u.print("FOUND ID", e.id);
+      // u.print("FOUND ID", e.id);
       return e.id;
     }
     return null;

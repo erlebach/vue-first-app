@@ -4,8 +4,8 @@ const state = ref(null);
 
 function setTable(post) {
   state.value = post;
-  console.log("setTable(post), post");
-  console.log(post);
+//  console.log("setTable(post), post");
+  //console.log(post);
   // nb edges keeps increasing. Nb nodes constant. Why?
 }
 

@@ -109,22 +109,7 @@ export default {
     // null to a non-null value?
     watch(fullGraph, (curVal) => {
       const f = store.getters.fullGraph;
-      //console.log("**** watcher, fullGraph, top of CityTable");
-      //console.log(curVal);
-      //console.log(`nbNodes: ${curVal.nbNodes}`);
-      //console.log(curVal.nbEdges);
     });
-
-    // function filterAndUpdateTable(city, data) {
-    //   const filteredData = filterData(data, city);
-    //   nbRows.value = filteredData.nodes.length;
-    //   store.commit("setGraphData", filteredData);
-    //   // There is watcher for nodesTable
-    //   store.commit("setTableData", filteredData.nodes);
-    //   // Update city table
-    //   const tableNodes = u.dataForCityTable(filteredData.nodes);
-    //   nodesTable.value = tableNodes;
-    // }
 
     const nodes = computed(() => {
       return store.getters.nodes;
@@ -146,8 +131,6 @@ export default {
     });
 
     watch(city, (cityValue, oldValue) => {
-      //console.log("DataTable: inside watch city");
-      //u.print("watch, cityTable, allGraphData", allGraphData);
       const graph = store.getters.graph;
       //const data = store.getters.allGraphData;
       // both graph data and graph must be available
@@ -157,9 +140,8 @@ export default {
         u.print("cityValue", cityValue);
         // Compute values are refs
         u.filterAndUpdateTable(cityValue, allGraphData.value);
-        //console.log("colorByCity");
 
-        // Color edges and nodes according to delays. Why should this 
+        // Color edges and nodes according to delays. Why should this
         // function be in CityTable? It should be in CityGraph ***
         colorByCity(graph, cityValue);
       }
@@ -189,7 +171,7 @@ export default {
           return isDataLoaded.value === true;
         }).then(() => {
           //console.log(
-            //"==> inside then of ensureCondition, Exp, Mounted, Data read succesfully!!"
+          //"==> inside then of ensureCondition, Exp, Mounted, Data read succesfully!!"
           //);
         });
       } catch (error) {

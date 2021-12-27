@@ -93,7 +93,7 @@ export function setupConfiguration(parameters) {
     plugins: [myTooltip],
   };
 
-  u.print("myToolTip", myTooltip);
+  // u.print("myToolTip", myTooltip);
   return configuration;
 }
 //-----------------------------------------
@@ -256,7 +256,7 @@ const myTooltip = new G6.Tooltip({
       } else if (depDelayP < 45) {
         depDelayPColor = "darkred";
       } else {
-        depDelayPColor = "black";
+        depDelayPColor = "brown";
       }
       if (depDelay < 5) {
         depDelayColor = "green";
@@ -267,7 +267,7 @@ const myTooltip = new G6.Tooltip({
       } else if (depDelay < 45) {
         depDelayColor = "darkred";
       } else {
-        depDelayColor = "black";
+        depDelayColor = "brown";
       }
 
       if (arrDelayP < 5) {
@@ -279,7 +279,7 @@ const myTooltip = new G6.Tooltip({
       } else if (arrDelayP < 45) {
         arrDelayPColor = "darkred";
       } else {
-        arrDelayPColor = "black";
+        arrDelayPColor = "brown";
       }
       if (arrDelay < 5) {
         arrDelayColor = "green";
@@ -290,8 +290,13 @@ const myTooltip = new G6.Tooltip({
       } else if (arrDelay < 45) {
         arrDelayColor = "darkred";
       } else {
-        arrDelayColor = "black";
+        arrDelayColor = "brown";
       }
+      node.depDelayColor = depDelayColor;
+      node.arrDelayColor = arrDelayColor;
+      node.depDelayPColor = depDelayPColor;
+      node.arrDelayPColor = arrDelayPColor;
+
       //  Hub Connections: nbOutbounds for feeder, and nbFeeders for outbound, flights
       let connectLabel;
       if (node.id.slice(10, 13) !== "PTY") {
@@ -299,10 +304,6 @@ const myTooltip = new G6.Tooltip({
       } else {
         connectLabel = "Nb Feeders";
       }
-      if (node.id === "2021-12-16AUAPTY17:320349") {
-        u.print("tooltip, node: ", node);
-      }
-      // u.print("tooltip node: ", node);
       outDiv.style.backgroundColor = "lightSteelBlue";
       outDiv.innerHTML = `<div>
       <h4>Flight (node)</h4>
@@ -344,7 +345,6 @@ const myTooltip = new G6.Tooltip({
       const inbound = e.item.getSource().getModel();
       const outbound = e.item.getTarget().getModel();
       outDiv.style.backgroundColor = "yellow";
-      // u.print("tooltip edge: ", edge);
 
       let actColor;
       if (edge.actAvail < 5) {
@@ -438,9 +438,6 @@ const myTooltip = new G6.Tooltip({
           -->
       </ul> 
       </div>`;
-      // <li>Available Connection Time (2) (outbound.schDep-inbound.inZ): ${actAvail2} min </li>
-      //<li style="color:${actColor}>Connection Time Slack: ${actAvail} - ${minConnectTime}
-      // = ${actAvail - minConnectTime} min</li>
 
       // How to create dynamic styling in the tooltip?
       return outDiv;
@@ -532,7 +529,7 @@ function pausecomp(millis) {
 export function followTails(graph) {
   // thicken edges that represent a connection between two identical tails
   const edges = graph.getEdges();
-  u.print("followTails::edges: ", edges);
+  // u.print("followTails::edges: ", edges);
   edges.forEach((edge) => {
     const props = edge.getModel();
     if (props.tail_f === props.tail_nf) {

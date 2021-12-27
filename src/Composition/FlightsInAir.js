@@ -10,19 +10,12 @@ import store from "../store/index.js";
  *     timeShift of curTime
  */
 export function flightsInAir(nodes, curDay, curTime, minDelay, timeShift = 8) {
-  // console.log("inside flightsInAir");
-  // u.print("curTime", curTime);
-  // u.print("data", nodes);
   //d.testTimeMethods();
   const ns2ms = 1e-6;
   const hr2ms = 3600 * 1000;
   const min2ms = 60 * 1000;
 
-  //u.print("hash nodes[0:3]", hash(nodes.slice(0,1)));
-  //u.print("enter hash(nodes)", hash(nodes));
-
   const curZ = d.datetimeZToTimestamp(curDay, curTime);
-  //u.print("curZ", curZ);
   const flights = [];
 
   // FIGURE OUT WHY THERE ARE NO DEPARTED FLIGHTS!! SOMETHING WRONG.

@@ -325,7 +325,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -353,7 +353,7 @@ function saveData() {
     // response[0] is a list of all flights registered to fly
     // only keep flights with CANCELLED === 0 (not cancelled)
 
-    console.log("enter saveData");
+    // console.log("enter saveData");
 
     const inRows = []; // empty. BECAUSE ALL PLANES LANDED. STRANGE.
     data.forEach((r) => {
@@ -499,24 +499,24 @@ function saveData() {
         // u.print(`saveData::CANNOT happen!, r.id: ${r.id}, flightTable row`, r);
       }
     });
-    console.log(
-      `computeFlightList::flightTable length 2: ${flightTable.length}`
-    );
+    // console.log(
+    //   `computeFlightList::flightTable length 2: ${flightTable.length}`
+    // );
 
     setStatus(true);
 
     flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
 
     // all_pairs, flight_table are finalized
-    console.log(
-      "========== all_pairs, flight_table are finalized ============"
-    );
-    u.print("saveData::flightTable", flightTable);
-    u.print("saveData::allPairs", allPairs);
+    // console.log(
+    //   "========== all_pairs, flight_table are finalized ============"
+    // );
+    // u.print("saveData::flightTable", flightTable);
+    // u.print("saveData::allPairs", allPairs);
     //=================================================================================
     // Check inboundsMap and outboundsMap for undefined
-    console.log("Check inboundsMap and outboundsMap for undefined");
-    console.log(`flightTable length: ${flightTable.length}`);
+    // console.log("Check inboundsMap and outboundsMap for undefined");
+    // console.log(`flightTable length: ${flightTable.length}`);
     // Set nb inbounds and outbounds to an empty list if they are undefined.
     // This simplifies processing of downstream tasks
     flightTable.forEach((r) => {
@@ -545,13 +545,13 @@ function saveData() {
     const obj = epu.getEdges(dBookings);
     edges = obj.edges;
     graph = createGraph(edges);
-    u.print("saveData::dBookings", dBookings);
-    u.print("saveData::dFSU", dFSU);
-    u.print("saveData::dTails", dTails);
-    u.print("saveData::edges", edges);
-    u.print("saveData::graph", graph);
-    u.print("saveData::inboundsMap", inboundsMap); // each element is list of ids
-    u.print("saveData::outboundsMap", outboundsMap);
+    // u.print("saveData::dBookings", dBookings);
+    // u.print("saveData::dFSU", dFSU);
+    // u.print("saveData::dTails", dTails);
+    // u.print("saveData::edges", edges);
+    // u.print("saveData::graph", graph);
+    // u.print("saveData::inboundsMap", inboundsMap); // each element is list of ids
+    // u.print("saveData::outboundsMap", outboundsMap);
   });
 }
 
@@ -721,8 +721,8 @@ export function syntheticConnections(ptyPairs, flightsInAir, nbConn) {
     }
   }
 
-  u.print("synthetic::inboundsMap", inboundsMap);
-  u.print("synthetic::outboundsMap", outboundsMap);
+  // u.print("synthetic::inboundsMap", inboundsMap);
+  // u.print("synthetic::outboundsMap", outboundsMap);
 
   return { inboundsMap, outboundsMap };
 }
@@ -742,8 +742,8 @@ export function computeTails(ptyPairs, flightTable) {
   for (let tail in tails) {
     nbPairs += tails[tail].length - 1;
   }
-  console.log(`computeTails, nbPairs: ${nbPairs}`);
-  u.print("computeTails::flightTable sorted by tail and sch_dep", fl);
+  // console.log(`computeTails, nbPairs: ${nbPairs}`);
+  // u.print("computeTails::flightTable sorted by tail and sch_dep", fl);
 
   // tails[tail] is a list, ordered by departure time, of all flights with the given tail
 
@@ -766,13 +766,13 @@ export function computeTails(ptyPairs, flightTable) {
       }
     }
   }
-  u.print("computeTails, flightTable: ", sortBy(flightTable, "id"));
-  u.print("computeTails, tails: ", tails);
-  u.print("computeTails, ptyPairs: ", ptyPairs);
-  u.print("computeTails, sameTailConnections: ", sameTailConnections);
-  console.log(
-    `computeTails::count: ${count}, countAll: ${countAll}, countAll2: ${countAll2}`
-  );
+  // u.print("computeTails, flightTable: ", sortBy(flightTable, "id"));
+  // u.print("computeTails, tails: ", tails);
+  // u.print("computeTails, ptyPairs: ", ptyPairs);
+  // u.print("computeTails, sameTailConnections: ", sameTailConnections);
+  // console.log(
+  //   `computeTails::count: ${count}, countAll: ${countAll}, countAll2: ${countAll2}`
+  // );
   // u.print("computeTails, connections.length: ", connections.length);
   return sameTailConnections; // id pairs   (same length as)
 }
@@ -785,13 +785,13 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
   // stationPairs: turnaround at stations
   // ptyPairs: turnaround at PTY
 
-  u.print("computeAllPairs::stationPairs: ", sortBy(stationPairs, "id_f"));
-  u.print("computeAllPairs::ptyPairs: ", sortBy(ptyPairs, "id_f"));
-  u.print("computeAllPairs::flightIdMap: ", sortBy(flightIdMap, "id_f"));
-  u.print("computeAllPairs::allPairs: ", allPairs);
+  // u.print("computeAllPairs::stationPairs: ", sortBy(stationPairs, "id_f"));
+  // u.print("computeAllPairs::ptyPairs: ", sortBy(ptyPairs, "id_f"));
+  // u.print("computeAllPairs::flightIdMap: ", sortBy(flightIdMap, "id_f"));
+  // u.print("computeAllPairs::allPairs: ", allPairs);
 
   // TODO: estArrTime must be given when computeAllPairs is called !!! <<<<<<<<<<<<<<<< ERROR (2021-12-22)
-  u.print("flightIdMap", flightIdMap);
+  // u.print("flightIdMap", flightIdMap);
 
   // console.log(`computeAllPairs, stationPairs.length: ${stationPairs.length}`);
   // console.log(`computeAllPairs, ptyPairs.length: ${ptyPairs.length}`);
@@ -910,8 +910,8 @@ function computeAllPairs(stationPairs, flightIdMap, ptyPairs) {
     //r.pax = undefined; // probably not required
   });
 
-  u.print("computeAllPairs, allPairs", allPairs);
-  console.log(`   allPairs.availRot: ${allPairs[10].availRot}`);
+  // u.print("computeAllPairs, allPairs", allPairs);
+  // console.log(`   allPairs.availRot: ${allPairs[10].availRot}`);
 }
 
 //----------------------------------------------------------------------
@@ -974,12 +974,12 @@ function computeFlightList(ptyPairs) {
     if (r.id == "2021-12-17MDEPTY14:340825") {
       const out = dt.timestampToDateTimeZ(r.out);
       const inn = dt.timestampToDateTimeZ(r.in);
-      u.print("id", r.id);
-      u.print("out", out);
-      u.print("r.out", r.out);
-      u.print("inn", inn);
-      u.print("sch_dep_z", r.sch_dep_z);
-      u.print("sch_arr_z", r.sch_arr_z);
+      // u.print("id", r.id);
+      // u.print("out", out);
+      // u.print("r.out", r.out);
+      // u.print("inn", inn);
+      // u.print("sch_dep_z", r.sch_dep_z);
+      // u.print("sch_arr_z", r.sch_arr_z);
     }
     // r.depDelayP = (r.out - r.sch_dep) / 60000; // 60000 ms per minute
     // r.arrDelayP = (r.in - r.sch_arr) / 60000;
@@ -1242,7 +1242,7 @@ function create_FSU_BOOK_TAILS(
 //--------------------------------------------------------------------
 function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
   // Arguments
-  console.log("text-processing::createBookings");
+  // console.log("text-processing::createBookings");
   for (let id_f in outboundsMap) {
     const r_f = flightTableMap[id_f]; // UNDEFINED. HOW CAN THAT BE. THERE ARE FLIGHTS MISSING?
     outboundsMap[id_f].forEach((id_nf) => {
@@ -1262,9 +1262,9 @@ function createBookings(inboundsMap, outboundsMap, allPairs, flightTableMap) {
           });
         }
       } else {
-        console.log(
-          `createBookings, outboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
-        );
+        // console.log(
+        //   `createBookings, outboundssMap, id_f: ${id_f}, id_nf: ${id_nf}`
+        // );
       }
     });
   }

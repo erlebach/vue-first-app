@@ -185,13 +185,16 @@ is returned from the endpoint. -->
           </div>
         </Panel>
       </div>
+      <!-- ------ SLIDER ----------, turn visibility on/off -->
       <div class="p-field p-col-12 p-md-1" style="color:green">
         <span style="font-size:1em">
           <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
         </span>
+        <Slider v-model="arrDelaySlider" :step="5" :min="0" :max="400" />
+        <!-- inputArrDelay -->
         <InputNumber
           id="integeronly"
-          v-model="inputArrDelay"
+          v-model="arrDelaySlider"
           inputStyle="color:red; width:4em"
         />
         <span style="font-size:1em">
@@ -218,8 +221,119 @@ is returned from the endpoint. -->
   </div>
 
   <!-- ------------------------------------------------------------------------ -->
+  <!-- Nodes of displayed Endpoint graph -->
+  <!-- Only the nodes displayed in theg raph are shown -->
+  <DataTable
+    :value="endpointRef.nodeTable"
+    :scrollable="true"
+    resizableColumns="true"
+    scrollHeight="300px"
+    expandedRows="expandedRows"
+    columnResizeMode="expand"
+    v-model:selection="selectedAllPairsRow"
+    selectionMode="single"
+    dataKey="id_f"
+  >
+    <template #header>
+      <h2>Displayed Filght Data</h2>
+    </template>
+    <Column
+      field="id"
+      style="width=30em;"
+      header="id"
+      :sortable="true"
+      :style="col"
+    >
+    </Column>
+    <Column field="orig" header="ORG" :sortable="true" :style="col"> </Column>
+    <Column field="dest" header="DST" :sortable="true" :style="col"> </Column>
+    <Column field="flt_num" header="Fltnum" :sortable="true" :style="col">
+    </Column>
+    <Column field="tail" header="Tail" :sortable="true" :style="col"> </Column>
+    <Column field="schDepTMZ" header="SchDep" :sortable="true" :style="col">
+    </Column>
+    <Column field="schArrTMZ" header="SchArr" :sortable="true" :style="col">
+    </Column>
+    <Column field="depDelay" header="depDelay" :sortable="true" :style="col">
+      <template #body="slotProps">
+        <div :style="depDelayStyle(slotProps.data)" class="bold">
+          {{ slotProps.data.depDelay }}
+        </div></template
+      >
+    </Column>
+    <Column
+      field="depDelayP"
+      header="PredDepDelay"
+      :sortable="true"
+      :style="col"
+    >
+      <template #body="slotProps">
+        <div :style="depDelayPStyle(slotProps.data)" class="bold">
+          {{ slotProps.data.depDelayP }}
+        </div></template
+      >
+    </Column>
+    <Column field="arrDelay" header="ArrDelay" :sortable="true" :style="col">
+      <template #body="slotProps">
+        <div :style="arrDelayStyle(slotProps.data)" class="bold">
+          {{ slotProps.data.arrDelay }}
+        </div></template
+      >
+    </Column>
+    <Column
+      field="arrDelayP"
+      header="PredArrDelay"
+      :sortable="true"
+      :style="col"
+    >
+      <template #body="slotProps">
+        <div :style="arrDelayPStyle(slotProps.data)" class="bold">
+          {{ slotProps.data.arrDelayP }}
+        </div></template
+      >
+    </Column>
+    <Column field="minACTP" header="MinACTP" :sortable="true" :style="col">
+    </Column>
+    <Column field="level" header="Level" :sortable="true" :style="col">
+    </Column>
+  </DataTable>
+
+  <!-- --------------------------------------------------------------------------- -->
+  <!-- Edges of displayed Endpoint graph -->
+  <!-- All edges of shown, irrespective of tier -->
+  <DataTable
+    :value="endpointRef.edgeTable"
+    :scrollable="true"
+    resizableColumns="true"
+    scrollHeight="300px"
+    expandedRows="expandedRows"
+    columnResizeMode="expand"
+    v-model:selection="selectedAllPairsRow"
+    selectionMode="single"
+    dataKey="id_f"
+  >
+    <template #header>
+      <h2>Displayed Connection Data</h2>
+    </template>
+    <Column field="id_f" header="In Id" :sortable="true" :style="col"> </Column>
+    <Column field="id_nf" header="Out Id" :sortable="true" :style="col">
+    </Column>
+    <Column field="status_f" header="In Status" :sortable="true" :style="col">
+    </Column>
+    <Column field="status_nf" header="Out Status" :sortable="true" :style="col">
+    </Column>
+    <Column field="tail_f" header="In Tail" :sortable="true" :style="col">
+    </Column>
+    <Column field="tail_nf" header="Out Tail" :sortable="true" :style="col">
+    </Column>
+    <Column field="slackP" header="Pred Slack" :sortable="true" :style="col">
+    </Column>
+  </DataTable>
+
+  <!-- ------------------------------------------------------------------------ -->
   <!-- DataTable of results returned from rigidBody -->
   <DataTable
+    style="display:none;"
     :value="rigidBodyRef.table"
     :scrollable="true"
     resizableColumns="true"
@@ -249,6 +363,7 @@ is returned from the endpoint. -->
   <!-- ------------------------------------------------------------------------ -->
 
   <DataTable
+    style="display:none;"
     :value="flightsInAirRef.table"
     :scrollable="true"
     resizableColumns="true"
@@ -320,6 +435,7 @@ import DataTable from "primevue/datatable";
 import ListBox from "primevue/listbox";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
+import Slider from "primevue/slider";
 import InputNumber from "primevue/inputnumber";
 import RadioButton from "primevue/radiobutton";
 import InputText from "primevue/inputtext";
@@ -340,117 +456,7 @@ import {
 import { computePropagationDelays } from "../Composition/endPointLibraryOnce.js";
 import { boundingBox } from "../Composition/graphImpl.js";
 import * as tier from "../Composition/RigidTierref.js";
-
-function defineNodes(city, edges, flights, nb_tiers) {
-  const nodes = [];
-  const ids = [];
-
-  //    obj.nodes.forEach((e) => {
-  // if (obj.id2level[e.id] < nb_tiers) {
-  //   nodes.push({
-  //     id: e.id,
-
-  edges.forEach((e) => {
-    ids.push(e.source);
-    ids.push(e.target);
-  });
-  const flightIds = u.createMapping(flights, "id");
-  // All nodes have degree two
-  // u.print("ids", ids);
-  // u.print("flightIds", flightIds);
-  ids.forEach((id) => {
-    // if (obj.id2level[e.id] < nb_tiers) {
-    // if (city === e.orig || city === e.dest) {
-    // u.print("id/e", id);
-    const row = flightIds[id];
-    nodes.push(row);
-    // }
-  });
-  return nodes;
-}
-
-function defineEdges(city, obj, nb_tiers) {
-  u.print("defineEdges, obj", obj);
-  const edges = [];
-  obj.forEach((e) => {
-    // console.log(`${city}, ${e.orig_f}, ${e.dest_f}, ${e.dest_nf}`);
-    if (city === e.orig_f || city === e.dest_f || city === e.dest_nf) {
-      edges.push({
-        source: e.id_f,
-        target: e.id_nf,
-        orig_f: e.orig_f,
-        orig_nf: e.orig_nf,
-        dest_f: e.dest_f,
-        dest_nf: e.dest_nf,
-        ACTSlack: e.ACTSlack,
-        ACTSlackP: e.ACTSlackP,
-        ACTAvailable: e.ACTAvailable,
-        ACTAvailableP: e.ACTAvailableP,
-        inDegree: e.inDegree,
-        outDegree: e.outDegree,
-        pax: e.pax,
-        rotSlackP: e.rotSlackP,
-      });
-    }
-  });
-  return edges;
-}
-function centerGraph(graph) {
-  //const layout = graph.get("layout");
-  boundingBox(graph);
-  // Must render in order to x,y coordinates
-  // "group" not defined
-  const bbox = graph.get("group").getCanvasBBox();
-  graph.fitView(); // Not clear this is required
-  graph.render(); // Not clear this is required
-}
-
-function listCities(flightTable, flightIds) {
-  // List all cities among flights in air
-  const cities_orig = u.getAttributeUnique(flightTable, "orig");
-  // const cities_dest = u.getAttributeUnique(flightTable, "dest");
-  // console.log(
-  //   `cities, orig: ${cities_orig.length}, dest: ${cities_dest.length}`
-  // );
-  const names = [];
-  cities_orig.forEach((r) => {
-    names.push({ name: r });
-  });
-  flightIds.value = names;
-}
-
-function checkCity(city) {
-  return city && city.length === 3;
-}
-
-function checkTime(time) {
-  return time && time.length == 5 && u.checkTime(time);
-}
-
-function checkEntries(tableRef) {
-  return checkCity(tableRef.city) && checkTime(tableRef.time);
-}
-
-// function rowClick() {
-//   console.log("row-click");
-// }
-
-function propagateData(dataRef, initialId, inputArrDelay, maxArrDelay) {
-  // u.print("inside propagateData, data: ", dataRef.value);
-  const { dBookings, dFSU, dTails, edges, graph } = dataRef.value;
-
-  const delayObj = computePropagationDelays(
-    initialId,
-    inputArrDelay,
-    maxArrDelay,
-    dBookings,
-    dFSU,
-    dTails,
-    edges,
-    graph
-  );
-  return delayObj;
-}
+import * as ep from "./Endpoint/endpointUtils.js";
 
 export default {
   components: {
@@ -462,6 +468,7 @@ export default {
     FlightsInAirHelp,
     RadioButton,
     Panel,
+    Slider,
   },
   props: {
     filePath: String,
@@ -493,6 +500,7 @@ export default {
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
     const delayObjRef = ref(null);
     const maxLevels = 6;
+    const arrDelaySlider = ref(0);
 
     const infoRef = reactive({
       nbEdges: 0,
@@ -505,6 +513,16 @@ export default {
     const flightsRef = reactive({
       nbRows: 0,
       table: null,
+      city: null,
+      cityEntered: null,
+      timeEntered: null,
+      initialId: null,
+    });
+
+    const endpointRef = reactive({
+      nbRows: 0,
+      nodeTable: null,
+      edgeTable: null,
       city: null,
       cityEntered: null,
       timeEntered: null,
@@ -556,35 +574,37 @@ export default {
     });
 
     watch(
+      // inputArrDelay.value should not have any effect since not a ref
       [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
       ([row, arrDelay, maxArrDelay], o) => {
-        console.log("===== watch selectedAllPairsRow, etc =======");
+        // console.log("===== watch selectedAllPairsRow, etc =======");
         const dataRef = getEndPointFilesComputed;
-        u.print("selected row", row);
-        u.print("watch::dataRef", dataRef); // did it change between invocations
+        // u.print("selected row", row);
+        // u.print("watch::dataRef", dataRef); // did it change between invocations
         const initialId = row.id_f;
 
         // check whether calling propagateData twice still produces a graph
         let delayObj;
         [0].forEach((i) => {
-          delayObj = propagateData(dataRef, initialId, arrDelay, maxArrDelay); // args: ref, value
+          delayObj = ep.propagateData(
+            dataRef,
+            initialId,
+            arrDelay,
+            maxArrDelay
+          ); // args: ref, value
         });
 
-        u.print("delayObj: ", delayObj);
+        // u.print("delayObj: ", delayObj);
         rigidBodyRef.table = delayObj.table;
 
         // NEXT STEP: draw   graphRigidModel
         delayObjRef.value = delayObj;
-        console.log(`Select new row, new graph, tiers: ${tiers.value}`);
         drawGraphRigidModel(delayObj, tiers.value);
       }
     );
 
     // Update graph according to the number of tiers
     watch(tiers, (nbTiers) => {
-      console.log("===== watch(tiers) =======");
-      // console.log(`watch tier: ${nbTiers}`);
-      // u.print("delayObjRef.value", delayObjRef.value);
       drawGraphRigidModel(delayObjRef.value, nbTiers);
     });
 
@@ -596,13 +616,13 @@ export default {
     watch(getStatus, (status) => {
       if (status > 0) {
         // u.print("allPairsref", allPairsRef);
-        if (checkEntries(allPairsRef)) {
+        if (ep.checkEntries(allPairsRef)) {
           if (flightsRef) {
             flightsRef.city = allPairsRef.city;
             flightsRef.time = allPairsRef.time;
             // console.log("===> after checkEntries allPairsRef");
             const data = getEndPointFilesComputed.value;
-            listCities(data.flightTable, flightIds);
+            ep.listCities(data.flightTable, flightIds);
             const city = allPairsRef.city.toUpperCase();
             // u.print("data", data);
             drawGraph(city, data);
@@ -613,7 +633,8 @@ export default {
     });
 
     onMounted(() => {
-      console.log("Component is mounted");
+      // console.log("Component is mounted");
+      //
     });
 
     function drawGraph(city, data) {
@@ -623,7 +644,7 @@ export default {
 
       const flightIdMap = u.createMapping(flights, "id");
       // I should combine ptyPairs with stationPairs to create allPairs array
-      const edges = defineEdges(city, allPairs, nb_tiers);
+      const edges = ep.defineEdges(city, allPairs, nb_tiers);
       const nodes = data.nodesTraversed;
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
@@ -652,6 +673,12 @@ export default {
       return;
     }
 
+    watch(arrDelaySlider, (val) => {
+      // this will go to the watcher of inputArrDelay
+      inputArrDelay.value = val; // redundant variable
+      // drawGraphRigidModel(delayObjRef.value, tiers.value);
+    });
+
     function drawGraphRigidModel(delayObj, nbTiers) {
       const {
         nodes,
@@ -663,7 +690,7 @@ export default {
         table,
       } = delayObj;
 
-      u.print("drawGraphRigidModel::delayObj", delayObj);
+      // u.print("drawGraphRigidModel::delayObj", delayObj);
 
       // Implement change of tiersss.
       // Change the nodes, and remove all edges connected to those nodes.
@@ -699,8 +726,8 @@ export default {
       // let gEdges = [];
       const tableIds = u.createMapping(table, "id");
       const nodesTraversedIds = u.createMapping(nodesTraversed, "id");
-      u.print("tableIds", tableIds);
-      u.print("nodesTraversedIds", nodesTraversedIds);
+      // u.print("tableIds", tableIds);
+      // u.print("nodesTraversedIds", nodesTraversedIds);
 
       // gNodes: all ids from all levels
 
@@ -710,15 +737,20 @@ export default {
       Object.entries(id2level).forEach((entry) => {
         const id = entry[0];
         const level = entry[1];
-        console.log(`level: ${level}, nbTiers: ${nbTiers}`);
+        // console.log(`level: ${level}, nbTiers: ${nbTiers}`);
         if (level < nbTiers) {
-          console.log("  level < nbTiers");
-          //gNodes.push(tableIds[id]);
-          u.print("id", nodesTraversed[id]);
+          // console.log("  level < nbTiers");
+          // u.print("id", nodesTraversed[id]);
           gNodes.push(nodesTraversedIds[id]); // There are more fields for tooltips (2021-12-21)
         }
       });
-      console.log(`nb gNodes: ${gNodes.length}`);
+      gNodes.forEach((r) => {
+        r.orig = r.id.slice(10, 13);
+        r.dest = r.id.slice(13, 16);
+      });
+
+      // Add color attributes
+      ep.setupDelayColors(gNodes);
 
       // gNodes are the nodes traversed in rigidBody
 
@@ -729,32 +761,13 @@ export default {
       });
 
       const gEdges = edgesTraversed;
+      // console.log(`nb gNodes: ${gNodes.length}`);
+      // u.print("gNodes", gNodes);
+      // console.log(`nb gEdges: ${gEdges.length}`);
+      // u.print("gEdges", gEdges);
 
-      // gEdges has duplicate (id_f, id_nf) pairs. How to remove these duplicates.
-
-      // u.checkEdgesDirection(gEdges, "check wrong order");
-
-      // edges always go from level to (level+1)
-
-      // The levels seem ok. Now I must graph them.
-      // Once the graph is made, return to rigid model and check the delay propagation value. They do not look correct.
-
-      // --------------------------
-      // This data is a list of flights, i.e. nodes of a graph
-
-      // const flightIdMap = u.createMapping(flights, "id");
-      // // I should combine ptyPairs with stationPairs to create allPairs array
-      // const edges = defineEdges(city, allPairs, nb_tiers);
-      // const nodes = defineNodes(city, edges, flights, nb_tiers);
-
-      // Create two functions: remove all nodes and edges
-      // Add new nodes and edges
-
-      // TODO (date2021-1)
-      // These two functions should redraw the graph in the same canvas
-      // function removeNodesEdges(graph)
-      // (nodes, edges are two arrays)
-      // function addNodesEdges(graph, nodes, edges)
+      endpointRef.nodeTable = gNodes;
+      endpointRef.edgeTable = gEdges;
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
@@ -768,38 +781,52 @@ export default {
       // This element must be mounted before creating the graph
       // const data = { nodes: nodesTraversed, edges: gEdges };
       const data = { nodes: gNodes, edges: gEdges };
-      u.print("data", data);
       endpointsGraph.data(data);
       endpointsGraph.read(data); // combines data and render
-      // endpointsGraph.refresh(); // not helping with tooltip problem
       endpointsGraph.render();
       endpointsGraph.fitView(); //   View and Center do not work
       endpointsGraph.fitCenter();
-      centerGraph(endpointsGraph);
+      ep.centerGraph(endpointsGraph);
       endpointsGraph.render();
-      // endpointsGraph.refreshLayout(true); // does not seem to work
-      u.print("endpointsGraph", endpointsGraph);
-      // endpointsGraph.render();
-
-      // for nodes: need: departureDelayP, arrDelayP
-      // for edges: need: ACTAvailableP
-
-      // centerGraph(endpointsGraph);
+      // u.print("endpointsGraph", endpointsGraph);
 
       dp.colorByCity(endpointsGraph);
       dp.followTails(endpointsGraph);
       endpointsGraph.render(); // not sure required
+
+      // u.print("endpointsGraph", endpointsGraph);
 
       dp.assignNodeLabels(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
       endpointsGraph.render();
       return;
     }
 
+    const arrStatusStyle = (data) => {
+      return data.arrStatus === "LATE" ? "color: red" : "color: green";
+    };
+    const inFlightStyle = (data) => {
+      return data.inFlight === "AIR" ? "color: green" : "color: red";
+    };
+    const arrDelayStyle = (data) => {
+      return `color:${data.arrDelayColor}; font-weight:bold`;
+    };
+    const arrDelayPStyle = (data) => {
+      return `color:${data.arrDelayPColor}; font-weight:bold`;
+    };
+    const depDelayStyle = (data) => {
+      return `color:${data.depDelayColor}; font-weight:bold`;
+    };
+    const depDelayPStyle = (data) => {
+      return `color:${data.depDelayPColor}; font-weight:bold`;
+    };
+
+    const rotStyle = (rotData) => {
+      const col = rotData < 45 ? "green" : "red";
+      return `color:${col}`;
+    };
+
     watch(selectedFlightIds, (ids) => {
       const data = getEndPointFilesComputed;
-      // u.print("before listCities");
-      // u.print("flightTable", data.value);
-      // u.print("selectedFlightIds.value", selectedFlightIds.value);
       const flightTable = data.value.flightTable;
       const allPairs = data.value.allPairs;
       u.print("allPairs", allPairs);
@@ -810,21 +837,16 @@ export default {
 
         const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
 
-        // const table = propagateData(data, initialId); // ref, ref
-
         u.print("table", table);
         allPairsRef.city = ids.name;
         allPairsRef.table = table;
-        // u.print("return table: ", table);
       }
     });
 
     watchEffect(() => {
-      // u.print("watcheffect, getStatus", getStatus.value);
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
-        u.print("==> data", data.value);
-        // u.print("getStatus > 0, data: ", data.value);
+        // u.print("==> data", data.value);
 
         flightsRef.table = data.value.flightTable;
         flightsRef.nbRows = data.value.flightTable.length;
@@ -837,9 +859,6 @@ export default {
             r.fltnumPair = r.flt_num_f + " - " + r.flt_num_nf;
           }
         });
-
-        // ptyPairsRef.table = ptyPairs;
-        // ptyPairsRef.nbRows = ptyPairs.length;
 
         const stationPairs = data.value.stationPairs;
         const stationIdPairs = [];
@@ -866,10 +885,10 @@ export default {
         });
 
         const allPairs = data.value.allPairs;
-        u.print("before allPairsRef.table = allPairs", allPairs);
+        // u.print("before allPairsRef.table = allPairs", allPairs);
         allPairsRef.table = allPairs;
         allPairsRef.nbRows = allPairs.length;
-        console.log(`Update allPairsRef, ${allPairs.length}`);
+        // console.log(`Update allPairsRef, ${allPairs.length}`);
 
         flightsInAirRef.table = allPairs; // Change later
         flightsInAirRef.nbRows = allPairs.length; // Change later
@@ -881,6 +900,7 @@ export default {
       flightsRef,
       allPairsRef,
       rigidBodyRef,
+      endpointRef,
       flightsInAirRef,
       inputTime,
       listedTime,
@@ -892,6 +912,11 @@ export default {
       inputArrDelay,
       maxArrDelayRef,
       infoRef,
+      depDelayStyle,
+      arrDelayStyle,
+      depDelayPStyle,
+      arrDelayPStyle,
+      arrDelaySlider,
     };
   },
 };

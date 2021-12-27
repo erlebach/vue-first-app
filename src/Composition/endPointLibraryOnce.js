@@ -66,7 +66,7 @@ export function computePropagationDelays(
     initialID
   );
 
-  u.print("Return from rigidModel, delayObj: ", delayObj);
+  // u.print("Return from rigidModel, delayObj: ", delayObj);
 
   // delayObj is in reality:
   // {nodes: nodesWithArrDelay,
@@ -111,7 +111,7 @@ export function computePropagationDelays(
     r.schArrTMZ = arr.dtz + ", " + arr.tmz;
     r.tail = r.TAIL;
   });
-  u.print("nodesTraversed: ", nodesTraversed);
+  // u.print("nodesTraversed: ", nodesTraversed);
 
   delayObj.nodesTraversed = nodesTraversed;
 
@@ -131,20 +131,20 @@ export function computePropagationDelays(
     });
   });
 
-  u.print("==> computePropagationDelays::table: ", table);
-  u.print("==> computePropagationDelays::table.length: ", table.length);
+  // u.print("==> computePropagationDelays::table: ", table);
+  //u.print("==> computePropagationDelays::table.length: ", table.length);
 
   // QUESTION: How can all elements of dFSU have arrDelayP and depDelayP set?
-  u.printAttributes("dFSU dep/arr delays", dFSU, [
-    "depDelay",
-    "depDelayP",
-    "arrDelay",
-    "arrDelayP",
-    "status",
-  ]);
+  // u.printAttributes("dFSU dep/arr delays", dFSU, [
+  //   "depDelay",
+  //   "depDelayP",
+  //   "arrDelay",
+  //   "arrDelayP",
+  //   "status",
+  // ]);
 
-  console.log("id2level");
-  console.log(id2level);
+  // console.log("id2level");
+  // console.log(id2level);
 
   // table.forEach((row) => {
   //   row.level = id2level[row.id];
@@ -154,10 +154,10 @@ export function computePropagationDelays(
   // u.print("FSUnode", FSUnode);
   // throw "end script";
 
-  console.log(`table length: ${table.length}`);
-  console.log(table);
+  // console.log(`table length: ${table.length}`);
+  // console.log(table);
   delayObj.table = table;
-  u.print("computePropagationDelays::delayObj", delayObj);
+  // u.print("computePropagationDelays::delayObj", delayObj);
 
   // Table contains nodes from delayNodes for display.
   return delayObj;
@@ -165,12 +165,12 @@ export function computePropagationDelays(
 //-----------------------------------------------------------------------
 function checkBookingsForConsistency(dBookings, dTails) {
   // Bookings should already have pairs of flights with same tails
-  console.log("Check whether bookings have same pairs with same tails");
+  // console.log("Check whether bookings have same pairs with same tails");
   // Rotations are at PTY and at stations
   let idPairs = [];
   dBookings.forEach((r) => {
     if (r.tail_f === r.tail_nf) {
-      console.log(`bookings with same tails: ${r.id_f}, ${r.id_nf}`);
+      // console.log(`bookings with same tails: ${r.id_f}, ${r.id_nf}`);
       idPairs.push({ id_f: r.id_f, id_nf: r.id_nf });
     }
   });
@@ -201,16 +201,16 @@ function checkBookingsForConsistency(dBookings, dTails) {
     }
   });
   tailPairs = sortBy(tailPairs, "id_f");
-  u.print("tailPairs: ", tailPairs);
-  u.print("tailPairs.length: ", tailPairs.length); // 83
-  console.log(`(tailPairs) countTailsPTY: ${countTailsPTY}`);
-  console.log(`(tailPairs) countTailsSTA: ${countTailsSTA}`);
-  console.log(
-    `(dBookings) nb of rotations at stations (idPairsPTY): ", ${countPairsPTY}`
-  ); // 13 (124 at PTY)
-  console.log(
-    `(dBookings) nb of rotations at stations (idPairsSTA): ${countPairsSTA}`
-  ); // 13 (124 at PTY)
+  // u.print("tailPairs: ", tailPairs);
+  // u.print("tailPairs.length: ", tailPairs.length); // 83
+  // console.log(`(tailPairs) countTailsPTY: ${countTailsPTY}`);
+  // console.log(`(tailPairs) countTailsSTA: ${countTailsSTA}`);
+  // console.log(
+  // `(dBookings) nb of rotations at stations (idPairsPTY): ", ${countPairsPTY}`
+  // ); // 13 (124 at PTY)
+  // console.log(
+  // `(dBookings) nb of rotations at stations (idPairsSTA): ${countPairsSTA}`
+  // ); // 13 (124 at PTY)
 
   // QUESTION: Why the discrepency between tailpairs and countPairs? STRANGE.
 
@@ -234,9 +234,9 @@ function moreBookingsChecks(
 ) {
   // Perform sanity checks on the arguments
   // do all flights in dFSU have inbounds and outbound flights?
-  u.print("moreBookingsChecks::bookingsIds_in", bookingIds_in); // UNDEFINED  MUST FIX
-  u.print("moreBookingsChecks::bookingsIds_out", bookingIds_out); // UNDEFINED MUST FIX
-  console.log(`FSU length: ${FSU.length}`);
+  // u.print("moreBookingsChecks::bookingsIds_in", bookingIds_in); // UNDEFINED  MUST FIX
+  // u.print("moreBookingsChecks::bookingsIds_out", bookingIds_out); // UNDEFINED MUST FIX
+  // console.log(`FSU length: ${FSU.length}`);
   let nbUndefInIds = 0;
   let nbUndefOutIds = 0;
   let nbDefInIds = 0;
