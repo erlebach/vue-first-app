@@ -10,15 +10,14 @@ import { containsProp } from "@vueuse/core";
 let gcounter = 0;
 
 //--------------------------------------------------------------------
+// rigidModel depends on parameters in the user interface.
+
 export function rigidModel(
   dFSU, // values
   bookings,
   bookingsIdMap, // CHECK
   dTails,
-  edges,
   graph,
-  // bookingsIds_in, // CHECK
-  // bookingsIds_out, // CHECK
   initialArrDelayP, // delay applied to startingid
   maxArrDelay,
   startingId
@@ -30,19 +29,8 @@ export function rigidModel(
   // IN -> INP, and OUT -> OUTP. Use INP and OUTP in calculations below.
   // For now, ignore OFF and ON
 
-  let hashCoercer = hasher({ sort: true, coerce: true });
+  // let hashCoercer = hasher({ sort: true, coerce: true });
 
-  // u.print("rigidModel::startingId", startingId);
-  // u.print("rigidModel::bookingsIdMap", bookingsIdMap); // empty arrays
-  // u.print("rigidModel::bookings_in", bookings_in);
-  // u.print("rigidModel::bookings_out", bookings_out);
-  // u.print("rigidModel::initialArrDelayP", initialArrDelayP);
-  // u.print("rigidModel::maxArrDelay", maxArrDelay);
-  // u.print("rigidModel::bookingsIds_in", bookingsIds_in);
-  // u.print("rigidModel::bookings", bookings);
-  // u.print("rigidModel::dFSU", dFSU);
-
-  // console.log("endpointRigidModelOnce::rigidModel");
   resetDelays(dFSU, bookings);
   const FSUm = u.createMapping(dFSU, "id");
 
@@ -51,25 +39,14 @@ export function rigidModel(
   // Edges must be initialized before nodes in order to compute minACT
   const a = true;
   if (a === true) {
-    initializeEdges(bookings, FSUm);
-    initializeNodes(
-      FSUm,
-      dTails,
-      bookingsIdMap
-      // bookings_in,
-      // bookings_out,
-      // bookingsIds_in,
-      // bookingsIds_out
-    );
-    // throw "script end";
+    initializeEdges(bookings, FSUm); // does not depend on intial delay
+    initializeNodes(FSUm, dTails, bookingsIdMap);
   }
+
+  // UP UNTIL THIS POINT, there is no dependence on maxArrDelay and initialArrDelayP
 
   // Initial Node. Add a delay of initialArrDelayPa
   // Rotation at STA is irrelevant. There is no PAX on this return flight.
-
-  // u.print("=> rigidModel, startingId", startingId);
-  // u.print("=> FSUm", FSUm);
-  // throw "script end";
 
   // depends on arguments. Should probably be called elsewhere
   setInitialDelays(FSUm, initialArrDelayP, startingId);
@@ -77,12 +54,6 @@ export function rigidModel(
   // const outs = bookings_out[startingId];
 
   // This is the graph to traverse
-  // What are edges?
-  // const { edges } = epu.getEdges(bookings);
-  // const graph = createGraph(edges);
-
-  // const graph = createGraph(edges, bookings_in, bookings_out);
-  // const id = startingId;
 
   // Start the analysis, run through the graph, breadth-first
   // Starting with root_id leaving a Sta and flying to PTY.
@@ -94,28 +65,12 @@ export function rigidModel(
   // At a Station, there is only a single returning flight to PTY we are
   // considering in the analysis with the same tail.
 
-  // dFSU.forEach((f) => {
-  //   if (f.arrDelayP > 0) {
-  //     const outbounds = bookings_out[f.id];
-  //     const inbounds = bookings_in[f.id];
-  //   }
-  // });
-
-  // All Empty arrays!
-  // u.print("traverseGraph::startingId", startingId);
-  // u.print("traverseGraph::bookingsIdMap", bookingsIdMap);
-  // u.print("traverseGraph::bookings_in", bookings_in);
-  // u.print("traverseGraph::bookingsIds_in", bookingsIds_in);
-  // u.print("traverseGraph::dFSU", dFSU);
-  // u.print("traverseGraph::FSUm", FSUm);
-
   // Depends on startingId, so should be done elsewhere. Every time
   // a new id is selected
   let { idsTraversed, edgesTraversed } = traverseGraph(
     startingId,
     graph,
     bookingsIdMap,
-    // bookingsIds_in,
     dFSU,
     FSUm
   );
@@ -125,31 +80,12 @@ export function rigidModel(
 
   // console.log(`before, edgesTraversed.length: ${edgesTraversed.length}`);
   edgesTraversed = makeUnique(edgesTraversed); // already no duplicates.
-  // console.log(`after, edgesTraversed.length: ${edgesTraversed.length}`);
-  // console.log(`after, edgesTraversed: ${edgesTraversed}`);
-
-  // There appears to be no undefined nodes
-
-  // return a dictionary that returns the level for any id
-  // also return a dictionary that returns a list of ids for each level
-
-  // idsTraversed is not used later
-  // Rather, arrDelayP, and other attributes are computed in dFSU
-
-  //const maxArrDelay = -10000; // keep al flights
-  // const maxArrDelay = 15; // arrival delays > 15 min
-
-  // The issue is that the first flight should not be removed.
-  // Alternatively, if the first flight is removed, there is no need to analyze
-  // maxArrDelay should be a parameter
-  // const maxArrDelay = 0; // keep only delayed flights
-
-  // filter nodes from dFSU
-
-  // console.log(`==> rigidModel::maxArrDelay: ${maxArrDelay}`);
 
   // subset of flights and bookings with predicted arrival delay (arrDelayP)
   // greater than maxArrDelay
+  // I could call this function before traversing graph, and overwrite dFSU and dBookings
+  // Alternatively, I could only return edgesTraversed connecting two flights with incoming
+  // arrival delay greater than some amount. (NOT DONE)
   const {
     nodesWithArrDelay,
     edgesWithArrDelay,
@@ -169,24 +105,6 @@ export function rigidModel(
   // newEdges only contains edges between nodes that were traversed
   // Note that the rigid model takes feeders into account that are not part of the traversed nodes.
   // The traversed nodes originate at startId, and consider the outbounds recursively.
-
-  // console.log(`restrictGraph::edges.length: ${edges.length}`);
-  let hEdgesTraversed = hashCoercer.hash(edgesTraversed);
-  // console.log(`hash hEdgesTraversed before restrictGraph: ${hEdgesTraversed}`);
-  // u.print("edgesTraversed before restrictGraph", edgesTraversed); // ZERO THE SECOND TIME AROUND
-  edgesTraversed = restrictGraph(edgesTraversed, id2level);
-  hEdgesTraversed = hashCoercer.hash(edgesTraversed);
-  // console.log(`hash hEdgesTraversed after restrictGraph: ${hEdgesTraversed}`);
-  // The second time around, restrictGraph returns an empty list. WHY? (2021-12-24)
-  // u.print("return from restrictGraph::edgesTraversed", edgesTraversed);
-  // u.print("return from restrictGraph::id2level", id2level);
-  const hid2level = hashCoercer.hash(id2level);
-  // console.log(`hash id2level: ${hid2level}`);
-
-  // console.log("Edges with In Arrival Delay");
-  // console.log(u.createMapping(edgesWithInArrDelay, "id_f"));
-  // u.print("nodesWithArrDelay", nodesWithArrDelay);
-  // u.print("edgesWithArrDelay", edgesWithArrDelay);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
   return {
@@ -239,9 +157,9 @@ function initializeEdges(bookings, FSUm) {
     // Predicted PAX connection time (initially set to available time)
     e.ACTAvailableP = e.ACTAvailable;
     // Available time slack: how much time is available beyond the minimum requirements (usually airport-dependent)
-    e.minAvailable = 30;
+    // e.minAvailable = 30;
     // e.ACTSlack = e.ACTAvailable - e.minAvailable;
-    e.ACTSlackP = e.ACTAvailableP - e.minAvailable; // SHOULD BE DEFINED
+    e.ACTSlackP = e.ACTAvailableP - 30; // SHOULD BE DEFINED
 
     // e.availRot = undefined;
     e.availRotP = 10000; // Rotationa does not apply. Need a number to calculate e.availSlackP correctly
@@ -266,13 +184,12 @@ function initializeEdges(bookings, FSUm) {
       e.schedRot = (row_nf.SCH_DEP_DTMZ - row_f.SCH_ARR_DTMZ) * ms2min; // same as calcAvailRot
       // Available rotation is based on best estimates for feeder arrival and outbound departure times
       e.availRotMinReq = 60;
-      e.availRot = (row_nf.estDepTime - row_f.estArrTime) * milli2min;
+      // e.availRot = (row_nf.estDepTime - row_f.estArrTime) * milli2min;
       e.availRotP = e.availRot;
       e.ACTAvailableP = e.availRotP;
       e.ACTSlackP = e.ACTAvailableP - 30; // hardcoded for now. WILL CHANGE LATER
-      // u.print("initializeEdges::availRot, e", e);
       //e.rotSlack = e.availRot - e.availRotMinReq; // slack can be negative (slack to spare)
-      e.availRotSlack = e.availRot - e.availRotMinReq; // slack can be negative (slack to spare)
+      // e.availRotSlack = e.availRot - e.availRotMinReq; // slack can be negative (slack to spare)
       e.availRotSlackP = e.availRotSlack;
 
       e.slackP = Math.min(e.availRotSlackP, e.ACTSlackP);
@@ -280,48 +197,24 @@ function initializeEdges(bookings, FSUm) {
         console.log(
           "2. e.availRotSlackP or e.ACTSlackP not a number. SHOULD NOT HAPPEN"
         );
-
-      // TODO: availRotSlackP=1655, rotSlackP
-      // Difference between rotSlackP and availRotSlackP  (NOT CLEAR)
     }
-    // u.print("initializeEdges, e", e);
   });
-  // console.log(`countTailTails: ${countTailTails}`);
 }
-// Additional edge attributes
-// availRotP, availRotMinReq, rotSlackP, ACTAvailableP, ACTSlackP
-//------------------------------------------------------------------
-// Original function before making mods on 2021-12-24
-// I want to reduce the number of changes to the data structures
-
 //------------------------------------------------------------------
 function initializeNodes(FSUm, dTails, bookingsIdMap) {
   // Initialize all records in FSUm
   Object.entries(FSUm).forEach((entry) => {
     const [k, r] = entry;
-    r.level = -1;
-    r.minACTP = r.minACT; // << NEEDED? r.minACT not defined
-    r.ACTSlackP = r.ACTSlack;
+    r.level = -1; // MUST FIX
     r.slackP = r.slack;
-    // r.rotSlackP = r.rotSlack;    r.availRotP = r.availRot;
     r.arrDelayP = r.arrDelay;
     r.depDelayP = r.depDelay;
-    // u.print("initializeNodes, r", r);
-    // if (r.inboundIds.length > 0) {
-    //   console.log(
-    //     `==> initializeNodes, r.inboundIds.length: ${r.inboundIds.length}, ${r.nbInbounds}`
-    //   );
-    // }
     const obj = computeMinACT(r.id, bookingsIdMap, r.inboundIds);
-    // u.print("initializeNodes, obj", obj);
-    const minACT = obj.minACT;
-    const inboundMinId = obj.inboundMinId;
-    if (
-      r.id === "2021-12-23GYEPTY20:080272" ||
-      r.id === "2021-12-24PTYMDE12:090306"
-    ) {
-      // u.print("initializeNodes, r", r);
-    }
+    r.minACT = obj.minACT;
+    r.ACTSlack = r.minACT - 30; // hardcoded 30
+    r.minACTP = r.minACT;
+    r.ACTSlackP = r.ACTSlack;
+    r.inboundMinId = obj.inboundMinId;
   });
 }
 //------------------------------------------------------------------
@@ -369,8 +262,6 @@ function resetDelays(dFSU, bookings) {
     b.OUTP_DTMZ_f = b.SCH_DEP_DTMZ_f;
     b.OUTP_DTMZ_nf = b.SCH_DEP_DTMZ_nf;
   });
-  // u.print("resetDelays::dFSU", dFSU);
-  // u.print("resetDelays::bookings", bookings);
 }
 //---------------------------------------------------------------
 function getOrig(id) {
@@ -462,20 +353,10 @@ function updateOutboundNodeNew(FSUm, bookingsIdMap, node) {
   const ACTSlackP = ACTAvailableP - 30; // manual setting
   const slackP = ACTSlackP; // this is really an edge quantity
   if (slackP < 0) {
-    // console.log(`=======> id_nf: ${id_nf}`);
-    // console.log(`     ==> minACTP: ${n.minACTP}`);
-    // console.log(`     ==> minId: ${n.minId}`);
-    // console.log(`     ==> slackP: ${slackP}`);
-    // console.log(`==> old est dep time: ${n.estDepTime}`);
-    // console.log(`    old dep DelayP: ${n.depDelayP}`);
-    // console.log(`    old arr DelayP: ${n.arrDelayP}`);
     n.estDepTime = n.SCH_DEP_DTMZ - slackP * 60000; // in ms
     n.estArrTime = n.SCH_ARR_DTMZ - slackP * 60000; // in ms
     n.depDelayP = (n.estDepTime - n.SCH_DEP_DTMZ) / 60000; // in min
     n.arrDelayP = (n.estArrTime - n.SCH_ARR_DTMZ) / 60000; // in min
-    // console.log(` => new est dep time: ${n.estDepTime}`);
-    // console.log(`    new dep DelayP: ${n.depDelayP}`);
-    // console.log(`    new arr DelayP: ${n.arrDelayP}`);
 
     // There is no need to update the incoming edges. These will all be updated at the
     // end of the graph traversal, once all the new estArrTime and estDepTimes have been
@@ -679,6 +560,7 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
 //----------------------------------------------------
 function computeNodesEdgesWithArrDelay(dFSU, bookings, maxArrDelay) {
   // Compute subset of flights and bookings with arrDelayP > maxArrDelay
+  // This method could be outside rigidModel
   const nodesWithArrDelay = [];
 
   dFSU.forEach((f) => {

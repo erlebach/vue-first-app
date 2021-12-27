@@ -453,7 +453,6 @@ import {
   getEndPointFilesComputed,
 } from "../Composition/text-processing.js";
 // refactored to no recompute unnecessary data
-import { computePropagationDelays } from "../Composition/endPointLibraryOnce.js";
 import { boundingBox } from "../Composition/graphImpl.js";
 import * as tier from "../Composition/RigidTierref.js";
 import * as ep from "./Endpoint/endpointUtils.js";
@@ -599,13 +598,15 @@ export default {
 
         // NEXT STEP: draw   graphRigidModel
         delayObjRef.value = delayObj;
-        drawGraphRigidModel(delayObj, tiers.value);
+        const recreate = true;
+        drawGraphRigidModel(delayObj, tiers.value, recreate);
       }
     );
 
     // Update graph according to the number of tiers
     watch(tiers, (nbTiers) => {
-      drawGraphRigidModel(delayObjRef.value, nbTiers);
+      const recreate = false;
+      drawGraphRigidModel(delayObjRef.value, nbTiers, recreate);
     });
 
     // saveOnce, saveAtIntervals, should be called from a single file for it
@@ -676,10 +677,10 @@ export default {
     watch(arrDelaySlider, (val) => {
       // this will go to the watcher of inputArrDelay
       inputArrDelay.value = val; // redundant variable
-      // drawGraphRigidModel(delayObjRef.value, tiers.value);
     });
 
-    function drawGraphRigidModel(delayObj, nbTiers) {
+    //-----------------------------------
+    function drawGraphRigidModel(delayObj, nbTiers, recreate) {
       const {
         nodes,
         edges,
@@ -772,9 +773,11 @@ export default {
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
         // removes all nodes and edges. Leaves configuration intact
+        console.log("==> clear Graph");
         endpointsGraph.clear();
       } else {
         endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
+        console.log("==> recreate Graph");
         endpointsGraphCreated = true;
       }
 

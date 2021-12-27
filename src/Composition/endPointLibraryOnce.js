@@ -17,7 +17,6 @@ export function computePropagationDelays(
   dBookings1, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
   dFSU1,
   dTails,
-  edges,
   graph
 ) {
   // dBookings1, dFSU1, dTails1, are copies to protect against overwriting elements. (Does not solve error)
@@ -28,7 +27,6 @@ export function computePropagationDelays(
   const dFSU = u.arrOfObjectsCopy(dFSU1);
   const dBookings = u.arrOfObjectsCopy(dBookings1);
 
-  // console.log("enter computePropagate");
   // id is a composite of id_f and id_nf separated by a '-'
   const dBookingsIdMap = u.createMapping(dBookings, "id"); // CHECK
 
@@ -42,38 +40,18 @@ export function computePropagationDelays(
 
   const dFSUm = u.createMapping(dFSU, "id");
 
-  // computeFeeders might not be required
-  // feeders is not required (same as bookings_in)
-  // let { bookingIds_in, bookingIds_out } = computeFeeders(dBookings);
-
-  // u.print("before computeFeeders::bookingIds_in", bookingIds_in);
-  // u.print("before computeFeeders::bookingIds_out", bookingIds_out);
-
-  // const initIDout = bookingIds_out[initialID];
-  // u.print(`outbound from initialID ${initialID}`, initIDout); // value does not change.
-
   // Analyze the impact of an initial arrival delay (using historical data)
   // Does rigidModel compute information that depends on maxArrDelay and initialArrDelay?
   const delayObj = rigidModel(
     dFSU,
     dBookings,
-    dBookingsIdMap, // CHECK
+    dBookingsIdMap,
     dTails,
-    edges,
     graph,
-    initialArrDelay, // applied to id
+    initialArrDelay, // applied to initialID
     maxArrDelay, // control what nodes are taken into account
     initialID
   );
-
-  // u.print("Return from rigidModel, delayObj: ", delayObj);
-
-  // delayObj is in reality:
-  // {nodes: nodesWithArrDelay,
-  // edges: edgesWithInArrDelay, // not useful
-  // graphEdges:
-  // level2ids,
-  // id2level,}
 
   // graphEdges are the edges traversed.
 
@@ -232,18 +210,12 @@ function moreBookingsChecks(
   bookingIds_out,
   tails
 ) {
-  // Perform sanity checks on the arguments
-  // do all flights in dFSU have inbounds and outbound flights?
-  // u.print("moreBookingsChecks::bookingsIds_in", bookingIds_in); // UNDEFINED  MUST FIX
-  // u.print("moreBookingsChecks::bookingsIds_out", bookingIds_out); // UNDEFINED MUST FIX
-  // console.log(`FSU length: ${FSU.length}`);
   let nbUndefInIds = 0;
   let nbUndefOutIds = 0;
   let nbDefInIds = 0;
   let nbDefOutIds = 0;
   FSU.forEach((r) => {
     const id = r.id;
-    // u.print("bookingIds_in[r.id]", bookingIds_in[r.id]);
     const inIds = bookingIds_in[r.id];
     const outIds = bookingIds_out[r.id];
     if (inIds === undefined) {
