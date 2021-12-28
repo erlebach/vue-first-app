@@ -325,7 +325,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 2,
+      days: 1,
     },
     {
       headers: {
@@ -563,8 +563,6 @@ const getEndPointFilesComputed = computed(() => {
     ptyPairs,
     stationPairs,
     allPairs,
-    // inboundsMap,
-    // outboundsMap,
     dBookings, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
     dFSU,
     dTails,

@@ -16,7 +16,6 @@ export function computePropagationDelays(
   maxArrDelay, // control what is taken into account
   dBookings, // three arrays now computed in text-processing. Not clear that the other arrays are still required. Perhaps.
   dFSU,
-  dTails,
   graph
 ) {
   // Propagation is recursive. An error might lead to infinite calls, so stack overflow
@@ -36,7 +35,6 @@ export function computePropagationDelays(
   const delayObj = rigidModel(
     dFSU,
     dBookings,
-    dTails,
     graph,
     initialArrDelay, // applied to initialID
     maxArrDelay, // control what nodes are taken into account
@@ -72,31 +70,6 @@ export function computePropagationDelays(
   u.print("dFSU", dFSU);
   u.print("idList", idList);
 
-  //---------------------
-
-  const delays = [];
-  const arrays = { dFSU, dBookings, dTails, graph };
-  const initArrDelays = [0, 15, 30, 45, 60, 120];
-  const maxArrDelayNew = 15;
-
-  // dFSU has repeats. HOW IS THIS POSSIBLE?
-  const dFSUIdm = u.createMapping(dFSU, "id");
-  dFSU = [];
-  Object.values(dFSUIdm).forEach((r) => {
-    dFSU.push(r);
-  });
-
-  console.log(`length(dFSUIdm): ${Object.keys(dFSUIdm).length}`);
-  console.log(`length(dFSU): ${dFSU.length}`);
-  u.print("maxArrDelay: ", maxArrDelayNew);
-  u.print("idList: ", idList);
-
-  idList.forEach((id) => {
-    initArrDelays.forEach((initArrDelay) => {
-      processDelays(id, delays, initArrDelay, maxArrDelayNew, arrays);
-    });
-  });
-  u.print("delays", delays);
   //---------------------
 
   // graphEdges are the edges traversed.
@@ -136,6 +109,54 @@ export function computePropagationDelays(
 
   // Table contains nodes from delayNodes for display.
   return delayObj;
+}
+//-----------------------------------------------------------------------
+export function computeNetworkDelays(data) {
+  // Apply the rigidModel to all incoming flights in the air
+
+  u.print("computeNetworkDelays::data", data);
+  let { dFSU, dBookings } = data;
+  const delays = [];
+  const idList = [];
+  const arrays = data; //{ dFSU, dBookings, dTails, graph };
+  const initArrDelays = [0, 15, 30, 45, 60, 120];
+  const maxArrDelayNew = 15;
+
+  // dFSU has repeats. HOW IS THIS POSSIBLE?
+  const dFSUm = u.createMapping(dFSU, "id");
+  const dBookingsm = u.createMapping(dBookings, "id");
+  // I am only looking for information on the inbound flights chosen among all pairs
+  // There are multiple outbounds per inbound flight in bookings
+  const inboundFlightsm = u.createMapping(dBookings, "id_f");
+
+  dFSU = [];
+  Object.values(dFSUm).forEach((r) => {
+    dFSU.push(r);
+  });
+
+  dBookings = [];
+  Object.values(dBookingsm).forEach((r) => {
+    dBookings.push(r);
+  });
+
+  Object.values(inboundFlightsm).forEach((r) => {
+    const row_f = dFSUm[r.id_f];
+    if (row_f === undefined) {
+      console.log("SHOULD NOT HAPPEN");
+      throw "SHOULD NOT HAPPEN";
+    }
+    if (row_f.id.slice(10, 13) !== "PTY" && row_f.out > 0 && row_f.in === 0) {
+      idList.push(r.id_f);
+    }
+  });
+
+  idList.forEach((id) => {
+    initArrDelays.forEach((initArrDelay) => {
+      processDelays(id, delays, initArrDelay, maxArrDelayNew, arrays);
+    });
+  });
+
+  return delays;
 }
 //-----------------------------------------------------------------------
 function checkBookingsForConsistency(dBookings, dTails) {
@@ -248,18 +269,18 @@ function moreBookingsChecks(
 }
 //------------------------------------------------------------------------
 function processDelays(id, delays, initArrDelay, maxArrDelay, arrays) {
-  console.log(`id: ${id}, maxArrDelay: ${maxArrDelay}`);
+  // console.log(`id: ${id}, maxArrDelay: ${maxArrDelay}`);
   const { dFSU, dBookings, dTails, graph } = arrays;
+
   const ddelayObj = rigidModel(
     dFSU,
     dBookings,
-    dTails,
     graph,
     initArrDelay, // applied to initialID
     maxArrDelay, // control what nodes are taken into account
     id
   );
-  u.print(`==> ddelayObj(${id})`, ddelayObj);
+  // u.print(`==> ddelayObj(${id})`, ddelayObj);
   const nodes = ddelayObj.nodesTraversed;
 
   // count nb nodes with depDelayP > maxArrDelay
@@ -272,6 +293,8 @@ function processDelays(id, delays, initArrDelay, maxArrDelay, arrays) {
     }
   });
   const ratio = nbDelayP > 0 ? totDelayP / nbDelayP : 0;
+  const nbFlights = ddelayObj.nodesTraversed.length;
+  const fracFlightsDelayed = Math.floor((100 * nbDelayP) / nbFlights) / 100;
   delays.push({
     id,
     maxArrDelay,
@@ -279,7 +302,10 @@ function processDelays(id, delays, initArrDelay, maxArrDelay, arrays) {
     nbDelayP,
     totDelayP,
     ratio: Math.floor(ratio),
+    nbFlights,
+    fracFlightsDelayed,
   });
+  return delays;
 }
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------

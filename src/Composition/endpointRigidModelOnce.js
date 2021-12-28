@@ -16,13 +16,12 @@ let gcounter = 0;
 export function rigidModel(
   dFSU1, // values
   dBookings1,
-  dTails,
   graph,
   initialArrDelayP, // delay applied to startingid
   maxArrDelay,
   startingId
 ) {
-  u.print("rigidModel::graph", graph);
+  // u.print("rigidModel::graph", graph);
   // dBookings1, dFSU1, dTails1, are copies to protect against overwriting elements. (Does not solve error)
   // These are arrays of Objects. The copy ([...]) copies the references (object addresses), but not the object content.
   // I need a deep copy.
@@ -50,7 +49,7 @@ export function rigidModel(
 
   // Edges must be initialized before nodes in order to compute minACT
   initializeEdges(bookings, FSUm); // does not depend on intial delay
-  initializeNodes(FSUm, dTails, bookingsIdMap);
+  initializeNodes(FSUm, bookingsIdMap);
 
   // UP UNTIL THIS POINT, there is no dependence on maxArrDelay and initialArrDelayP
 
@@ -76,7 +75,7 @@ export function rigidModel(
 
   // Depends on startingId, so should be done elsewhere. Every time
   // a new id is selected
-  u.print("before traverseGraph, graph ", graph);
+  // u.print("before traverseGraph, graph ", graph);
   let { idsTraversed, edgesTraversed } = traverseGraph(
     startingId,
     graph,
@@ -84,7 +83,7 @@ export function rigidModel(
     dFSU,
     FSUm
   );
-  u.print("after traverseGraph, graph ", graph);
+  // u.print("after traverseGraph, graph ", graph);
 
   // Map to access levels and ids (using the ids traversed starting with the flight startingId)
   const { id2level, level2ids } = createId2Level(idsTraversed);
@@ -130,7 +129,6 @@ export function rigidModel(
   // newEdges only contains edges between nodes that were traversed
   // Note that the rigid model takes feeders into account that are not part of the traversed nodes.
   // The traversed nodes originate at startId, and consider the outbounds recursively.
-  u.print("after traverseGraph, return from rigidModel, graph ", graph);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
   return {
@@ -228,7 +226,7 @@ function initializeEdges(bookings, FSUm) {
   });
 }
 //------------------------------------------------------------------
-function initializeNodes(FSUm, dTails, bookingsIdMap) {
+function initializeNodes(FSUm, bookingsIdMap) {
   // Initialize all records in FSUm
   Object.entries(FSUm).forEach((entry) => {
     const [k, r] = entry;
@@ -551,7 +549,7 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
   let countDef = 0;
 
   let count = 0;
-  u.print("traverseGraph, graph", graph);
+  // u.print("traverseGraph, graph", graph);
 
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
 
@@ -577,8 +575,6 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
   // //   idCount[id] = count;
   // }
   // u.print("rigidModel, traversing graph, idCount", idCount);
-
-  u.print("graph", graph);
 
   const ids = [];
 

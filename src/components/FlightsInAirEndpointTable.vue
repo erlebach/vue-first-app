@@ -36,7 +36,7 @@ is returned from the endpoint. -->
     <Column field="sch_arr_z" header="sch_arr" :sortable="true"> </Column>
     <Column field="eta" header="ETA" :sortable="true"> </Column>
   </DataTable>
-  <!-- ---------------------------------------------------------- -->
+  <!-- ----------------------------------------------------------------------------- -->
   <DataTable
     :value="allPairsRef.table"
     :scrollable="true"
@@ -191,11 +191,21 @@ is returned from the endpoint. -->
         <span style="font-size:1em">
           <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
         </span>
-        <Slider v-model="arrDelaySlider" :step="5" :min="0" :max="400" />
+        <!-- Slider with buttons -->
+        <div class="p-d-flex p-ai-center">
+          <Button icon="pi pi-angle-left" @click="arrDelaySlider.dec" />
+          <Slider
+            v-model="arrDelaySlider.value"
+            :step="arrDelaySlider.step"
+            :min="arrDelaySlider.min"
+            :max="arrDelaySlider.max"
+          />
+          <Button icon="pi pi-angle-right" @click="arrDelaySlider.inc" />
+        </div>
         <!-- inputArrDelay -->
         <InputNumber
           id="integeronly"
-          v-model="arrDelaySlider"
+          v-model="arrDelaySlider.value"
           inputStyle="color:red; width:4em"
         />
         <span style="font-size:1em">
@@ -217,6 +227,7 @@ is returned from the endpoint. -->
       <div>
         <div id="GETooltipId" class="GETooltipId"></div>
         <div id="mountEndpointsGraph"></div>
+        <div id="mountEndpointsChart"></div>
       </div>
     </div>
   </div>
@@ -438,10 +449,14 @@ import Button from "primevue/button";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
 import Slider from "primevue/slider";
+// import SliderPlus from "./SliderPlus.vue";
 import InputNumber from "primevue/inputnumber";
 import RadioButton from "primevue/radiobutton";
 import InputText from "primevue/inputtext";
+import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
+import G2 from "@antv/g2";
+import * as g2p from "@antv/g2plot";
 // I should factor all the graph routines into a single function called commonGraphImpl.js
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 //import { colorByCity } from "../Composition/graphImpl";
@@ -490,6 +505,7 @@ export default {
     let graphCreated = false;
     let endpointsGraphCreated = false;
     let graph = null;
+    let chart = null;
     let endpointsGraph = null;
     const showGraph = ref(null);
     const selectedFlightIds = ref();
@@ -502,9 +518,19 @@ export default {
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
     const delayObjRef = ref(null);
     const maxLevels = 6;
-    const arrDelaySlider = ref(0);
     // Endpoint graph orientation
     const portrait = ref(true);
+    // const arrDelaySlider = ref(0);
+    // const arrDelayStep = ref(15);
+    // const arrDelayMin = ref(0);
+    // const arrDelayMax = ref(400);
+
+    const arrDelaySlider = reactive({
+      value: 0,
+      min: 0,
+      max: 400,
+      step: 15,
+    });
 
     const infoRef = reactive({
       nbEdges: 0,
@@ -597,6 +623,50 @@ export default {
       // endpointsGraph.fitCenter();
     }
 
+    const chartConfiguration = dp.setupConfiguration({
+      container: "mountEndpointsChart",
+      width: 800,
+      height: 600,
+    });
+
+    function drawChart(data) {
+      //
+      // const chartConfiguration = new G2.Column(connectionConfiguration);
+      // chart = new G2.Column(connectionConfiguration);
+      const column = new g2p.Column("mountEndpointsChart", {
+        data,
+        xField: "id",
+        yField: "fracFlightsDelayed",
+        seriesField: "initArrDelay",
+        isGroup: "true",
+        columnStyle: {
+          radius: [20, 20, 0, 0],
+        },
+      });
+      column.render();
+    }
+
+    watch(arrDelaySlider, () => {
+      // this will go to the watcher of inputArrDelay
+      inputArrDelay.value = arrDelaySlider.value; // redundant variable
+      console.log(`Update inputArrDelay value: ${inputArrDelay.value}`);
+    });
+
+    arrDelaySlider.inc = () => {
+      console.log(`arrDelayInc, ${arrDelaySlider.value}`);
+      if (arrDelaySlider.value <= arrDelaySlider.max - arrDelaySlider.step)
+        arrDelaySlider.value += arrDelaySlider.step;
+      else arrDelaySlider.value = arrDelaySlider.max;
+    };
+
+    //const arrDelayDec = () => {
+    arrDelaySlider.dec = () => {
+      console.log(`arrDelayDec, ${arrDelaySlider.value}`);
+      if (arrDelaySlider.value >= arrDelaySlider.min + arrDelaySlider.step)
+        arrDelaySlider.value -= arrDelaySlider.step;
+      else arrDelaySlider.value = arrDelaySlider.min;
+    };
+
     watch(
       // inputArrDelay.value should not have any effect since not a ref
       [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
@@ -617,6 +687,13 @@ export default {
             maxArrDelay
           ); // args: ref, value
         });
+
+        // Go through all flights in air and compute effect of initial arrival delays
+        const delays = ep.propagateNetwork(dataRef);
+        u.print("return from propagateNetwork, delays", delays);
+
+        // draw a chart with the delays
+        drawChart(delays);
 
         // u.print("delayObj: ", delayObj);
         rigidBodyRef.table = delayObj.table;
@@ -698,11 +775,6 @@ export default {
       graph.render();
       return;
     }
-
-    watch(arrDelaySlider, (val) => {
-      // this will go to the watcher of inputArrDelay
-      inputArrDelay.value = val; // redundant variable
-    });
 
     //-----------------------------------
     function drawGraphRigidModel(delayObj, nbTiers, recreate) {
@@ -971,6 +1043,11 @@ export default {
       depDelayPStyle,
       arrDelayPStyle,
       arrDelaySlider,
+      //arrDelayStep,
+      //arrDelayMin,
+      //arrDelayMax,
+      //arrDelayDec,
+      //arrDelayInc,
     };
   },
 };
@@ -989,5 +1066,10 @@ export default {
 .p-panel-header {
   font-size: 8em;
   color: blue;
+}
+.p-slider {
+  width: 100px;
+  margin-left: 10px;
+  margin-right: 10px;
 }
 </style>
