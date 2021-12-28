@@ -146,3 +146,8 @@ TODO: rmeove all edge information from FSU and remove all nodes information from
 - TODO: scale the graph to fit the window (URGENT)
 - TODO: add a orientation toggle button to change the graph to landscape (FIRST)
 ----------------------------------------------
+2021-12-27
+- ERROR: sch_dep and sch_arr are wrong in the node tooltips (WHY???).  They are the same and the date says 1970. 
+  SOMETHING IS WRONG!!!
+- DONE: run analysis of all flights in the air for potential downstream network delays (using all nodes in the network). 
+-------------------------------

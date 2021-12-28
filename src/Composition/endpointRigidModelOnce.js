@@ -22,6 +22,7 @@ export function rigidModel(
   maxArrDelay,
   startingId
 ) {
+  u.print("rigidModel::graph", graph);
   // dBookings1, dFSU1, dTails1, are copies to protect against overwriting elements. (Does not solve error)
   // These are arrays of Objects. The copy ([...]) copies the references (object addresses), but not the object content.
   // I need a deep copy.
@@ -41,6 +42,9 @@ export function rigidModel(
 
   // resetDelays(dFSU, bookings); // Might not be required
   const FSUm = u.createMapping(dFSU, "id");
+
+  // u.print("rigidModel::FSUm", FSUm);
+  // u.print("rigidModel::dFSU", dFSU);
 
   // End letter P refers to "Propagated" or "Predicted"
 
@@ -72,6 +76,7 @@ export function rigidModel(
 
   // Depends on startingId, so should be done elsewhere. Every time
   // a new id is selected
+  u.print("before traverseGraph, graph ", graph);
   let { idsTraversed, edgesTraversed } = traverseGraph(
     startingId,
     graph,
@@ -79,6 +84,7 @@ export function rigidModel(
     dFSU,
     FSUm
   );
+  u.print("after traverseGraph, graph ", graph);
 
   // Map to access levels and ids (using the ids traversed starting with the flight startingId)
   const { id2level, level2ids } = createId2Level(idsTraversed);
@@ -124,6 +130,7 @@ export function rigidModel(
   // newEdges only contains edges between nodes that were traversed
   // Note that the rigid model takes feeders into account that are not part of the traversed nodes.
   // The traversed nodes originate at startId, and consider the outbounds recursively.
+  u.print("after traverseGraph, return from rigidModel, graph ", graph);
 
   // I really should return all nodes, but only draw the nodes with propagation delay > 0
   return {
@@ -544,6 +551,7 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
   let countDef = 0;
 
   let count = 0;
+  u.print("traverseGraph, graph", graph);
 
   // return null; // REMOVE. SIMPLY THERE FOR DEBUGGING. Sept. 9, 2021
 
@@ -559,15 +567,18 @@ function traverseGraph(startingId, graph, bookingsIdMap, dFSU, FSUm) {
   // There is no graph created
 
   const dFSUids = u.createMapping(dFSU, "id");
-  const idCount = {};
-  for (let id in dFSUids) {
-    let count = 0;
-    graph.traverseBfs(id, (key, values) => {
-      count += 1;
-    });
-    idCount[id] = count;
-  }
+  // const idCount = {};
+
+  // for (let id in dFSUids) {
+  //   let count = 0;
+  //   graph.traverseBfs(id, (key, values) => {
+  //     count += 1;
+  //   });
+  // //   idCount[id] = count;
+  // }
   // u.print("rigidModel, traversing graph, idCount", idCount);
+
+  u.print("graph", graph);
 
   const ids = [];
 
