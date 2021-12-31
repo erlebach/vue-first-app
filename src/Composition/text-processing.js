@@ -43,7 +43,6 @@ const inboundsMap = {};
 const outboundsMap = {};
 
 const status = ref(null);
-
 const getStatus = computed(() => status.value);
 
 function setStatus(post) {
@@ -325,7 +324,7 @@ const GetTableData = () => {
     {
       pwd: "M$h`52NQV4_%N}mvc$w)-z*EuZ`_^bf3",
       arr_DTL: curDate, //"2021-11-28",
-      days: 1,
+      days: 2,
     },
     {
       headers: {
@@ -503,8 +502,6 @@ function saveData() {
     //   `computeFlightList::flightTable length 2: ${flightTable.length}`
     // );
 
-    setStatus(true);
-
     flightTable = flightTable.sort((a, b) => a.sch_dep - b.sch_dep);
 
     // all_pairs, flight_table are finalized
@@ -540,11 +537,14 @@ function saveData() {
     // console.log("call create_FSU_BOOK_TAILS");
     // dBookings, dFSU, dTails are globals.
     //const { dBookings, dFSU, dTails } = create_FSU_BOOK_TAILS( // )
+    console.log("before create_FSU_BOOK_TAILS");
     create_FSU_BOOK_TAILS(allPairs, flightTable, inboundsMap, outboundsMap);
     // { edges } = epu.getEdges(bookings);
     const obj = epu.getEdges(dBookings);
     edges = obj.edges;
+    u.print("saveData, edges: ", edges);
     graph = createGraph(edges);
+    u.print("saveData, graph: ", graph);
     // u.print("saveData::dBookings", dBookings);
     // u.print("saveData::dFSU", dFSU);
     // u.print("saveData::dTails", dTails);
@@ -552,11 +552,14 @@ function saveData() {
     // u.print("saveData::graph", graph);
     // u.print("saveData::inboundsMap", inboundsMap); // each element is list of ids
     // u.print("saveData::outboundsMap", outboundsMap);
+    console.log("text-processing, before setStatus");
+    setStatus(true); // all data is read in
   });
 }
 
 //-----------------------------------------------------------------------
 const getEndPointFilesComputed = computed(() => {
+  // returns a ref since this is a computed function
   return {
     // Figure out why vue module requires flightTable, ptyPairs, allPairs, stationPairs
     flightTable,

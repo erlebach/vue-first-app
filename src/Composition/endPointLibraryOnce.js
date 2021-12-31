@@ -26,6 +26,10 @@ export function computePropagationDelays(
   // bookingsIds are part of FSU nodes. So computeFeeders is no longer required.
   // Let us check this.
 
+  u.print("computePropagationDelays::dBookings", dBookings);
+  u.print("computePropagationDelays::dFSU", dFSU);
+  u.print("computePropagationDelays::graph", graph);
+
   const dFSUm = u.createMapping(dFSU, "id");
   u.print("dFSU", dFSU);
   u.print("computePropagationDelays, graph", graph);
@@ -115,19 +119,28 @@ export function computeNetworkDelays(data) {
   // Apply the rigidModel to all incoming flights in the air
 
   u.print("computeNetworkDelays::data", data);
-  let { dFSU, dBookings } = data;
+  let dFSU = data.dFSU;
+  let dBookings = data.dBookings;
   const delays = [];
   const idList = [];
   const arrays = data; //{ dFSU, dBookings, dTails, graph };
-  const initArrDelays = [0, 15, 30, 45, 60, 120];
+  //const initArrDelays = [0, 15, 30, 45, 60, 120];
+  const initArrDelays = [30, 45, 60];
   const maxArrDelayNew = 15;
 
   // dFSU has repeats. HOW IS THIS POSSIBLE?
-  const dFSUm = u.createMapping(dFSU, "id");
-  const dBookingsm = u.createMapping(dBookings, "id");
+  const dFSUm = u.createMapping(dFSU, "id"); // DOES NOT WORK!!
+  const dBookingsm = u.createMapping(dBookings, "id"); // DOES NOT WORK!!! WHY?
+  const inboundFlightsm = u.createMapping(dBookings, "id_f");
+
+  // u.print("computeNetworkDelays::dFSU", dFSU);
+  // u.print("computeNetworkDelays::dFSUm", dFSUm);
+  // u.print("computeNetworkDelays::dBookings", dBookings);
+  // u.print("computeNetworkDelays::dBookingsm", dBookingsm);
+  // u.print("computeNetworkDelays::inboundFlightsm", inboundFlightsm);
+
   // I am only looking for information on the inbound flights chosen among all pairs
   // There are multiple outbounds per inbound flight in bookings
-  const inboundFlightsm = u.createMapping(dBookings, "id_f");
 
   dFSU = [];
   Object.values(dFSUm).forEach((r) => {
@@ -145,16 +158,21 @@ export function computeNetworkDelays(data) {
       console.log("SHOULD NOT HAPPEN");
       throw "SHOULD NOT HAPPEN";
     }
-    if (row_f.id.slice(10, 13) !== "PTY" && row_f.out > 0 && row_f.in === 0) {
+    //if (row_f.id.slice(10, 13) !== "PTY" && row_f.out > 0 && row_f.in === 0) {
+    // Flights in air or not depated
+    if (row_f.id.slice(10, 13) !== "PTY" && row_f.out >= 0 && row_f.in === 0) {
       idList.push(r.id_f);
     }
   });
 
-  idList.forEach((id) => {
+  // only top 10 are displayed (for now and for speed)
+  idList.slice(0, 20).forEach((id) => {
     initArrDelays.forEach((initArrDelay) => {
       processDelays(id, delays, initArrDelay, maxArrDelayNew, arrays);
     });
   });
+  u.print("computeNetworkDelays::idList", idList);
+  u.print("computeNetworkDelays::maxArrDelayNew", maxArrDelayNew);
 
   return delays;
 }

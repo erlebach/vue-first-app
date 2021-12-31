@@ -84,6 +84,8 @@ export function rigidModel(
     FSUm
   );
   // u.print("after traverseGraph, graph ", graph);
+  // u.print("after traverseGraph, idsTraversed ", idsTraversed);
+  // u.print("after traverseGraph, edgesTraversed ", edgesTraversed);
 
   // Map to access levels and ids (using the ids traversed starting with the flight startingId)
   const { id2level, level2ids } = createId2Level(idsTraversed);

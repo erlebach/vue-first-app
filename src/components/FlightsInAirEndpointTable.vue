@@ -69,6 +69,7 @@ is returned from the endpoint. -->
       <!-- ListBox gives "No available options" -->
       <span>Enter </span>
       <!-- I want the left box to the right of last span -->
+      <!-- selectedFlightIds.value.name is the chosen city -->
       <ListBox
         v-model="selectedFlightIds"
         :options="flightIds"
@@ -85,9 +86,10 @@ is returned from the endpoint. -->
           </div>
         </template>
       </ListBox>
-      <h2>{{ selectedFlightIds }}</h2>
+      <h2>Selected Flight Ids: {{ selectedFlightIds }}</h2>
       <!-- remove when done -->
     </template>
+    <!-- Select rows from table (selectedFlightIds) -->
     <Column
       field="id_f"
       header="In id (clickable)"
@@ -142,11 +144,11 @@ is returned from the endpoint. -->
   <!-- start with hidden graph. Show when graph created -->
   <!-- Add a panel surrounding the radio buttons -->
   <!-- <span width="200"> -->
-  <div>
+  <div class="p-d-flex p-flex-column">
     <h2>Endpoint Graph</h2>
     <!-- style propagated to text box, but not to panel -->
     <!-- <div class="p-d-flex flex-start" style="font-size:8ex;color:red"> -->
-    <div class="p-d-flex start">
+    <div class="p-d-flex p-flex-row start">
       <!-- style below acts on header style. I do not fully understand how this works. -->
       <div>
         <!-- <div> needed so that the border is not determined by the flex-style -->
@@ -224,12 +226,21 @@ is returned from the endpoint. -->
         <div>level2ids: {{ infoRef.level2ids }}</div>
         <div>nbId2level: {{ infoRef.nbId2level }}</div>
       </div>
-      <div>
-        <div id="GETooltipId" class="GETooltipId"></div>
-        <div id="mountEndpointsGraph"></div>
+      <div id="GETooltipId" class="GETooltipId"></div>
+      <div id="mountEndpointsGraph"></div>
+    </div>
+    <!-- ---------- -->
+    <div class="p-d-flex">
+      <div class="flex p-flex-column">
+        <h2>Delay Propagation: global view</h2>
+        <h3>
+          Imposed [0, 15, 30, 45, 60, 120] min arrival delay on all airborne
+          flights
+        </h3>
         <div id="mountEndpointsChart"></div>
       </div>
     </div>
+    <!-- ---------- -->
   </div>
 
   <!-- ------------------------------------------------------------------------ -->
@@ -457,6 +468,7 @@ import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
 import G2 from "@antv/g2";
 import * as g2p from "@antv/g2plot";
+import { GroupedBar } from "@antv/g2plot";
 // I should factor all the graph routines into a single function called commonGraphImpl.js
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 //import { colorByCity } from "../Composition/graphImpl";
@@ -516,7 +528,9 @@ export default {
     const inputArrDelay = ref(0); // imposed on original flight = arrDelayP (predicted)
     // Make the id of the first flight is kept, otherwise errors occur.
     const maxArrDelayRef = ref(-300); // keep nodes with > maxArrDelayRef.value
+    //
     const delayObjRef = ref(null);
+    const dataRef = ref(null);
     const maxLevels = 6;
     // Endpoint graph orientation
     const portrait = ref(true);
@@ -587,7 +601,8 @@ export default {
       initialId: null,
     });
 
-    const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
+    // const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
+    const initialId = ref(undefined);
 
     const connectionConfiguration = dp.setupConfiguration({
       container: "mountConnectionsGraph",
@@ -605,7 +620,7 @@ export default {
     u.print("==> props: ", props);
 
     function toggleOrientation() {
-      endpointsGraph.setMinZoom(0.01);
+      // endpointsGraph.setMinZoom(0.01);
 
       portrait.value = portrait.value === true ? false : true;
 
@@ -625,27 +640,110 @@ export default {
 
     const chartConfiguration = dp.setupConfiguration({
       container: "mountEndpointsChart",
-      width: 800,
-      height: 600,
+      width: 1200,
+      height: 900,
     });
 
-    function drawChart(data) {
-      //
-      // const chartConfiguration = new G2.Column(connectionConfiguration);
-      // chart = new G2.Column(connectionConfiguration);
-      const column = new g2p.Column("mountEndpointsChart", {
+    // function initializeChart(data) {
+    function initializeChart() {
+      // Does not work with autoFit=true
+      //jchart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+      chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+      // chart = new g2p.GroupedColumn("mountEndpointsChart", { autoFit: true });
+      // u.print("GroupedBar", GroupedBar);
+      // chart = new GroupedBar("mountEndpointsChart", { autoFit: true });
+      // changeSize has no effect
+      // chart.changeSize({ width: "1200px", height: "900px" });
+    }
+
+    //--------------------------
+    function drawDelayChart(data) {
+      console.log("==> drawDelayChart");
+      data.forEach((r) => {
+        r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
+      });
+
+      chart.update({
         data,
-        xField: "id",
-        yField: "fracFlightsDelayed",
+        yField: "od",
+        xField: "fracFlightsDelayed",
+        groupField: "initArrDelay",
         seriesField: "initArrDelay",
-        isGroup: "true",
+        isGroup: "true", // not clear what isGroup does
+        label: {
+          visible: true,
+          position: "right",
+        },
+        title: {
+          visible: true,
+          text: "This is the title",
+        },
+        legend: {
+          position: "top-left",
+        },
+        // HOW TO DISPLAY custom tooltips that change in different bars of a group
+        // tooltip: {
+        //   containerTpl:
+        //     '<div class="g2-tooltip"><div class="g2-tooltip-list"></div></div>',
+        //   // shared: true,
+        //   // showCrosshairs: true,
+        //   // enterable: true,
+        //   domStyles: {
+        //     "g2-tooltip": {
+        //       fontSize: "24px",
+        //       textAlign: "left",
+        //     },
+        //   },
+        //   fields: [
+        //     "initArrDelay",
+        //     //   "maxArrDelay",
+        //     //   "nbDelayP",
+        //     //   "totDelayP",
+        //     //   "ratio",
+        //     //   "nbFlights",
+        //     //   "fracFlightsDelayed",
+        //   ],
+        // },
+        xAxis: {
+          label: {
+            autorotate: false,
+            // offsetY: 50,
+            offset: 50,
+            rotate: 45,
+            // offsetx: -80,
+            style: {
+              fontSize: 24,
+            },
+          },
+        },
         columnStyle: {
           radius: [20, 20, 0, 0],
         },
+        // Sliders only work with line plot, area plot, dual-axes plot
+        // https://g2plot.antv.vision/en/docs/api/components/slider/
+        // interactions: [
+        //   {
+        //     type: "slider",
+        //     cfg: {
+        //       start: 0.0,
+        //       end: 100.0,
+        //       minLimit: 0,
+        //       maxLimit: 100,
+        //     },
+        //   },
+        // ],
       });
-      column.render();
     }
 
+    //--------------------------
+    // Save data from the endpoint URL, either once or at fixed intervals (in sec)
+    // saveOnce, saveAtIntervals, should be called from a single file for it
+    // to work properly in order to periodically update tables
+    saveOnce(0);
+    console.log(`getStatus.value: ${getStatus.value}`);
+    //saveAtIntervals(3); // Retrieves data at fixed intervals
+
+    //----------------
     watch(arrDelaySlider, () => {
       // this will go to the watcher of inputArrDelay
       inputArrDelay.value = arrDelaySlider.value; // redundant variable
@@ -659,7 +757,6 @@ export default {
       else arrDelaySlider.value = arrDelaySlider.max;
     };
 
-    //const arrDelayDec = () => {
     arrDelaySlider.dec = () => {
       console.log(`arrDelayDec, ${arrDelaySlider.value}`);
       if (arrDelaySlider.value >= arrDelaySlider.min + arrDelaySlider.step)
@@ -667,67 +764,80 @@ export default {
       else arrDelaySlider.value = arrDelaySlider.min;
     };
 
+    //----------------
+    // Select City to filter out the rows in the endpoint data table
+    watch(selectedFlightIds, (ids) => {
+      console.log("watch selectedFlightIds");
+      const dataRef = getEndPointFilesComputed;
+      const flightTable = dataRef.value.flightTable;
+      if (ids === null) {
+        console.log("ids is null!!! SHOULD NOT HAPPEN");
+      } else {
+        u.print("ids.name", ids.name);
+
+        const allPairs = dataRef.value.allPairs;
+        const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
+
+        allPairsRef.city = ids.name;
+        allPairsRef.table = table;
+      }
+    });
+
+    //----------------
     watch(
       // inputArrDelay.value should not have any effect since not a ref
+      // User interface elements
       [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
       ([row, arrDelay, maxArrDelay], o) => {
-        // console.log("===== watch selectedAllPairsRow, etc =======");
-        const dataRef = getEndPointFilesComputed;
-        // u.print("selected row", row);
-        // u.print("watch::dataRef", dataRef); // did it change between invocations
+        console.log("watch selectedAllPairsRow, inputArrDelay, maxArrDelayRef");
         const initialId = row.id_f;
 
         // check whether calling propagateData twice still produces a graph
-        let delayObj;
+        // let delayObj;
         [0].forEach((i) => {
-          delayObj = ep.propagateData(
+          delayObjRef.value = ep.propagateData(
             dataRef,
             initialId,
             arrDelay,
             maxArrDelay
-          ); // args: ref, value
+          );
         });
 
         // Go through all flights in air and compute effect of initial arrival delays
-        const delays = ep.propagateNetwork(dataRef);
-        u.print("return from propagateNetwork, delays", delays);
+        // Only update the chart when savedData is updated
 
-        // draw a chart with the delays
-        drawChart(delays);
-
-        // u.print("delayObj: ", delayObj);
-        rigidBodyRef.table = delayObj.table;
-
-        // NEXT STEP: draw   graphRigidModel
-        delayObjRef.value = delayObj;
-        const recreate = true;
-        drawGraphRigidModel(delayObj, tiers.value, recreate);
+        rigidBodyRef.table = delayObjRef.value.table;
+        drawGraphRigidModel(delayObjRef.value, tiers.value);
       }
     );
 
     // Update graph according to the number of tiers
+    //----------------
+    // Redraw the network if the number tiers is changed
     watch(tiers, (nbTiers) => {
       const recreate = false;
-      drawGraphRigidModel(delayObjRef.value, nbTiers, recreate);
+      drawGraphRigidModel(delayObjRef.value, nbTiers);
     });
 
-    // saveOnce, saveAtIntervals, should be called from a single file for it
-    // to work properly in order to periodically update tables
-    saveOnce(0);
-    //saveAtIntervals(3); // Retrieves data at fixed intervals
-
+    // once data is read in from the Endpoint URL
     watch(getStatus, (status) => {
       if (status > 0) {
-        // u.print("allPairsref", allPairsRef);
+        dataRef.value = getEndPointFilesComputed.value; // Why not use computed value?
+        //allPairsRef.table = dataRef.value.table;
+        u.print("==> before propagateNetwork::dataRef.value: ", dataRef.value);
+
+        const delayObj = ep.propagateNetwork(dataRef);
+        u.print("... delayObj", delayObj);
+        drawDelayChart(delayObj); // Works! NOT.
+
+        // WHAT DOES THIS SECTION DO? Prepares to graph
         if (ep.checkEntries(allPairsRef)) {
           if (flightsRef) {
             flightsRef.city = allPairsRef.city;
             flightsRef.time = allPairsRef.time;
-            // console.log("===> after checkEntries allPairsRef");
             const data = getEndPointFilesComputed.value;
             ep.listCities(data.flightTable, flightIds);
             const city = allPairsRef.city.toUpperCase();
-            // u.print("data", data);
             drawGraph(city, data);
           }
         }
@@ -736,8 +846,7 @@ export default {
     });
 
     onMounted(() => {
-      // console.log("Component is mounted");
-      //
+      initializeChart();
     });
 
     function drawGraph(city, data) {
@@ -777,7 +886,7 @@ export default {
     }
 
     //-----------------------------------
-    function drawGraphRigidModel(delayObj, nbTiers, recreate) {
+    function drawGraphRigidModel(delayObj, nbTiers) {
       const {
         nodes,
         edges,
@@ -787,8 +896,6 @@ export default {
         level2ids,
         table,
       } = delayObj;
-
-      // u.print("drawGraphRigidModel::delayObj", delayObj);
 
       // Implement change of tiersss.
       // Change the nodes, and remove all edges connected to those nodes.
@@ -877,6 +984,7 @@ export default {
         // console.log("==> recreate Graph");
         endpointsGraphCreated = true;
       }
+      endpointsGraph.setMinZoom(0.01);
 
       const data = { nodes: gNodes, edges: gEdges };
       // endpointsGraph.data(data);
@@ -950,24 +1058,7 @@ export default {
       return `color:${col}`;
     };
 
-    watch(selectedFlightIds, (ids) => {
-      const data = getEndPointFilesComputed;
-      const flightTable = data.value.flightTable;
-      const allPairs = data.value.allPairs;
-      u.print("allPairs", allPairs);
-      if (ids === null) {
-        console.log("ids is null!!! SHOULD NOT HAPPEN");
-      } else {
-        u.print("ids.name", ids.name);
-
-        const table = u.getRowsWithAttribute(allPairs, "orig_f", ids.name);
-
-        u.print("table", table);
-        allPairsRef.city = ids.name;
-        allPairsRef.table = table;
-      }
-    });
-
+    //----------------
     watchEffect(() => {
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
@@ -1071,5 +1162,10 @@ export default {
   width: 100px;
   margin-left: 10px;
   margin-right: 10px;
+}
+/* Directly controls size of chart */
+#mountEndpointsChart {
+  width: 1200px;
+  height: 1500px;
 }
 </style>

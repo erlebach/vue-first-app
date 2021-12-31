@@ -29,7 +29,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .p-slider-horizontal {
   width: 14rem;
