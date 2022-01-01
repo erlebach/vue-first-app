@@ -243,7 +243,7 @@ is returned from the endpoint. -->
       <div class="flex p-flex-row">
         <Button label="Toggle Orientation" @click="toggleChartOrientation" />
         <div class="flex p-flex-column">
-          <h2>Delay Propagation: global view</h2>
+          <h2>Delay Propagation: global view (@antv/G2plot)</h2>
           <h3>
             Imposed [30, 45, 60] min arrival delay on all airborne flights
           </h3>
@@ -251,7 +251,20 @@ is returned from the endpoint. -->
         </div>
       </div>
     </div>
-    <!-- ---------- -->
+    <!-- ------------------------------ -->
+    <div class="p-d-flex">
+      <div class="flex p-flex-row">
+        <Button label="Toggle Orientation" @click="toggleG2ChartOrientation" />
+        <div class="flex p-flex-column">
+          <h2>Delay Propagation: global view (@antv/G2)</h2>
+          <h3>
+            Imposed [30, 45, 60] min arrival delay on all airborne flights
+          </h3>
+          <div id="mountEndpointsG2Chart"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ---------------------------------- -->
   </div>
 
   <!-- ------------------------------------------------------------------------ -->
@@ -479,7 +492,8 @@ import InputText from "primevue/inputtext";
 import SliderWithButtons from "./SliderWithButtons.vue";
 import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
-import * as dc from "../Composition/DelayChart.js";
+import * as dc from "../Composition/DelayChart_g2plot.js";
+import * as dcg2 from "../Composition/DelayChart_g2.js";
 import G2 from "@antv/g2";
 import * as g2p from "@antv/g2plot";
 import { GroupedBar } from "@antv/g2plot";
@@ -549,16 +563,6 @@ export default {
     const maxLevels = 6;
     // Endpoint graph orientation
     const portrait = ref(true);
-    const chartPortrait = ref(true);
-
-    // const arrDelaySlider = reactive({
-    //   value: 0,
-    //   min: 0,
-    //   max: 400,
-    //   step: 15,
-    //   inc: null,
-    //   dec: null,
-    // });
 
     const infoRef = reactive({
       nbEdges: 0,
@@ -639,8 +643,6 @@ export default {
     function getArrDelay(delay) {
       // retrieve the slider value (single scalar)
       inputArrDelay.value = delay; // redundant variable
-      u.print("retrieved arrDelay from complex slider", delay);
-      u.print("==> inputArrDelay.value: ", inputArrDelay.value);
     }
     //------------------------------------
     function toggleOrientation() {
@@ -1031,6 +1033,11 @@ export default {
 }
 /* Directly controls size of chart */
 #mountEndpointsChart {
+  width: 1200px;
+  height: 800px;
+}
+/* Directly controls size of chart */
+#mountEndpointsG2Chart {
   width: 1200px;
   height: 800px;
 }
