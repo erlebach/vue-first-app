@@ -532,7 +532,6 @@ export default {
     let graphCreated = false;
     let endpointsGraphCreated = false;
     let graph = null;
-    let chart = null;
     let delayObj = null;
     let endpointsGraph = null;
     const showGraph = ref(null);
@@ -616,7 +615,6 @@ export default {
       initialId: null,
     });
 
-    // const initialId = ref("2021-11-28MIAPTY10:130173"); // Select automatically else date will be wrong
     const initialId = ref(undefined);
 
     const connectionConfiguration = dp.setupConfiguration({
@@ -634,11 +632,7 @@ export default {
     });
 
     function toggleChartOrientation() {
-      dc.toggleChartOrientation();
-      // chartPortrait.value = chartPortrait.value === true ? false : true;
-      // if (delayObj) {
-      //   drawDelayChart(delayObj);
-      // }
+      dc.toggleChartOrientation(delayObj);
     }
     //------------------------------------
     // retrieve from slider
@@ -666,135 +660,11 @@ export default {
     }
 
     //------------------------------------
-    const chartConfiguration = dp.setupConfiguration({
-      container: "mountEndpointsChart",
-      width: 1200,
-      height: 900,
-    });
-
-    // function initializeChart(data) {
-    // function initializeChart() {
-    //   // Does not work with autoFit=true
-    //   if (chartPortrait.value === true) {
-    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-    //   } else {
-    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
-    //   }
-    // }
-
-    const _chartPortrait = {
-      xField: "od",
-      yField: "fracFlightsDelayed",
-      groupField: "initArrDelay",
-      seriesField: "initArrDelay",
-      isGroup: "true", // not clear what isGroup does
-      label: {
-        visible: true,
-        position: "top",
-      },
-      title: {
-        visible: true,
-        text: "This is the title",
-      },
-      legend: {
-        position: "top-left",
-      },
-      xAxis: {
-        label: {
-          autorotate: false,
-          offset: 50,
-          rotate: 45,
-          style: {
-            fontSize: 18,
-          },
-        },
-      },
-      columnStyle: {
-        radius: [20, 20, 0, 0],
-      },
-    };
-
-    const _chartLandscape = {
-      yField: "od",
-      xField: "fracFlightsDelayed",
-      seriesField: "initArrDelay",
-      isGroup: "true", // not clear what isGroup does
-      label: {
-        visible: true,
-        position: "right",
-      },
-      title: {
-        visible: true,
-        text: "This is the title",
-      },
-      legend: {
-        position: "top-left",
-      },
-      xAxis: {
-        label: {
-          autorotate: false,
-          offset: 50,
-          rotate: 45,
-          style: {
-            fontSize: 18,
-          },
-        },
-      },
-      columnStyle: {
-        radius: [20, 20, 0, 0],
-      },
-    };
-    //--------------------------
-    // function drawDelayChart(data) {
-    //   console.log("==> drawDelayChart");
-    //   data.forEach((r) => {
-    //     r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
-    //   });
-    //   // destroy all resources
-    //   if (chart) chart.destroy();
-    //   if (chartPortrait.value === true) {
-    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-    //     console.log("chart => portrait");
-    //     u.print("data", data);
-    //     u.print("_chartPortrait", _chartPortrait);
-    //     chart.update({ data });
-    //     chart.update(_chartPortrait);
-    //   } else {
-    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
-    //     console.log("chart => landscape");
-    //     chart.update({ data });
-    //     chart.update(_chartLandscape);
-    //   }
-    // }
-
-    //--------------------------
     // Save data from the endpoint URL, either once or at fixed intervals (in sec)
     // saveOnce, saveAtIntervals, should be called from a single file for it
     // to work properly in order to periodically update tables
     saveOnce(0);
-    console.log(`getStatus.value: ${getStatus.value}`);
     //saveAtIntervals(3); // Retrieves data at fixed intervals
-
-    //----------------
-    // watch(arrDelaySlider, () => {
-    //   // this will go to the watcher of inputArrDelay
-    //   inputArrDelay.value = arrDelaySlider.value; // redundant variable
-    //   console.log(`Update inputArrDelay value: ${inputArrDelay.value}`);
-    // });
-
-    // arrDelaySlider.inc = () => {
-    //   console.log(`arrDelayInc, ${arrDelaySlider.value}`);
-    //   if (arrDelaySlider.value <= arrDelaySlider.max - arrDelaySlider.step)
-    //     arrDelaySlider.value += arrDelaySlider.step;
-    //   else arrDelaySlider.value = arrDelaySlider.max;
-    // };
-
-    // arrDelaySlider.dec = () => {
-    //   console.log(`arrDelayDec, ${arrDelaySlider.value}`);
-    //   if (arrDelaySlider.value >= arrDelaySlider.min + arrDelaySlider.step)
-    //     arrDelaySlider.value -= arrDelaySlider.step;
-    //   else arrDelaySlider.value = arrDelaySlider.min;
-    // };
 
     //----------------
     // Select City to filter out the rows in the endpoint data table
@@ -855,7 +725,6 @@ export default {
     watch(getStatus, (status) => {
       if (status > 0) {
         dataRef.value = getEndPointFilesComputed.value; // Why not use computed value?
-        //allPairsRef.table = dataRef.value.table;
         u.print("==> before propagateNetwork::dataRef.value: ", dataRef.value);
 
         delayObj = ep.propagateNetwork(dataRef);

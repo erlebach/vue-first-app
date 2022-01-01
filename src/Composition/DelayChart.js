@@ -3,18 +3,18 @@ import * as g2p from "@antv/g2plot";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 import * as u from "../Composition/utils.js";
 
-// let endpointsGraph = null;
 let chart = null;
 const portrait = ref(true);
 const chartPortrait = ref(true);
 
 //--------------------------------------------------------
-function toggleChartOrientation(delayObj) {
+export function toggleChartOrientation(delayObj) {
   chartPortrait.value = chartPortrait.value === true ? false : true;
   if (delayObj) {
     drawDelayChart(delayObj);
   }
 }
+
 //--------------------------------------------------------
 const chartConfiguration = dp.setupConfiguration({
   container: "mountEndpointsChart",
@@ -24,7 +24,7 @@ const chartConfiguration = dp.setupConfiguration({
 
 //--------------------------------------------------------
 // function initializeChart(data) {
-function initializeChart() {
+export function initializeChart() {
   // Does not work with autoFit=true
   if (chartPortrait.value === true) {
     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
@@ -98,7 +98,7 @@ const _chartLandscape = {
   },
 };
 //--------------------------------------------------------
-function drawDelayChart(data) {
+export function drawDelayChart(data) {
   console.log("==> drawDelayChart");
   data.forEach((r) => {
     r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
