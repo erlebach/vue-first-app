@@ -190,11 +190,20 @@ is returned from the endpoint. -->
       <!-- ------ SLIDER ----------, turn visibility on/off -->
       <div class="p-field p-col-12 p-md-1" style="color:green">
         <Button label="Toggle Orientation" @click="toggleOrientation" />
-        <span style="font-size:1em">
-          <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
-        </span>
-        <!-- Slider with buttons -->
-        <div class="p-d-flex p-ai-center">
+        <div :style="sliderDisplay()">
+          <span style="font-size:1em">
+            <label for="integeronly"><h2>Arrival Delay (min)</h2></label>
+          </span>
+          <!-- Slider with buttons -->
+          <SliderWithButtons
+            val="0"
+            min="-30"
+            max="300"
+            step="15"
+            @sendValue="getArrDelay"
+          />
+        </div>
+        <!-- <div class="p-d-flex p-ai-center">
           <Button icon="pi pi-angle-left" @click="arrDelaySlider.dec" />
           <Slider
             v-model="arrDelaySlider.value"
@@ -203,13 +212,13 @@ is returned from the endpoint. -->
             :max="arrDelaySlider.max"
           />
           <Button icon="pi pi-angle-right" @click="arrDelaySlider.inc" />
-        </div>
+        </div> -->
         <!-- inputArrDelay -->
-        <InputNumber
+        <!-- <InputNumber
           id="integeronly"
-          v-model="arrDelaySlider.value"
+          v-model="inputArrDelay"
           inputStyle="color:red; width:4em"
-        />
+        /> -->
         <span style="font-size:1em">
           <label for="integeronly"
             ><h2>Max Arrival Delay to keep(min)</h2></label
@@ -462,11 +471,12 @@ import ListBox from "primevue/listbox";
 import Button from "primevue/button";
 import Column from "primevue/column";
 import Panel from "primevue/panel";
-import Slider from "primevue/slider";
+// import Slider from "primevue/slider";
 // import SliderPlus from "./SliderPlus.vue";
 import InputNumber from "primevue/inputnumber";
 import RadioButton from "primevue/radiobutton";
 import InputText from "primevue/inputtext";
+import SliderWithButtons from "./SliderWithButtons.vue";
 import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
 import G2 from "@antv/g2";
@@ -500,7 +510,8 @@ export default {
     RadioButton,
     Button,
     Panel,
-    Slider,
+    // Slider,
+    SliderWithButtons,
   },
   props: {
     filePath: String,
@@ -539,17 +550,15 @@ export default {
     // Endpoint graph orientation
     const portrait = ref(true);
     const chartPortrait = ref(true);
-    // const arrDelaySlider = ref(0);
-    // const arrDelayStep = ref(15);
-    // const arrDelayMin = ref(0);
-    // const arrDelayMax = ref(400);
 
-    const arrDelaySlider = reactive({
-      value: 0,
-      min: 0,
-      max: 400,
-      step: 15,
-    });
+    // const arrDelaySlider = reactive({
+    //   value: 0,
+    //   min: 0,
+    //   max: 400,
+    //   step: 15,
+    //   inc: null,
+    //   dec: null,
+    // });
 
     const infoRef = reactive({
       nbEdges: 0,
@@ -622,7 +631,6 @@ export default {
       height: props.height,
       defaultNodeSize: 40,
     });
-    u.print("==> props: ", props);
 
     function toggleChartOrientation() {
       chartPortrait.value = chartPortrait.value === true ? false : true;
@@ -630,22 +638,16 @@ export default {
         drawDelayChart(delayObj);
       }
     }
-    // function drawChart(data) {
-    //   if (chartPortrait.value === true) {
-    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-    //     console.log("chart => portrait");
-    //     chart.update(_chartPortrait);
-    //   } else {
-    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
-    //     console.log("chart => landscape");
-    //     chart.update(_chartLandscape);
-    //   }
-    //   //
-    // }
+    //------------------------------------
+    // retrieve from slider
+    function getArrDelay(delay) {
+      // retrieve the slider value (single scalar)
+      inputArrDelay.value = delay; // redundant variable
+      u.print("retrieved arrDelay from complex slider", delay);
+      u.print("==> inputArrDelay.value: ", inputArrDelay.value);
+    }
     //------------------------------------
     function toggleOrientation() {
-      // endpointsGraph.setMinZoom(0.01);
-
       portrait.value = portrait.value === true ? false : true;
 
       if (portrait.value === true) {
@@ -659,7 +661,6 @@ export default {
       }
       endpointsGraph.fitView();
       endpointsGraph.render();
-      // endpointsGraph.fitCenter();
     }
 
     //------------------------------------
@@ -677,11 +678,6 @@ export default {
       } else {
         chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
       }
-      // chart = new g2p.GroupedColumn("mountEndpointsChart", { autoFit: true });
-      // u.print("GroupedBar", GroupedBar);
-      // chart = new GroupedBar("mountEndpointsChart", { autoFit: true });
-      // changeSize has no effect
-      // chart.changeSize({ width: "1200px", height: "900px" });
     }
 
     const _chartPortrait = {
@@ -719,7 +715,6 @@ export default {
     const _chartLandscape = {
       yField: "od",
       xField: "fracFlightsDelayed",
-      // groupField: "initArrDelay",
       seriesField: "initArrDelay",
       isGroup: "true", // not clear what isGroup does
       label: {
@@ -753,7 +748,7 @@ export default {
       data.forEach((r) => {
         r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
       });
-      // destroy all ersources
+      // destroy all resources
       if (chart) chart.destroy();
       if (chartPortrait.value === true) {
         chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
@@ -779,25 +774,25 @@ export default {
     //saveAtIntervals(3); // Retrieves data at fixed intervals
 
     //----------------
-    watch(arrDelaySlider, () => {
-      // this will go to the watcher of inputArrDelay
-      inputArrDelay.value = arrDelaySlider.value; // redundant variable
-      console.log(`Update inputArrDelay value: ${inputArrDelay.value}`);
-    });
+    // watch(arrDelaySlider, () => {
+    //   // this will go to the watcher of inputArrDelay
+    //   inputArrDelay.value = arrDelaySlider.value; // redundant variable
+    //   console.log(`Update inputArrDelay value: ${inputArrDelay.value}`);
+    // });
 
-    arrDelaySlider.inc = () => {
-      console.log(`arrDelayInc, ${arrDelaySlider.value}`);
-      if (arrDelaySlider.value <= arrDelaySlider.max - arrDelaySlider.step)
-        arrDelaySlider.value += arrDelaySlider.step;
-      else arrDelaySlider.value = arrDelaySlider.max;
-    };
+    // arrDelaySlider.inc = () => {
+    //   console.log(`arrDelayInc, ${arrDelaySlider.value}`);
+    //   if (arrDelaySlider.value <= arrDelaySlider.max - arrDelaySlider.step)
+    //     arrDelaySlider.value += arrDelaySlider.step;
+    //   else arrDelaySlider.value = arrDelaySlider.max;
+    // };
 
-    arrDelaySlider.dec = () => {
-      console.log(`arrDelayDec, ${arrDelaySlider.value}`);
-      if (arrDelaySlider.value >= arrDelaySlider.min + arrDelaySlider.step)
-        arrDelaySlider.value -= arrDelaySlider.step;
-      else arrDelaySlider.value = arrDelaySlider.min;
-    };
+    // arrDelaySlider.dec = () => {
+    //   console.log(`arrDelayDec, ${arrDelaySlider.value}`);
+    //   if (arrDelaySlider.value >= arrDelaySlider.min + arrDelaySlider.step)
+    //     arrDelaySlider.value -= arrDelaySlider.step;
+    //   else arrDelaySlider.value = arrDelaySlider.min;
+    // };
 
     //----------------
     // Select City to filter out the rows in the endpoint data table
@@ -825,6 +820,7 @@ export default {
       [selectedAllPairsRow, inputArrDelay, maxArrDelayRef],
       ([row, arrDelay, maxArrDelay], o) => {
         console.log("watch selectedAllPairsRow, inputArrDelay, maxArrDelayRef");
+        console.log(`inputArrDelay: ${arrDelay}`);
         const initialId = row.id_f;
 
         // check whether calling propagateData twice still produces a graph
@@ -1036,6 +1032,10 @@ export default {
       return;
     }
 
+    const sliderDisplay = () => {
+      return selectedAllPairsRow.value ? "display:true;" : "display:none;";
+    };
+
     const arrStatusStyle = (data) => {
       return data.arrStatus === "LATE" ? "color: red" : "color: green";
     };
@@ -1133,7 +1133,8 @@ export default {
       arrDelayStyle,
       depDelayPStyle,
       arrDelayPStyle,
-      arrDelaySlider,
+      sliderDisplay,
+      getArrDelay,
     };
   },
 };
