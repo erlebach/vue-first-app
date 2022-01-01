@@ -105,7 +105,7 @@ export function colorEdges(graph) {
     // console.log(edge);
     const avail = edge.ACTAvailableP;
     if (avail < 5) {
-      color = "black";
+      color = "darkbrown";
     } else if (avail < 15) {
       color = "darkred";
     } else if (avail < 30) {
@@ -158,7 +158,7 @@ export function colorNodes(graph) {
     } else if (delay < 45) {
       color = "darkred";
     } else {
-      color = "black";
+      color = "darkbrown";
     }
 
     // console.log(`color: ${color}, delay: ${delay}`);
@@ -172,7 +172,7 @@ export function colorNodes(graph) {
     } else if (strokeDelay < 45) {
       stroke = "darkred";
     } else {
-      stroke = "black";
+      stroke = "darkbrown";
     }
     lineWidth = 2;
 
@@ -256,7 +256,7 @@ const myTooltip = new G6.Tooltip({
       } else if (depDelayP < 45) {
         depDelayPColor = "darkred";
       } else {
-        depDelayPColor = "brown";
+        depDelayPColor = "darkbrown";
       }
       if (depDelay < 5) {
         depDelayColor = "green";
@@ -267,7 +267,7 @@ const myTooltip = new G6.Tooltip({
       } else if (depDelay < 45) {
         depDelayColor = "darkred";
       } else {
-        depDelayColor = "brown";
+        depDelayColor = "darkbrown";
       }
 
       if (arrDelayP < 5) {
@@ -279,7 +279,7 @@ const myTooltip = new G6.Tooltip({
       } else if (arrDelayP < 45) {
         arrDelayPColor = "darkred";
       } else {
-        arrDelayPColor = "brown";
+        arrDelayPColor = "darkbrown";
       }
       if (arrDelay < 5) {
         arrDelayColor = "green";
@@ -290,7 +290,7 @@ const myTooltip = new G6.Tooltip({
       } else if (arrDelay < 45) {
         arrDelayColor = "darkred";
       } else {
-        arrDelayColor = "brown";
+        arrDelayColor = "darkbrown";
       }
       node.depDelayColor = depDelayColor;
       node.arrDelayColor = arrDelayColor;
@@ -348,7 +348,7 @@ const myTooltip = new G6.Tooltip({
 
       let actColor;
       if (edge.actAvail < 5) {
-        actColor = "black";
+        actColor = "brown";
       } else if (edge.actAvail < 15) {
         actColor = "darkred";
       } else if (edge.actAvail < 30) {
@@ -510,7 +510,7 @@ export function updateNodeTypes(nodes, city) {
       if (node.id.slice(10, 13) === city) {
         node.style.fill = "blue"; // departing city
       } else {
-        node.style.fill = "black"; // arrival city
+        node.style.fill = "brown"; // arrival city
       }
       // node.size = cityNodeSize.value; // dangerous because hardcoded
     }
