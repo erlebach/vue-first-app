@@ -166,13 +166,16 @@ export function computeNetworkDelays(data) {
   });
 
   // only top 10 are displayed (for now and for speed)
-  idList.slice(0, 20).forEach((id) => {
+  const maxNbIds = idList.length < 20 ? idList.length : 20;
+  idList.slice(0, maxNbIds).forEach((id) => {
     initArrDelays.forEach((initArrDelay) => {
       processDelays(id, delays, initArrDelay, maxArrDelayNew, arrays);
     });
   });
-  u.print("computeNetworkDelays::idList", idList);
-  u.print("computeNetworkDelays::maxArrDelayNew", maxArrDelayNew);
+  // u.print("computeNetworkDelays::idList", idList);
+  // u.print("computeNetworkDelays::maxArrDelayNew", maxArrDelayNew);
+
+  sortBy(delays, "fracFlightsDelayed");
 
   return delays;
 }

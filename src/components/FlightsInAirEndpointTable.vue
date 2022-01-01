@@ -231,13 +231,15 @@ is returned from the endpoint. -->
     </div>
     <!-- ---------- -->
     <div class="p-d-flex">
-      <div class="flex p-flex-column">
-        <h2>Delay Propagation: global view</h2>
-        <h3>
-          Imposed [0, 15, 30, 45, 60, 120] min arrival delay on all airborne
-          flights
-        </h3>
-        <div id="mountEndpointsChart"></div>
+      <div class="flex p-flex-row">
+        <Button label="Toggle Orientation" @click="toggleChartOrientation" />
+        <div class="flex p-flex-column">
+          <h2>Delay Propagation: global view</h2>
+          <h3>
+            Imposed [30, 45, 60] min arrival delay on all airborne flights
+          </h3>
+          <div id="mountEndpointsChart"></div>
+        </div>
       </div>
     </div>
     <!-- ---------- -->
@@ -258,7 +260,7 @@ is returned from the endpoint. -->
     dataKey="id_f"
   >
     <template #header>
-      <h2>Displayed Filght Data</h2>
+      <h2>Displayed Flight Data</h2>
     </template>
     <Column
       field="id"
@@ -325,6 +327,7 @@ is returned from the endpoint. -->
   <!-- Edges of displayed Endpoint graph -->
   <!-- All edges of shown, irrespective of tier -->
   <DataTable
+    style="display:none;"
     :value="endpointRef.edgeTable"
     :scrollable="true"
     resizableColumns="true"
@@ -435,7 +438,7 @@ is returned from the endpoint. -->
   </DataTable>
   <!-- ------------------------------------------------------------------------ -->
 
-  <div>
+  <div style="display:none;">
     <h2>Connections Graph (based on {{ allPairsRef.city }})</h2>
     <div id="GEConnectionsToolTip"></div>
     <div id="mountConnectionsGraph"></div>
@@ -518,6 +521,7 @@ export default {
     let endpointsGraphCreated = false;
     let graph = null;
     let chart = null;
+    let delayObj = null;
     let endpointsGraph = null;
     const showGraph = ref(null);
     const selectedFlightIds = ref();
@@ -534,6 +538,7 @@ export default {
     const maxLevels = 6;
     // Endpoint graph orientation
     const portrait = ref(true);
+    const chartPortrait = ref(true);
     // const arrDelaySlider = ref(0);
     // const arrDelayStep = ref(15);
     // const arrDelayMin = ref(0);
@@ -619,6 +624,25 @@ export default {
     });
     u.print("==> props: ", props);
 
+    function toggleChartOrientation() {
+      chartPortrait.value = chartPortrait.value === true ? false : true;
+      if (delayObj) {
+        drawDelayChart(delayObj);
+      }
+    }
+    // function drawChart(data) {
+    //   if (chartPortrait.value === true) {
+    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+    //     console.log("chart => portrait");
+    //     chart.update(_chartPortrait);
+    //   } else {
+    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+    //     console.log("chart => landscape");
+    //     chart.update(_chartLandscape);
+    //   }
+    //   //
+    // }
+    //------------------------------------
     function toggleOrientation() {
       // endpointsGraph.setMinZoom(0.01);
 
@@ -638,6 +662,7 @@ export default {
       // endpointsGraph.fitCenter();
     }
 
+    //------------------------------------
     const chartConfiguration = dp.setupConfiguration({
       container: "mountEndpointsChart",
       width: 1200,
@@ -647,8 +672,11 @@ export default {
     // function initializeChart(data) {
     function initializeChart() {
       // Does not work with autoFit=true
-      //jchart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-      chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+      if (chartPortrait.value === true) {
+        chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+      } else {
+        chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+      }
       // chart = new g2p.GroupedColumn("mountEndpointsChart", { autoFit: true });
       // u.print("GroupedBar", GroupedBar);
       // chart = new GroupedBar("mountEndpointsChart", { autoFit: true });
@@ -656,83 +684,90 @@ export default {
       // chart.changeSize({ width: "1200px", height: "900px" });
     }
 
+    const _chartPortrait = {
+      xField: "od",
+      yField: "fracFlightsDelayed",
+      groupField: "initArrDelay",
+      seriesField: "initArrDelay",
+      isGroup: "true", // not clear what isGroup does
+      label: {
+        visible: true,
+        position: "top",
+      },
+      title: {
+        visible: true,
+        text: "This is the title",
+      },
+      legend: {
+        position: "top-left",
+      },
+      xAxis: {
+        label: {
+          autorotate: false,
+          offset: 50,
+          rotate: 45,
+          style: {
+            fontSize: 18,
+          },
+        },
+      },
+      columnStyle: {
+        radius: [20, 20, 0, 0],
+      },
+    };
+
+    const _chartLandscape = {
+      yField: "od",
+      xField: "fracFlightsDelayed",
+      // groupField: "initArrDelay",
+      seriesField: "initArrDelay",
+      isGroup: "true", // not clear what isGroup does
+      label: {
+        visible: true,
+        position: "right",
+      },
+      title: {
+        visible: true,
+        text: "This is the title",
+      },
+      legend: {
+        position: "top-left",
+      },
+      xAxis: {
+        label: {
+          autorotate: false,
+          offset: 50,
+          rotate: 45,
+          style: {
+            fontSize: 18,
+          },
+        },
+      },
+      columnStyle: {
+        radius: [20, 20, 0, 0],
+      },
+    };
     //--------------------------
     function drawDelayChart(data) {
       console.log("==> drawDelayChart");
       data.forEach((r) => {
         r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
       });
-
-      chart.update({
-        data,
-        yField: "od",
-        xField: "fracFlightsDelayed",
-        groupField: "initArrDelay",
-        seriesField: "initArrDelay",
-        isGroup: "true", // not clear what isGroup does
-        label: {
-          visible: true,
-          position: "right",
-        },
-        title: {
-          visible: true,
-          text: "This is the title",
-        },
-        legend: {
-          position: "top-left",
-        },
-        // HOW TO DISPLAY custom tooltips that change in different bars of a group
-        // tooltip: {
-        //   containerTpl:
-        //     '<div class="g2-tooltip"><div class="g2-tooltip-list"></div></div>',
-        //   // shared: true,
-        //   // showCrosshairs: true,
-        //   // enterable: true,
-        //   domStyles: {
-        //     "g2-tooltip": {
-        //       fontSize: "24px",
-        //       textAlign: "left",
-        //     },
-        //   },
-        //   fields: [
-        //     "initArrDelay",
-        //     //   "maxArrDelay",
-        //     //   "nbDelayP",
-        //     //   "totDelayP",
-        //     //   "ratio",
-        //     //   "nbFlights",
-        //     //   "fracFlightsDelayed",
-        //   ],
-        // },
-        xAxis: {
-          label: {
-            autorotate: false,
-            // offsetY: 50,
-            offset: 50,
-            rotate: 45,
-            // offsetx: -80,
-            style: {
-              fontSize: 24,
-            },
-          },
-        },
-        columnStyle: {
-          radius: [20, 20, 0, 0],
-        },
-        // Sliders only work with line plot, area plot, dual-axes plot
-        // https://g2plot.antv.vision/en/docs/api/components/slider/
-        // interactions: [
-        //   {
-        //     type: "slider",
-        //     cfg: {
-        //       start: 0.0,
-        //       end: 100.0,
-        //       minLimit: 0,
-        //       maxLimit: 100,
-        //     },
-        //   },
-        // ],
-      });
+      // destroy all ersources
+      if (chart) chart.destroy();
+      if (chartPortrait.value === true) {
+        chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+        console.log("chart => portrait");
+        u.print("data", data);
+        u.print("_chartPortrait", _chartPortrait);
+        chart.update({ data });
+        chart.update(_chartPortrait);
+      } else {
+        chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+        console.log("chart => landscape");
+        chart.update({ data });
+        chart.update(_chartLandscape);
+      }
     }
 
     //--------------------------
@@ -826,7 +861,7 @@ export default {
         //allPairsRef.table = dataRef.value.table;
         u.print("==> before propagateNetwork::dataRef.value: ", dataRef.value);
 
-        const delayObj = ep.propagateNetwork(dataRef);
+        delayObj = ep.propagateNetwork(dataRef);
         u.print("... delayObj", delayObj);
         drawDelayChart(delayObj); // Works! NOT.
 
@@ -920,19 +955,13 @@ export default {
       const max_levels = 2;
       const dataPerLevel = {};
 
-      // Why is nbTiers null?  <<<<<<<<<<< *************** ERROR
-
       // Extract the ids for each level
       for (let level = 0; level < nbTiers; level++) {
         dataPerLevel[level] = u.getRowsWithAttribute(table, "level", level);
-        // u.print(`==> dataPerLevel[${level}]`, dataPerLevel[level]);
       }
 
-      // let gEdges = [];
       const tableIds = u.createMapping(table, "id");
       const nodesTraversedIds = u.createMapping(nodesTraversed, "id");
-      // u.print("tableIds", tableIds);
-      // u.print("nodesTraversedIds", nodesTraversedIds);
 
       // gNodes: all ids from all levels
 
@@ -942,10 +971,7 @@ export default {
       Object.entries(id2level).forEach((entry) => {
         const id = entry[0];
         const level = entry[1];
-        // console.log(`level: ${level}, nbTiers: ${nbTiers}`);
         if (level < nbTiers) {
-          // console.log("  level < nbTiers");
-          // u.print("id", nodesTraversed[id]);
           gNodes.push(nodesTraversedIds[id]); // There are more fields for tooltips (2021-12-21)
         }
       });
@@ -966,22 +992,17 @@ export default {
       });
 
       const gEdges = edgesTraversed;
-      // console.log(`nb gNodes: ${gNodes.length}`);
-      // u.print("gNodes", gNodes);
-      // console.log(`nb gEdges: ${gEdges.length}`);
-      // u.print("gEdges", gEdges);
 
       endpointRef.nodeTable = gNodes;
-      endpointRef.edgeTable = gEdges;
+      // Do not display connetion (edge) table
+      // endpointRef.edgeTable = gEdges;
 
       // There MUST be a way to update edges and nodes WITHOUT destroying and recreating the graph (inefficient)
       if (endpointsGraphCreated) {
         // removes all nodes and edges. Leaves configuration intact
-        // console.log("==> clear Graph");
         endpointsGraph.clear();
       } else {
-        endpointsGraph = new G6.Graph(endpointConfiguration); // ERROR
-        // console.log("==> recreate Graph");
+        endpointsGraph = new G6.Graph(endpointConfiguration);
         endpointsGraphCreated = true;
       }
       endpointsGraph.setMinZoom(0.01);
@@ -1000,34 +1021,15 @@ export default {
       const node = endpointsGraph.getNodes()[0];
       const { x, y } = node.getModel();
 
-      // console.log(`x: ${x}, y: ${y}`);
-      // u.print("gNodes[0]", gNodes[0]);
-      //u.print("gNodes", gNodes);
-      // const canvasXY = endpointsGraph.getCanvasByPoint(x, y);
-      // const clientXY = endpointsGraph.getClientByPoint(x, y);
-      // u.print("canvasXY", canvasXY);
-      // u.print("clientXY", clientXY);
       const minZoom = endpointsGraph.getMinZoom();
-      // endpointsGraph.setMinZoom(0.02);
-      // console.log(`minZoom: ${minZoom}`);
 
       u.print("node[0]: ", gNodes[0]);
-      endpointsGraph.fitView(); //   View and Center do not work
-      // endpointsGraph.fitCenter();
-      // const centerPoint = endpointsGraph.getViewPortCenterPoint();
-      // Always the same (midpoint of canvas in Canvas coord)
-      // const graphCenterPoint = endpointsGraph.getGraphCenterPoint();
-      //ep.centerGraph(endpointsGraph);
-      // u.print("==> viewport center point", centerPoint);
-      // u.print("==> graph center point", graphCenterPoint);
+      endpointsGraph.fitView();
       endpointsGraph.render();
-      // u.print("endpointsGraph", endpointsGraph);
 
       dp.colorByCity(endpointsGraph);
       dp.followTails(endpointsGraph);
       endpointsGraph.render(); // not sure required
-
-      // u.print("endpointsGraph", endpointsGraph);
 
       dp.assignNodeLabels(endpointsGraph); // Generates Maximum call stack size exceeded!!!!!
       endpointsGraph.render();
@@ -1062,7 +1064,6 @@ export default {
     watchEffect(() => {
       if (getStatus.value > 0) {
         const data = getEndPointFilesComputed;
-        // u.print("==> data", data.value);
 
         flightsRef.table = data.value.flightTable;
         flightsRef.nbRows = data.value.flightTable.length;
@@ -1101,10 +1102,8 @@ export default {
         });
 
         const allPairs = data.value.allPairs;
-        // u.print("before allPairsRef.table = allPairs", allPairs);
         allPairsRef.table = allPairs;
         allPairsRef.nbRows = allPairs.length;
-        // console.log(`Update allPairsRef, ${allPairs.length}`);
 
         flightsInAirRef.table = allPairs; // Change later
         flightsInAirRef.nbRows = allPairs.length; // Change later
@@ -1113,6 +1112,7 @@ export default {
 
     return {
       toggleOrientation,
+      toggleChartOrientation,
       ifhelp,
       flightsRef,
       allPairsRef,
@@ -1134,11 +1134,6 @@ export default {
       depDelayPStyle,
       arrDelayPStyle,
       arrDelaySlider,
-      //arrDelayStep,
-      //arrDelayMin,
-      //arrDelayMax,
-      //arrDelayDec,
-      //arrDelayInc,
     };
   },
 };
@@ -1166,6 +1161,6 @@ export default {
 /* Directly controls size of chart */
 #mountEndpointsChart {
   width: 1200px;
-  height: 1500px;
+  height: 800px;
 }
 </style>
