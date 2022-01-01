@@ -479,6 +479,7 @@ import InputText from "primevue/inputtext";
 import SliderWithButtons from "./SliderWithButtons.vue";
 import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
+import * as dc from "../Composition/DelayChart.js";
 import G2 from "@antv/g2";
 import * as g2p from "@antv/g2plot";
 import { GroupedBar } from "@antv/g2plot";
@@ -633,10 +634,11 @@ export default {
     });
 
     function toggleChartOrientation() {
-      chartPortrait.value = chartPortrait.value === true ? false : true;
-      if (delayObj) {
-        drawDelayChart(delayObj);
-      }
+      dc.toggleChartOrientation();
+      // chartPortrait.value = chartPortrait.value === true ? false : true;
+      // if (delayObj) {
+      //   drawDelayChart(delayObj);
+      // }
     }
     //------------------------------------
     // retrieve from slider
@@ -671,14 +673,14 @@ export default {
     });
 
     // function initializeChart(data) {
-    function initializeChart() {
-      // Does not work with autoFit=true
-      if (chartPortrait.value === true) {
-        chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-      } else {
-        chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
-      }
-    }
+    // function initializeChart() {
+    //   // Does not work with autoFit=true
+    //   if (chartPortrait.value === true) {
+    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+    //   } else {
+    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+    //   }
+    // }
 
     const _chartPortrait = {
       xField: "od",
@@ -743,27 +745,27 @@ export default {
       },
     };
     //--------------------------
-    function drawDelayChart(data) {
-      console.log("==> drawDelayChart");
-      data.forEach((r) => {
-        r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
-      });
-      // destroy all resources
-      if (chart) chart.destroy();
-      if (chartPortrait.value === true) {
-        chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
-        console.log("chart => portrait");
-        u.print("data", data);
-        u.print("_chartPortrait", _chartPortrait);
-        chart.update({ data });
-        chart.update(_chartPortrait);
-      } else {
-        chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
-        console.log("chart => landscape");
-        chart.update({ data });
-        chart.update(_chartLandscape);
-      }
-    }
+    // function drawDelayChart(data) {
+    //   console.log("==> drawDelayChart");
+    //   data.forEach((r) => {
+    //     r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
+    //   });
+    //   // destroy all resources
+    //   if (chart) chart.destroy();
+    //   if (chartPortrait.value === true) {
+    //     chart = new g2p.Column("mountEndpointsChart", { autoFit: true });
+    //     console.log("chart => portrait");
+    //     u.print("data", data);
+    //     u.print("_chartPortrait", _chartPortrait);
+    //     chart.update({ data });
+    //     chart.update(_chartPortrait);
+    //   } else {
+    //     chart = new g2p.Bar("mountEndpointsChart", { autoFit: true });
+    //     console.log("chart => landscape");
+    //     chart.update({ data });
+    //     chart.update(_chartLandscape);
+    //   }
+    // }
 
     //--------------------------
     // Save data from the endpoint URL, either once or at fixed intervals (in sec)
@@ -835,7 +837,6 @@ export default {
         });
 
         // Go through all flights in air and compute effect of initial arrival delays
-        // Only update the chart when savedData is updated
 
         rigidBodyRef.table = delayObjRef.value.table;
         drawGraphRigidModel(delayObjRef.value, tiers.value);
@@ -859,7 +860,7 @@ export default {
 
         delayObj = ep.propagateNetwork(dataRef);
         u.print("... delayObj", delayObj);
-        drawDelayChart(delayObj); // Works! NOT.
+        dc.drawDelayChart(delayObj); // <<<< Use dc module
 
         // WHAT DOES THIS SECTION DO? Prepares to graph
         if (ep.checkEntries(allPairsRef)) {
@@ -877,7 +878,7 @@ export default {
     });
 
     onMounted(() => {
-      initializeChart();
+      dc.initializeChart();
     });
 
     function drawGraph(city, data) {
