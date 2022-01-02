@@ -638,6 +638,10 @@ export default {
     function toggleChartOrientation() {
       dc.toggleChartOrientation(delayObj);
     }
+    function toggleG2ChartOrientation() {
+      console.log("call dcg2.toggleChartOrientation");
+      dcg2.toggleChartOrientation(delayObj);
+    }
     //------------------------------------
     // retrieve from slider
     function getArrDelay(delay) {
@@ -750,6 +754,7 @@ export default {
 
     onMounted(() => {
       dc.initializeChart();
+      dcg2.initializeChart();
     });
 
     function drawGraph(city, data) {
@@ -985,6 +990,7 @@ export default {
     return {
       toggleOrientation,
       toggleChartOrientation,
+      toggleG2ChartOrientation,
       ifhelp,
       flightsRef,
       allPairsRef,

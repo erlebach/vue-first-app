@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import * as g2p from "@antv/g2plot";
+import * as g2 from "@antv/g2";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 import * as u from "../Composition/utils.js";
 
@@ -7,13 +7,15 @@ let chart = null;
 const portrait = ref(true);
 const chartPortrait = ref(true);
 
-// Ideally, mountEndpointsG2Chart should be a parameter. 
+// Ideally, mountEndpointsG2Chart should be a parameter.
 
 //--------------------------------------------------------
 export function toggleChartOrientation(delayObj) {
   chartPortrait.value = chartPortrait.value === true ? false : true;
+  u.print("G2::toggleChartOrientation::delayObj", delayObj);
   if (delayObj) {
-    drawDelayChart(delayObj);
+    console.log("G2::drawPortrait");
+    drawPortraitChart(chart, delayObj);
   }
 }
 
@@ -25,101 +27,90 @@ const chartConfiguration = dp.setupConfiguration({
 });
 
 //--------------------------------------------------------
-// function initializeChart(data) {
 export function initializeChart() {
-  // Does not work with autoFit=true
-  if (chartPortrait.value === true) {
-    chart = new g2p.Column("mountEndpointsG2Chart", { autoFit: true });
-  } else {
-    chart = new g2p.Bar("mountEndpointsG2Chart", { autoFit: true });
-  }
-}
-
-//--------------------------------------------------------
-const _chartPortrait = {
-  xField: "od",
-  yField: "fracFlightsDelayed",
-  groupField: "initArrDelay",
-  seriesField: "initArrDelay",
-  isGroup: "true", // not clear what isGroup does
-  label: {
-    visible: true,
-    position: "top",
-  },
-  title: {
-    visible: true,
-    text: "This is the title",
-  },
-  legend: {
-    position: "top-left",
-  },
-  xAxis: {
-    label: {
-      autorotate: false,
-      offset: 50,
-      rotate: 45,
-      style: {
-        fontSize: 18,
-      },
-    },
-  },
-  columnStyle: {
-    radius: [20, 20, 0, 0],
-  },
-};
-
-//--------------------------------------------------------
-const _chartLandscape = {
-  yField: "od",
-  xField: "fracFlightsDelayed",
-  seriesField: "initArrDelay",
-  isGroup: "true", // not clear what isGroup does
-  label: {
-    visible: true,
-    position: "right",
-  },
-  title: {
-    visible: true,
-    text: "This is the title",
-  },
-  legend: {
-    position: "top-left",
-  },
-  xAxis: {
-    label: {
-      autorotate: false,
-      offset: 50,
-      rotate: 45,
-      style: {
-        fontSize: 18,
-      },
-    },
-  },
-  columnStyle: {
-    radius: [20, 20, 0, 0],
-  },
-};
-//--------------------------------------------------------
-export function drawDelayChart(data) {
-  console.log("==> drawDelayChart");
-  data.forEach((r) => {
-    r.od = r.id.slice(10, 13) + "-" + r.id.slice(13, 16);
+  chart = new g2.Chart({
+    container: "mountEndpointsG2Chart",
+    autoFit: true,
+    height: 500,
   });
-  // destroy all resources
-  if (chart) chart.destroy();
-  if (chartPortrait.value === true) {
-    chart = new g2p.Column("mountEndpointsG2Chart", { autoFit: true });
-    console.log("chart => portrait");
-    u.print("data", data);
-    u.print("_chartPortrait", _chartPortrait);
-    chart.update({ data });
-    chart.update(_chartPortrait);
-  } else {
-    chart = new g2p.Bar("mountEndpointsG2Chart", { autoFit: true });
-    console.log("chart => landscape");
-    chart.update({ data });
-    chart.update(_chartLandscape);
-  }
+  return chart;
 }
+
+//--------------------------------------------------------
+function drawPortraitChart(chart, data) {
+  chart.data(data);
+
+  chart.coordinate().scale("od", {
+    nice: true,
+  });
+
+  chart.tooltip({
+    shared: true,
+    showMarkers: true,
+  });
+
+  chart
+    .interval()
+    .position("od*fracFlightsDelayed")
+    .color("initArrDelay")
+    .adjust([
+      {
+        //type: "dodge",
+        marginRatio: 0,
+      },
+    ]);
+  chart.axis("od", {
+    position: "bottom",
+  });
+  chart.axis("fracFlightsDelayed", {
+    position: "left",
+  });
+
+  //chart.interaction("active-region");
+  u.print("chart.render, G2");
+  chart.render();
+}
+
+//--------------------------------------------------------
+function drawLandscapeChart(chart, data) {
+  chart.data(data);
+
+  chart
+    .coordinate()
+    .transpose()
+    .scale(1, -1);
+
+  chart.axis("value", {
+    position: "right",
+  });
+  chart.axis("label", {
+    label: {
+      offset: 12,
+    },
+  });
+
+  chart.tooltip({
+    shared: true,
+    showMarkers: false,
+  });
+
+  chart
+    .interval()
+    .position("label*value")
+    .color("type")
+    .adjust([
+      {
+        type: "dodge",
+        marginRatio: 0,
+      },
+    ]);
+
+  chart.interaction("active-region");
+  chart.render();
+}
+
+//--------------------------------------------------------
+
+//--------------------------------------------------------
 
 //--------------------------------------------------------
