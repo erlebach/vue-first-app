@@ -1,5 +1,6 @@
 import { ref } from "vue";
-import * as g2 from "@antv/g2";
+//import * as g2 from "@antv/g2";
+import G2 from "@antv/g2";
 import * as dp from "../Composition/delayPropagationGraphImpl.js";
 import * as u from "../Composition/utils.js";
 
@@ -10,12 +11,12 @@ const chartPortrait = ref(true);
 // Ideally, mountEndpointsG2Chart should be a parameter.
 
 //--------------------------------------------------------
-export function toggleChartOrientation(delayObj) {
+export function toggleChartOrientation(data) {
   chartPortrait.value = chartPortrait.value === true ? false : true;
-  u.print("G2::toggleChartOrientation::delayObj", delayObj);
-  if (delayObj) {
+  u.print("G2::toggleChartOrientation::delayObj", data);
+  if (data) {
     console.log("G2::drawPortrait");
-    drawPortraitChart(chart, delayObj);
+    drawPortraitChart(data);
   }
 }
 
@@ -27,47 +28,51 @@ const chartConfiguration = dp.setupConfiguration({
 });
 
 //--------------------------------------------------------
+// NOT DISPLAYING
 export function initializeChart() {
-  chart = new g2.Chart({
+  // Data from https://github.com/liximomo/g2
+  const data = [
+    { genre: "Sports", sold: 275 },
+    { genre: "Strategy", sold: 1150 },
+    { genre: "Action", sold: 120 },
+    { genre: "Shooter", sold: 350 },
+    { genre: "Other", sold: 150 },
+  ];
+  const chart = new G2.Chart({
     container: "mountEndpointsG2Chart",
-    autoFit: true,
+    width: 500,
     height: 500,
   });
-  return chart;
+
+  chart.data(data);
+  chart
+    .interval()
+    .position("genre*sold")
+    .color("genre");
+  chart.render();
 }
 
 //--------------------------------------------------------
-function drawPortraitChart(chart, data) {
+// THE FUNCTION IS NOT DISPLAYING TO THE SCREEN. WHY NOT? I CANNOT FIGURE THIS OUT!
+function drawPortraitChart(data) {
+  chart.destroy();
+  chart = new G2.Chart({
+    container: "mountEndpointsG2Chart",
+    autoFit: true,
+    width: 1200,
+    height: 600,
+  });
   chart.data(data);
 
-  chart.coordinate().scale("od", {
+  chart.coordinate().scale("fracFlightsDelayed", {
     nice: true,
-  });
-
-  chart.tooltip({
-    shared: true,
-    showMarkers: true,
   });
 
   chart
     .interval()
     .position("od*fracFlightsDelayed")
-    .color("initArrDelay")
-    .adjust([
-      {
-        //type: "dodge",
-        marginRatio: 0,
-      },
-    ]);
-  chart.axis("od", {
-    position: "bottom",
-  });
-  chart.axis("fracFlightsDelayed", {
-    position: "left",
-  });
+    .color("initArrDelay");
 
-  //chart.interaction("active-region");
-  u.print("chart.render, G2");
   chart.render();
 }
 
@@ -105,8 +110,10 @@ function drawLandscapeChart(chart, data) {
       },
     ]);
 
+  u.print("before render: chart", chart);
   chart.interaction("active-region");
   chart.render();
+  u.print("after render: chart", chart);
 }
 
 //--------------------------------------------------------

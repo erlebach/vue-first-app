@@ -754,7 +754,28 @@ export default {
 
     onMounted(() => {
       dc.initializeChart();
-      dcg2.initializeChart();
+      // dcg2.initializeChart(); // NOT DISPLAYING!!
+      // Data from https://github.com/liximomo/g2
+      const data = [
+        { genre: "Sports", sold: 275 },
+        { genre: "Strategy", sold: 1150 },
+        { genre: "Action", sold: 120 },
+        { genre: "Shooter", sold: 350 },
+        { genre: "Other", sold: 150 },
+      ];
+      const chart = new G2.Chart({
+        // NOT DISPLAYING!!
+        container: "mountEndpointsG2Chart",
+        width: 500,
+        height: 500,
+      });
+
+      chart.data(data);
+      chart
+        .interval()
+        .position("genre*sold")
+        .color("genre");
+      chart.render();
     });
 
     function drawGraph(city, data) {
