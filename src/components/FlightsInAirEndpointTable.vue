@@ -252,7 +252,20 @@ is returned from the endpoint. -->
       </div>
     </div>
     <!-- ------------------------------ -->
-    <div class="p-d-flex">
+    <div class="p-d-flex" style="display:true;">
+      <div class="flex p-flex-row">
+        <Button label="Toggle Orientation" @click="toggleChChartOrientation" />
+        <div class="flex p-flex-column">
+          <h2>Delay Propagation: global view (chart.js)</h2>
+          <h3>
+            Imposed [30, 45, 60] min arrival delay on all airborne flights
+          </h3>
+          <canvas id="mountEndpointsChChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- ------------------------------ -->
+    <div class="p-d-flex" style="display:none;">
       <div class="flex p-flex-row">
         <Button label="Toggle Orientation" @click="toggleG2ChartOrientation" />
         <div class="flex p-flex-column">
@@ -494,6 +507,7 @@ import "primeicons/primeicons.css";
 import G6 from "@antv/g6";
 import * as dc from "../Composition/DelayChart_g2plot.js";
 import * as dcg2 from "../Composition/DelayChart_g2.js";
+import * as chart from "../Composition/DelayChart_chart.js";
 import G2 from "@antv/g2";
 import * as g2p from "@antv/g2plot";
 import { GroupedBar } from "@antv/g2plot";
@@ -642,6 +656,10 @@ export default {
       console.log("call dcg2.toggleChartOrientation");
       dcg2.toggleChartOrientation(delayObj);
     }
+    function toggleChChartOrientation() {
+      console.log("call chart.toggleChartOrientation");
+      chart.toggleChartOrientation(delayObj);
+    }
     //------------------------------------
     // retrieve from slider
     function getArrDelay(delay) {
@@ -754,28 +772,29 @@ export default {
 
     onMounted(() => {
       dc.initializeChart();
+      chart.initializeChart();
       // dcg2.initializeChart(); // NOT DISPLAYING!!
       // Data from https://github.com/liximomo/g2
-      const data = [
-        { genre: "Sports", sold: 275 },
-        { genre: "Strategy", sold: 1150 },
-        { genre: "Action", sold: 120 },
-        { genre: "Shooter", sold: 350 },
-        { genre: "Other", sold: 150 },
-      ];
-      const chart = new G2.Chart({
-        // NOT DISPLAYING!!
-        container: "mountEndpointsG2Chart",
-        width: 500,
-        height: 500,
-      });
+      // const data = [
+      //   { genre: "Sports", sold: 275 },
+      //   { genre: "Strategy", sold: 1150 },
+      //   { genre: "Action", sold: 120 },
+      //   { genre: "Shooter", sold: 350 },
+      //   { genre: "Other", sold: 150 },
+      // ];
+      // const chart = new G2.Chart({
+      //   // NOT DISPLAYING!!
+      //   container: "mountEndpointsG2Chart",
+      //   width: 500,
+      //   height: 500,
+      // });
 
-      chart.data(data);
-      chart
-        .interval()
-        .position("genre*sold")
-        .color("genre");
-      chart.render();
+      // chart.data(data);
+      // chart
+      //   .interval()
+      //   .position("genre*sold")
+      //   .color("genre");
+      // chart.render();
     });
 
     function drawGraph(city, data) {
@@ -1012,6 +1031,7 @@ export default {
       toggleOrientation,
       toggleChartOrientation,
       toggleG2ChartOrientation,
+      toggleChChartOrientation,
       ifhelp,
       flightsRef,
       allPairsRef,
