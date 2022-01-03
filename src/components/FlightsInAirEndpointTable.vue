@@ -1088,4 +1088,8 @@ export default {
   width: 1200px;
   height: 800px;
 }
+#mountEndpointsChChart {
+  width: 1200px;
+  height: 800px;
+}
 </style>
